@@ -3,13 +3,13 @@
         [rhombrick.staticgeometry]
         [rhombrick.facecode]))
 
-(def max-tiles 500)
+(def max-tiles 1000)
 (def tiles (atom {}))
 (def todo (atom (clojure.lang.PersistentQueue/EMPTY)))
 
 (def working-tileset (atom #{
-                      "100000000000" 
-                      "000111000100"
+                      "100000001000" 
+                      ;"000111000100"
                       ;"100100100100"
                       }))
 
@@ -61,21 +61,29 @@
   (let [num-tiles 1
         tiles (repeat num-tiles 
                       (rand-nth 
-                        (take 20 (seq @normalised-facecodes-sorted))))]
+                        (take 10 (seq @normalised-facecodes-sorted))))]
         ;(init-tiler)
         (reset! working-tileset #{})
         (doseq [tile tiles]
           (swap! working-tileset conj tile))
-        (swap! working-tileset conj "100000000000")
+        (if (< (rand-int 100) 50)
+          (swap! working-tileset conj "100000000000"))
         (if (< (rand-int 100) 50)
           (swap! working-tileset conj "111111111111"))
+        ;(if (< (rand-int 100) 50)
+        ;  (swap! working-tileset conj "111000000000"))
+        (if (< (rand-int 100) 50)
+          (swap! working-tileset conj "110000000000"))
+        (if (< (rand-int 100) 50)
+          (swap! working-tileset conj "100100000000"))
         ))
 
 (defn auto-seed-todo []
   (if (= (count @todo) 0)
     (do
       (init-tiler)
-      (random-tileset))))
+      ;(random-tileset)
+      )))
 ; _______________________________________________________________________
 
 (defn get-neighbour [pos face]

@@ -3,7 +3,8 @@
         [rhombrick.vector]
         [rhombrick.staticgeometry]
         [rhombrick.facecode]
-        [rhombrick.tiling]))
+        [rhombrick.tiling]
+        [rhombrick.glider]))
 
 
 ; _______________________________________________________________________
@@ -39,7 +40,7 @@
         ;(fill 0 0 0 32)
         ;(no-stroke)
         (if (seq colors)
-          (fill (/ (col 0) 3.0) (/ (col 1) 3.0) (/ (col 2) 3.0) 128 ))
+          (fill (/ (col 0) 3.0) (/ (col 1) 3.0) (/ (col 2) 3.0) 192 ))
         (begin-shape :quads)
         (vertex (v0 0) (v0 1) (v0 2))
         (vertex (v1 0) (v1 1) (v1 2))
@@ -57,8 +58,8 @@
       (with-translation pos 
         (push-matrix)
         (scale 0.5)
-        (box 1 1 1)
-        ;(draw-faces rd-verts rd-faces rd-face-colors)
+        ;(box 1 1 1)
+        (draw-faces rd-verts rd-faces rd-face-colors)
         (pop-matrix)))))
 
 ; _______________________________________________________________________
@@ -66,12 +67,12 @@
 
 (defn draw-todo-head []
   ;(fill 255 255 0 255)
-  (stroke 64 64 255 220)
-  (stroke-weight 8)
+  (stroke 128 128 255 220)
+  (stroke-weight 4)
   (if (not (empty? @todo)) 
     (with-translation (peek @todo)
       (push-matrix)
-      (scale 0.45)
+      (scale 0.55)
       (draw-faces rd-verts rd-faces rd-face-colors)
       (pop-matrix))))
     ;(sphere 1)))
@@ -95,17 +96,6 @@
 
 
 
-;(defn get-connected-idxs [facecode]
-;  (filter #(not= nil %)
-;          (map #(if (= %2 \1) %1 nil)
-;               (range 12) facecode)))
-
-; buggy:
-;(defn get-connected-idxs [facecode]
-;  (filter #(not= nil %)
-;          (map #(if (not= %2 \0) %1 nil)
-;               (range 12) facecode)))
-
 (defn make-curve-endpoints [connected-idxs]
   (let [num-points (count connected-idxs)]
     (map #(vector %1 (nth connected-idxs (mod (+ %2 1) num-points)))
@@ -113,24 +103,56 @@
 
 ; _______________________________________________________________________
 
+(defn draw-gliders []
+  (do
+    ;(fill 255 0 0 255)
+    ;(sphere 1)
+    ;(println @gliders)
+    (doseq [glider @gliders]
+      (let [t (glider :time)
+            entry-idx (glider :entry-face-idx)
+            exit-idx (glider :exit-face-idx)
+            p1 (vec3-scale (co-verts entry-idx) 0.5)
+            p2 (vec3-scale p1 0.5)
+            p4 (vec3-scale (co-verts exit-idx) 0.5)
+            p3 (vec3-scale p4 0.5)
+            bx (vec (map #(% 0) [p1 p2 p3 p4]))
+            by (vec (map #(% 1) [p1 p2 p3 p4]))
+            bz (vec (map #(% 2) [p1 p2 p3 p4]))
+            gx (bezier-point (bx 0) (bx 1) (bx 2) (bx 3) t)
+            gy (bezier-point (by 0) (by 1) (by 2) (by 3) t)
+            gz (bezier-point (bz 0) (bz 1) (bz 2) (bz 3) t)
+            pos (vec3-add [gx gy gz] (glider :current-tile))
+            ]
+        ;(sphere 10)))))
+        (with-translation pos
+          (apply fill (glider :color))
+          ;(scale 0.5)
+          ;(sphere 0.2)
+          (box 0.05 0.05 0.05)
+                          )))))
+
+
+
+
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (count (filter #(= \1 %) code))]
-    (if (= code "xxxxxxxxxxxx")
-      (do 
-        (no-stroke)
-        (fill 255 0 0 64)
-        (sphere 0.25)
-        (no-fill)))
+;    (if (= code "xxxxxxxxxxxx")
+;      (do 
+;        (no-stroke)
+;        (fill 255 0 0 64)
+;        (sphere 0.25)
+;        (no-fill)))
     (if (= num-connected 1)
       (let [p (co-verts (first (get-connected-idxs code)))]
         (stroke 192 192 255 192)
         (line 0 0 0 (p 0) (p 1) (p 2))
-        (no-stroke)
-        (fill 255 255 255 255)
-        (sphere 0.125)
+        
+        ;(no-stroke)
+        ;(fill 255 255 255 255)
+        ;(sphere 0.125)
         (no-fill))
-        ;(stroke 192 192 255 192))
         
       (doseq [endpoints endpoint-pairs]
         (draw-curve (endpoints 0) (endpoints 1))))))
@@ -172,20 +194,22 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile]
       (with-translation pos 
-        (push-matrix)
+        ;(push-matrix)
         (scale 0.5)
         ;(stroke-weight 2)
         ;(stroke 0 0 0  192)
-        (stroke-weight 4)
-        (stroke 192 192 255 192)
+        (stroke-weight 2)
+        (stroke 192 192 255 220)
         (no-fill) 
         (draw-facecode (@tiles pos))
         
-        (stroke-weight 1)
-        (stroke 128 128 128 32)
-        ;(no-stroke)
-        (draw-faces rd-verts rd-faces nil)
+        ;(stroke-weight 1)
+        ;(stroke 128 128 128 32)
+        ;;(no-stroke)
+        ;(draw-faces rd-verts rd-faces nil)
+        
         (stroke 0 255 0 32)
         ;(draw-todo)
-        (pop-matrix)))))
+        ;(pop-matrix)
+      ))))
 

@@ -3,14 +3,15 @@
         [rhombrick.facecode]
         [rhombrick.staticgeometry]
         [rhombrick.tiling]
-        [rhombrick.tiling-render]))
+        [rhombrick.tiling-render]
+        [rhombrick.glider]))
 
 (def mouse-position (atom [0 0]))
 (def view-scale (atom 1.0))
 (def model-scale (atom 75))
 (def frame (atom 0))
 
-
+(def num-gliders 50)
 
 
 ; _______________________________________________________________________
@@ -19,7 +20,7 @@
 
 (defn setup []
     (smooth)
-    (sphere-detail 4)
+    (sphere-detail 12)
     ;(display-filter :blur 10)
     (text-font (load-font "FreeMono-16.vlw"))
     (set-state! :mouse-position (atom [0 0]))
@@ -27,8 +28,11 @@
     ;(make-cubic-tiling 10 10 10)
     ;(reset! tiles {})
     (init-tiler)
+    (make-tiling-iteration) ; needed so init-gliders works
+    (init-gliders num-gliders)
+    ;(println @gliders)
     ;(init-todo)
- 
+    (println "bezier test: " (bezier-point 1.0 2.0 3.0 4.0 0.5))
     )
     ;(doseq [code @normalised-facecodes]
     ; (println code))
@@ -43,6 +47,7 @@
 ; _______________________________________________________________________
 
 
+
 (defn draw-xyplane []
   (quad -1 -1
          1 -1
@@ -53,9 +58,22 @@
 
 (defn draw []
   (make-tiling-iteration)
-  (auto-seed-todo)
+  ;(auto-seed-todo)
+;  (if (= (count @todo) 0)
+;    (do
+;      (init-tiler)
+;      (make-tiling-iteration)
+;      (init-gliders num-gliders)
+;      ;(random-tileset)
+;      ))
+
   (if (> (count @tiles) max-tiles)
-    (init-tiler))
+    (do
+      (init-tiler)
+      (make-tiling-iteration)
+      (init-gliders num-gliders)
+    ))
+  (update-gliders)
   (swap! frame + 1)
   (background 0 0 0)
   (lights)    
@@ -68,16 +86,23 @@
     (scale @model-scale)
     (rotate-x (* (- my 400) -0.01))
     (rotate-y (* (- mx 700) 0.01))
-    (rotate-x (* @frame 0.00351471))
+    ;(rotate-x (* @frame 0.00351471))
     (rotate-y (* @frame 0.0035236))
-    (rotate-z (* @frame 0.0035123))
+    ;(rotate-z (* @frame 0.0035123))
 
     (stroke 255 255 255 192)
     (stroke-weight 1)
     (draw-tiling)
-    (stroke-weight 1)
-    (draw-todo-head)
 
+    ;(push-matrix)
+    ;(scale 0.5)
+    (draw-gliders)
+    ;(pop-matrix)
+
+    (stroke-weight 1)
+    (draw-todo)
+    (draw-todo-head)
+    
     (pop-matrix)
     
     ;(no-fill)
@@ -115,7 +140,10 @@
    \r #(init-tiler)
    \R #(do 
          (init-tiler)
-         (random-tileset))
+         (random-tileset)
+         (make-tiling-iteration)
+         (init-gliders num-gliders)
+         )
    \- #(swap! auto-delete-max-lonlieness - 1)
    \= #(swap! auto-delete-max-lonlieness + 1)
    })
@@ -145,5 +173,5 @@
   :mouse-moved mouse-moved)
 
 
-(sketch-start rhombrick)
+;(sketch-start rhombrick)
 

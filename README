@@ -1,13 +1,3 @@
 # rhombrick
 
-FIXME: write description
-
-## Usage
-
-FIXME: write
-
-## License
-
-Copyright (C) 2012 FIXME
-
-Distributed under the Eclipse Public License, the same as Clojure.
+A 3d tiling engine that tiles space with rhombic dodecahedrons
