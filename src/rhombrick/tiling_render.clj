@@ -103,7 +103,7 @@
 
 ; _______________________________________________________________________
 
-(defn draw-gliders []
+(defn draw-gliders-old []
   (do
     ;(fill 255 0 0 128)
     (sphere 0.25)
@@ -133,6 +133,17 @@
                           )))))
 
 
+(defn draw-gliders []
+  (do
+    ;(fill 255 0 0 128)
+    ;(sphere 0.25)
+    (doseq [glider @gliders]
+        ;(sphere 10)))))
+        (with-translation (get-glider-pos (glider :id))
+          (apply fill (glider :color))
+          ;(scale 0.5)
+          ;(sphere 0.2)
+          (box 0.015 0.015 0.015)))))
 
 
 (defn draw-facecode [code]
