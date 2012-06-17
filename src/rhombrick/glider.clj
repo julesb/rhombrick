@@ -23,7 +23,7 @@
           :entry-face-idx (face-ids 0)
           :exit-face-idx (face-ids 1)
           ;:bezier-points [p1 p2 p3 p4]
-          :speed 0.05
+          :speed 0.025
           :time 0.0
           :color (rand-nth rd-face-colors)
           }
@@ -48,56 +48,26 @@
 ; _______________________________________________________________________
 
 (defn get-glider-pos [id]
-  (let [glider (@gliders :id)
-        tile (glider :current-tile)
-        entry-idx (glider :entry-face-idx)
-        exit-idx (glider :exit-face-idx)
-        t (glider :time)
-        p1 (vec3-scale (co-verts entry-idx) 0.5)
-        p2 (vec3-scale p1 0.5)
-        p4 (vec3-scale (co-verts exit-idx) 0.5)
-        p3 (vec3-scale p4 0.5)
-        bx (vec (map #(% 0) [p1 p2 p3 p4]))
-        by (vec (map #(% 1) [p1 p2 p3 p4]))
-        bz (vec (map #(% 2) [p1 p2 p3 p4]))
-        gx (bezier-point (bx 0) (bx 1) (bx 2) (bx 3) t)
-        gy (bezier-point (by 0) (by 1) (by 2) (by 3) t)
-        gz (bezier-point (bz 0) (bz 1) (bz 2) (bz 3) t)
-        pos (vec3-add [gx gy gz] tile)]
-    pos))
+  (let [glider (first (filter #(= (% :id) id) @gliders))]
+    (if (= glider nil)
+      [0 0 0]
+      (let [tile (glider :current-tile)
+            entry-idx (glider :entry-face-idx)
+            exit-idx (glider :exit-face-idx)
+            t (glider :time)
+            p1 (vec3-scale (co-verts entry-idx) 0.5)
+            p2 (vec3-scale p1 0.5)
+            p4 (vec3-scale (co-verts exit-idx) 0.5)
+            p3 (vec3-scale p4 0.5)
+            bx (vec (map #(% 0) [p1 p2 p3 p4]))
+            by (vec (map #(% 1) [p1 p2 p3 p4]))
+            bz (vec (map #(% 2) [p1 p2 p3 p4]))
+            gx (bezier-point (bx 0) (bx 1) (bx 2) (bx 3) t)
+            gy (bezier-point (by 0) (by 1) (by 2) (by 3) t)
+            gz (bezier-point (bz 0) (bz 1) (bz 2) (bz 3) t)
+            pos (vec3-add [gx gy gz] tile)]
+      pos))))
 
-
-; _______________________________________________________________________
-
-;(defn init-gliders [num-gliders]
-;  (do
-;    (reset! gliders [])
-;    (reset! max-glider-id 0)
-;    (doseq [i (range num-gliders)]
-;      (let [tile (vec (rand-nth (filter #(not= nil %) (keys @tiles))))
-;            entry-idx (rand-nth (get-connected-idxs (@tiles tile)))
-;            path-idxs (choose-glider-path (@tiles tile) entry-idx)]
-;        (make-glider tile path-idxs)))))
-
-(defn init-gliders [num-gliders]
-  (do
-    (reset! gliders [])
-    (reset! max-glider-id 0)
-    (if (> (count @tiles) 0)
-      (doseq [i (range num-gliders)]
-        (let [tile [0 0 0]
-              entry-idx (first (get-connected-idxs (@tiles tile)))
-              path-idxs (choose-glider-path (@tiles tile) entry-idx)]
-          (if (= (count path-idxs) 2)
-            (make-glider tile path-idxs)))))
-    ;(println @gliders)
-    ))
-
-
-; _______________________________________________________________________
-
-(defn get-gliders-on-tile [pos]
-  (filter #(= (% :current-tile) pos) @gliders))
 
 ; _______________________________________________________________________
 
@@ -117,6 +87,39 @@
 ;        p3 (vec3-scale p4 0.5)]
 ;    (update-glider-value id :bezier-points [p1 p2 p3 p4])))
 ; _______________________________________________________________________
+
+;(defn init-gliders [num-gliders]
+;  (do
+;    (reset! gliders [])
+;    (reset! max-glider-id 0)
+;    (doseq [i (range num-gliders)]
+;      (let [tile (vec (rand-nth (filter #(not= nil %) (keys @tiles))))
+;            entry-idx (rand-nth (get-connected-idxs (@tiles tile)))
+;            path-idxs (choose-glider-path (@tiles tile) entry-idx)]
+;        (make-glider tile path-idxs)))))
+
+(defn init-gliders [num-gliders]
+  (do
+    (reset! gliders [])
+    (reset! max-glider-id 0)
+    (if (> (count @tiles) 0)
+      (doseq [i (range (+ 2 num-gliders))]
+        (let [tile [0 0 0]
+              entry-idx (first (get-connected-idxs (@tiles tile)))
+              path-idxs (choose-glider-path (@tiles tile) entry-idx)]
+          (if (= (count path-idxs) 2)
+            (make-glider tile path-idxs)))))
+    (update-glider-value (@gliders 0) :time 0.3)
+    (update-glider-value (@gliders 1) :time 0.6)
+    ;(println @gliders)
+    ))
+
+
+; _______________________________________________________________________
+
+(defn get-gliders-on-tile [pos]
+  (filter #(= (% :current-tile) pos) @gliders))
+
 
 (defn is-traversable? [tilecode]
   (not 

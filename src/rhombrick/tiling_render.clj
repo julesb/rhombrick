@@ -105,8 +105,8 @@
 
 (defn draw-gliders []
   (do
-    ;(fill 255 0 0 255)
-    ;(sphere 1)
+    ;(fill 255 0 0 128)
+    (sphere 0.25)
     ;(println @gliders)
     (doseq [glider @gliders]
       (let [t (glider :time)
@@ -138,24 +138,25 @@
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (count (filter #(= \1 %) code))]
-;    (if (= code "xxxxxxxxxxxx")
-;      (do 
-;        (no-stroke)
-;        (fill 255 0 0 64)
-;        (sphere 0.25)
-;        (no-fill)))
+    ;(if (= code "xxxxxxxxxxxx")
+    ;  (do 
+    ;    (no-stroke)
+    ;    (fill 255 0 0 64)
+    ;    (sphere 0.25)
+    ;    (no-fill)))
     (if (= num-connected 1)
       (let [p (co-verts (first (get-connected-idxs code)))]
-        (stroke 192 192 255 192)
+        ;(stroke 192 192 255 192)
         (line 0 0 0 (p 0) (p 1) (p 2))
         
         ;(no-stroke)
-        ;(fill 255 255 255 255)
+        (fill 255 128 128 128)
+        (box 0.05125 0.05125 0.05125)
         ;(sphere 0.125)
         (no-fill))
-        
+        )
       (doseq [endpoints endpoint-pairs]
-        (draw-curve (endpoints 0) (endpoints 1))))))
+        (draw-curve (endpoints 0) (endpoints 1)))))
 
 ; _______________________________________________________________________
 
@@ -198,13 +199,13 @@
         (scale 0.5)
         ;(stroke-weight 2)
         ;(stroke 0 0 0  192)
-        (stroke-weight 2)
-        (stroke 192 192 255 220)
+        (stroke-weight 4)
+        (stroke 150 150 255 128)
         (no-fill) 
         (draw-facecode (@tiles pos))
         
-        ;(stroke-weight 1)
-        ;(stroke 128 128 128 32)
+        (stroke-weight 1)
+        (stroke 128 128 128 32)
         ;;(no-stroke)
         ;(draw-faces rd-verts rd-faces nil)
         

@@ -61,21 +61,26 @@
   (let [num-tiles 1
         tiles (repeat num-tiles 
                       (rand-nth 
-                        (take 10 (seq @normalised-facecodes-sorted))))]
+                        (take 50 (seq @normalised-facecodes-sorted))))]
         ;(init-tiler)
         (reset! working-tileset #{})
         (doseq [tile tiles]
           (swap! working-tileset conj tile))
-        (if (< (rand-int 100) 50)
+        (if (< (rand-int 100) 90)
           (swap! working-tileset conj "100000000000"))
         (if (< (rand-int 100) 50)
           (swap! working-tileset conj "111111111111"))
-        ;(if (< (rand-int 100) 50)
-        ;  (swap! working-tileset conj "111000000000"))
         (if (< (rand-int 100) 50)
           (swap! working-tileset conj "110000000000"))
-        (if (< (rand-int 100) 50)
+        (if (< (rand-int 100) 30)
+          (swap! working-tileset conj "101000000000"))
+        (if (< (rand-int 100) 30)
           (swap! working-tileset conj "100100000000"))
+        (if (< (rand-int 100) 30)
+          (swap! working-tileset conj "100010000000"))
+        (if (< (rand-int 100) 30)
+          (swap! working-tileset conj "100000000000"))
+
         ))
 
 (defn auto-seed-todo []

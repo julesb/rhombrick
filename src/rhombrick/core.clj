@@ -4,6 +4,7 @@
         [rhombrick.staticgeometry]
         [rhombrick.tiling]
         [rhombrick.tiling-render]
+        [rhombrick.vector]
         [rhombrick.glider]))
 
 (def mouse-position (atom [0 0]))
@@ -77,17 +78,27 @@
   (swap! frame + 1)
   (background 0 0 0)
   (lights)    
+  (push-matrix)
+  (if (> (count @gliders) 1)
+    (let [cam-pos (vec3-scale (get-glider-pos 1) @model-scale)
+          cam-lookat (vec3-scale (get-glider-pos 2) @model-scale) ]
+      (camera (cam-pos 0) (cam-pos 1) (+ (cam-pos 2) 50)
+              (cam-lookat 0) (cam-lookat 1) (cam-lookat 2)
+              0 0 1)))
+        
+
+
   ;(light-specular 255 255 255)
   ;(stroke 0 0 0 250)
   ;(stroke-weight 1)
   (let [[mx my] @(state :mouse-position)] 
     (push-matrix)
-    (translate [700 400 0])
+    ;(translate [700 400 0])
     (scale @model-scale)
-    (rotate-x (* (- my 400) -0.01))
-    (rotate-y (* (- mx 700) 0.01))
+    ;(rotate-x (* (- my 400) -0.01))
+    ;(rotate-y (* (- mx 700) 0.01))
     ;(rotate-x (* @frame 0.00351471))
-    (rotate-y (* @frame 0.0035236))
+    ;(rotate-y (* @frame 0.0035236))
     ;(rotate-z (* @frame 0.0035123))
 
     (stroke 255 255 255 192)
@@ -105,6 +116,7 @@
     
     (pop-matrix)
     
+
     ;(no-fill)
     ;(stroke-weight 1)
     ;(stroke 255 255 255 255)
@@ -113,7 +125,7 @@
     ;(scale @model-scale)
     ;(draw-normalized-facecodes @frame )
     ;(pop-matrix)
-
+      (pop-matrix)
 
   )
 ;  (if (> (count @tiles) max-tiles)
