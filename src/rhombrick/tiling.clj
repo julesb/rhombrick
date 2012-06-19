@@ -3,14 +3,18 @@
         [rhombrick.staticgeometry]
         [rhombrick.facecode]))
 
-(def max-tiles 1000)
+(def max-tiles 750)
 (def tiles (atom {}))
 (def todo (atom (clojure.lang.PersistentQueue/EMPTY)))
 
 (def working-tileset (atom #{
-                      "100000001000" 
-                      ;"000111000100"
-                      ;"100100100100"
+                      ;"100000000000"
+                      "100000000100" 
+                      ;"110000000000"
+                      ;"000111000000"
+                      "000101010000"
+                      "100010001000"
+                      "111111111111"
                       }))
 
 (def facecode-compatible #{[\0 \0] [\1 \1] [\0 \-] [\1 \-] [\- \-]})

@@ -9,10 +9,10 @@
 
 (def mouse-position (atom [0 0]))
 (def view-scale (atom 1.0))
-(def model-scale (atom 75))
+(def model-scale (atom 200))
 (def frame (atom 0))
 
-(def num-gliders 100)
+(def num-gliders 30)
 
 (def camera-pos (atom [0 0 0]))
 (def camera-lookat (atom [0 0 0]))
@@ -46,6 +46,7 @@
     (update-camera)
     ;(display-filter :blur 10)
     (text-font (load-font "FreeMono-16.vlw"))
+    ;(text-mode :screen)
     (set-state! :mouse-position (atom [0 0]))
     (build-normalised-facecode-set)
     ;(make-cubic-tiling 10 10 10)
@@ -101,7 +102,8 @@
   (swap! frame + 1)
   (background 32 32 192)
   ;(lights)    
-;  (push-matrix)
+  ;(reset-matrix)
+  ;(push-matrix)
 
 ; attach cam to glider 1, lookat glider 2
 ;  (if (> (count @gliders) 1)
@@ -116,7 +118,7 @@
         d  (dist (@camera-pos 0) (@camera-pos 1) (@camera-pos 2)
                  (g 0) (g 1) (g 2))
         dir (vec3-normalize (vec3-sub g @camera-pos))
-        newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.025)))
+        newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.035)))
         cl-d (dist (@camera-lookat 0) (@camera-lookat 1) (@camera-lookat 2)
                  (g 0) (g 1) (g 2))
         cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
@@ -125,9 +127,9 @@
                                                 (* cl-d 0.2)))]
     (reset! camera-lookat new-camera-lookat)    
     (reset! camera-pos newpos)
-        (camera (newpos 0) (newpos 1) (newpos 2)
-              (new-camera-lookat 0) (new-camera-lookat 1) (new-camera-lookat 2)
-              0 0 1))
+    (camera (newpos 0) (newpos 1) (newpos 2)
+            (new-camera-lookat 0) (new-camera-lookat 1) (new-camera-lookat 2)
+            0 0 1))
 
 ; camera follows paths
 ;  (if (> (count @gliders) 1)
@@ -142,7 +144,7 @@
                  @camera-near-clip
                  @camera-far-clip)
 
-  (light-falloff 0.0 0.1 0.0) 
+  ;(light-falloff 0.0 0.1 0.0) 
   ;(light-specular 255 255 255)
   (stroke 0 255 255 128)
   (stroke-weight 1)
@@ -151,7 +153,6 @@
   (box 2000 2000 2000)
   (let [[mx my] @(state :mouse-position)] 
     (push-matrix)
-    ;(translate [700 400 0])
     (scale @model-scale)
     ;(rotate-x (* (- my 400) -0.01))
     ;(rotate-y (* (- mx 700) 0.01))
@@ -161,31 +162,24 @@
 
     (stroke 255 255 255 192)
     (stroke-weight 1)
+
+    (draw-gliders)
+
     (draw-tiling)
 
-    ;(push-matrix)
-    ;(scale 0.5)
-    (draw-gliders)
-    ;(pop-matrix)
+    ;(draw-gliders)
 
     (stroke-weight 1)
-
     (draw-todo)
+
     (fill 192 192 192 255)
     (draw-todo-head)
     
-    (pop-matrix)
-    
-
     ;(no-fill)
     ;(stroke-weight 1)
     ;(stroke 255 255 255 255)
-    ;(push-matrix)
-    ;(translate [700 400 0])
-    ;(scale @model-scale)
     ;(draw-normalized-facecodes @frame )
-    ;(pop-matrix)
-    ;  (pop-matrix)
+    (pop-matrix)
 
   )
 ;  (if (> (count @tiles) max-tiles)
@@ -197,6 +191,9 @@
 ;      ;    (delete-random-tile)))
 ;      ))
 
+;   (pop-matrix)
+;  (ortho)
+  ;(translate [700 400 0])
   (draw-info)
   )
 
@@ -211,7 +208,10 @@
          (println "model-scale: " @model-scale))
    \. #(swap! model-scale - 1.0)
    ;\r #(make-cubic-tiling 10 10 10)
-   \r #(init-tiler)
+   \r #(do
+         (init-tiler)
+         (make-tiling-iteration)
+         (init-gliders num-gliders))
    \R #(do 
          (init-tiler)
          (random-tileset)

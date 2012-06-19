@@ -159,11 +159,11 @@
     (if (= code "xxxxxxxxxxxx")
       (do 
         ;(no-stroke)
-        (fill 64 0 0 255)
+        (fill 32 32 96 255)
         (stroke 0 0 0 192)
         (push-matrix)
         (scale 0.95)
-        (draw-faces rd-verts rd-faces rd-face-colors)
+        (draw-faces rd-verts rd-faces nil)
 
         ;(sphere 0.25)
         (pop-matrix)
@@ -180,8 +180,9 @@
         ;(sphere 0.125)
         (no-fill))
         )
-      (doseq [endpoints endpoint-pairs]
-        (draw-curve (endpoints 0) (endpoints 1)))))
+    ;(fill 255 255 64 128)
+    (doseq [endpoints endpoint-pairs]
+      (draw-curve (endpoints 0) (endpoints 1)))))
 
 ; _______________________________________________________________________
 
@@ -225,12 +226,13 @@
         ;(stroke-weight 2)
         ;(stroke 0 0 0  192)
         (stroke-weight 8)
-        (stroke 150 150 255 64)
+        ;(stroke 150 150 255 64)
+        (stroke 0 0 0 64)
         (no-fill) 
         (draw-facecode (@tiles pos))
         
         (stroke-weight 1)
-        (stroke 128 128 128 32)
+        (stroke 128 128 128 128)
         ;;(no-stroke)
         ;(draw-faces rd-verts rd-faces nil)
         
