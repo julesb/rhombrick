@@ -40,7 +40,7 @@
         ;(fill 0 0 0 32)
         ;(no-stroke)
         (if (seq colors)
-          (fill (/ (col 0) 3.0) (/ (col 1) 3.0) (/ (col 2) 3.0) 192 ))
+          (fill (/ (col 0) 3.0) (/ (col 1) 3.0) (/ (col 2) 3.0) 255 ))
         (begin-shape :quads)
         (vertex (v0 0) (v0 1) (v0 2))
         (vertex (v1 0) (v1 1) (v1 2))
@@ -59,6 +59,7 @@
         (push-matrix)
         (scale 0.5)
         ;(box 1 1 1)
+        ;(draw-faces rd-verts rd-faces nil)
         (draw-faces rd-verts rd-faces rd-face-colors)
         (pop-matrix)))))
 
@@ -129,7 +130,7 @@
           (apply fill (glider :color))
           ;(scale 0.5)
           ;(sphere 0.2)
-          (box 0.05 0.05 0.05)
+          (box 0.025 0.025 0.025)
                           )))))
 
 
@@ -138,26 +139,39 @@
     ;(fill 255 0 0 128)
     ;(sphere 0.25)
     (doseq [glider @gliders]
+      (let [pos (get-glider-pos (glider :id))
+            col (glider :color)]
         ;(sphere 10)))))
-        (with-translation (get-glider-pos (glider :id))
-          (apply fill (glider :color))
+        (with-translation pos
+          (fill (col 0) (col 1) (col 2) 128)
+          ;(apply fill (glider :color))
           ;(scale 0.5)
           ;(sphere 0.2)
-          (box 0.015 0.015 0.015)))))
+          (if (= (glider :id) 1) 
+            (point-light 255 255 255 ;(col 0) (col 1) (col 2)
+                       (pos 0) (pos 1) (- (pos 2) 0)))
+          (box 0.015 0.015 0.015))))))
 
 
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (count (filter #(= \1 %) code))]
-    ;(if (= code "xxxxxxxxxxxx")
-    ;  (do 
-    ;    (no-stroke)
-    ;    (fill 255 0 0 64)
-    ;    (sphere 0.25)
-    ;    (no-fill)))
+    (if (= code "xxxxxxxxxxxx")
+      (do 
+        ;(no-stroke)
+        (fill 64 0 0 255)
+        (stroke 0 0 0 192)
+        (push-matrix)
+        (scale 0.95)
+        (draw-faces rd-verts rd-faces rd-face-colors)
+
+        ;(sphere 0.25)
+        (pop-matrix)
+        (no-fill)))
+    (stroke 150 150 255 128)
+    
     (if (= num-connected 1)
       (let [p (co-verts (first (get-connected-idxs code)))]
-        ;(stroke 192 192 255 192)
         (line 0 0 0 (p 0) (p 1) (p 2))
         
         ;(no-stroke)
@@ -210,8 +224,8 @@
         (scale 0.5)
         ;(stroke-weight 2)
         ;(stroke 0 0 0  192)
-        (stroke-weight 4)
-        (stroke 150 150 255 128)
+        (stroke-weight 8)
+        (stroke 150 150 255 64)
         (no-fill) 
         (draw-facecode (@tiles pos))
         

@@ -12,7 +12,7 @@
 (def model-scale (atom 75))
 (def frame (atom 0))
 
-(def num-gliders 50)
+(def num-gliders 100)
 
 (def camera-pos (atom [0 0 0]))
 (def camera-lookat (atom [0 0 0]))
@@ -99,8 +99,8 @@
 
   (update-gliders)
   (swap! frame + 1)
-  (background 0 0 0)
-  (lights)    
+  (background 32 32 192)
+  ;(lights)    
 ;  (push-matrix)
 
 ; attach cam to glider 1, lookat glider 2
@@ -117,7 +117,6 @@
                  (g 0) (g 1) (g 2))
         dir (vec3-normalize (vec3-sub g @camera-pos))
         newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.025)))
-        
         cl-d (dist (@camera-lookat 0) (@camera-lookat 1) (@camera-lookat 2)
                  (g 0) (g 1) (g 2))
         cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
@@ -129,8 +128,6 @@
         (camera (newpos 0) (newpos 1) (newpos 2)
               (new-camera-lookat 0) (new-camera-lookat 1) (new-camera-lookat 2)
               0 0 1))
-
-    
 
 ; camera follows paths
 ;  (if (> (count @gliders) 1)
@@ -145,7 +142,7 @@
                  @camera-near-clip
                  @camera-far-clip)
 
-
+  (light-falloff 0.0 0.1 0.0) 
   ;(light-specular 255 255 255)
   (stroke 0 255 255 128)
   (stroke-weight 1)
@@ -172,7 +169,9 @@
     ;(pop-matrix)
 
     (stroke-weight 1)
+
     (draw-todo)
+    (fill 192 192 192 255)
     (draw-todo-head)
     
     (pop-matrix)
@@ -207,7 +206,9 @@
 
 (def key-command-map
   {
-   \, #(swap! model-scale + 1.0)
+   \, #(do
+         (swap! model-scale + 1.0)
+         (println "model-scale: " @model-scale))
    \. #(swap! model-scale - 1.0)
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(init-tiler)

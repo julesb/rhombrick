@@ -197,7 +197,8 @@
 
 (defn find-candidates [pos tileset]
   (let [outercode (get-outer-facecode pos)]
-    (filter #(facecodes-directly-compatible? outercode %) (expand-tiles tileset))))
+    (filter #(facecodes-directly-compatible? outercode %)
+            (expand-tiles tileset))))
   
 
 (defn choose-tilecode [pos tileset]

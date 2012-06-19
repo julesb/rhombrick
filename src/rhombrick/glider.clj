@@ -22,7 +22,7 @@
           :current-tile tile
           :entry-face-idx (face-ids 0)
           :exit-face-idx (face-ids 1)
-          :speed 0.025
+          :speed (+ 0.02 (* (rand) 0.001))
           :time 0.0
           :color (rand-nth rd-face-colors)
           }
@@ -30,7 +30,7 @@
 
 ; _______________________________________________________________________
 
-(defn choose-glider-path [code entry-face-idx]
+(defn choose-glider-path-old [code entry-face-idx]
   (let [con-idxs (get-connected-idxs code)
         num-cons (count con-idxs)]
     (if (= num-cons 1)
@@ -42,7 +42,26 @@
           [face-id1 face-id2])
         []))))
 
-; _______________________________________________________________________
+(defn choose-left-or-right [connected-idxs entry-idx]
+  (let [i (.indexOf connected-idxs entry-idx)
+        n (count connected-idxs)
+        r (rand-int 2)]
+    (if (= r 0)
+      (nth connected-idxs (mod (dec i) n))
+      (nth connected-idxs (mod (inc i) n)))))
+        
+
+(defn choose-glider-path [code entry-face-idx]
+  (let [con-idxs (get-connected-idxs code)
+        num-cons (count con-idxs)]
+    (if (= num-cons 1)
+      [entry-face-idx entry-face-idx] ; one connection, one way out
+      (if (>= (count con-idxs) 2)
+        [entry-face-idx (choose-left-or-right con-idxs entry-face-idx)]
+        []))))
+
+;
+; _____________________________________________________________
 
 (defn get-glider-pos [id]
   (let [glider (first (filter #(= (% :id) id) @gliders))]
@@ -157,13 +176,15 @@
                                                    next-entry-face-idx )]
           (if (is-traversable? next-tile-code)
             (do
-              (update-glider-value (glider :id) :time (- new-glider-time
-                                                         (int new-glider-time)))
-              (update-glider-value (glider :id) :current-tile next-tile-pos)
+              (update-glider-value (glider :id)
+                                   :time (- new-glider-time
+                                            (int new-glider-time)))
+              (update-glider-value (glider :id)
+                                   :current-tile next-tile-pos)
               (update-glider-value (glider :id) 
-                               :entry-face-idx (next-glider-path 0))
+                                   :entry-face-idx (next-glider-path 0))
               (update-glider-value (glider :id) 
-                               :exit-face-idx (next-glider-path 1))
+                                   :exit-face-idx (next-glider-path 1))
               )
 
             ; the next tile is not traversable or doesnt exist
