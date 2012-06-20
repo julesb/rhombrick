@@ -156,18 +156,16 @@
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (count (filter #(= \1 %) code))]
-    (if (= code "xxxxxxxxxxxx")
-      (do 
-        ;(no-stroke)
-        (fill 32 32 96 255)
-        (stroke 0 0 0 192)
-        (push-matrix)
-        (scale 0.95)
-        (draw-faces rd-verts rd-faces nil)
-
-        ;(sphere 0.25)
-        (pop-matrix)
-        (no-fill)))
+;    (if (= code "xxxxxxxxxxxx")
+;      (do 
+;        (fill 32 32 96 255)
+;        (stroke 0 0 0 192)
+;        (push-matrix)
+;        (scale 0.95)
+;        (draw-faces rd-verts rd-faces nil)
+;        (pop-matrix)
+;        (no-fill)))
+      
     (stroke 150 150 255 128)
     
     (if (= num-connected 1)
@@ -180,10 +178,11 @@
         ;(sphere 0.125)
         (no-fill))
         )
-    ;(fill 255 255 64 128)
+    (if (> num-connected 2)
+      (fill 2 255 8 64))
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))))
-
+    ;))
 ; _______________________________________________________________________
 
 

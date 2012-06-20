@@ -3,18 +3,18 @@
         [rhombrick.staticgeometry]
         [rhombrick.facecode]))
 
-(def max-tiles 750)
+(def max-tiles 500)
 (def tiles (atom {}))
 (def todo (atom (clojure.lang.PersistentQueue/EMPTY)))
 
 (def working-tileset (atom #{
-                      ;"100000000000"
+                      "100000000000"
                       "100000000100" 
-                      ;"110000000000"
-                      ;"000111000000"
+                      "110000000000"
+                      "000111000000"
                       "000101010000"
                       "100010001000"
-                      "111111111111"
+                      ;"111111111111"
                       }))
 
 (def facecode-compatible #{[\0 \0] [\1 \1] [\0 \-] [\1 \-] [\- \-]})
@@ -60,8 +60,40 @@
 
 ; _______________________________________________________________________
 
+(defn get-n-rand-tilecode [n]
+  (vec 
+    (map (fn [a] (rand-nth (take 352 (seq @normalised-facecodes-sorted))))
+         (range n))))
+
+(defn get-n-rand-tilecode-from-group [n g]
+  (map (fn [a] (rand-nth (@normalised-facecodes-grouped g)))
+         (range n)))
 
 (defn random-tileset []
+  (reset! working-tileset #{})
+  (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
+      (swap! working-tileset conj code))
+  (doseq [code (get-n-rand-tilecode-from-group 2 2) ]
+      (swap! working-tileset conj code))
+  (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
+      (swap! working-tileset conj code))
+  ;(doseq [code (get-n-rand-tilecode-from-group 1 4) ]
+  ;    (swap! working-tileset conj code))
+  (println "working tileset: " @working-tileset)
+  )
+
+
+(defn random-tileset1 []
+  (let [num-tiles (+ 1 (rand-int 5))]
+    (reset! working-tileset #{})
+    (swap! working-tileset conj "100000000000")
+    (doseq [code (get-n-rand-tilecode num-tiles) ]
+      (swap! working-tileset conj code))
+    (println "working tileset: " @working-tileset)))
+ 
+
+
+(defn random-tileset-old []
   (let [num-tiles 1
         tiles (repeat num-tiles 
                       (rand-nth 
@@ -150,10 +182,10 @@
           (push-todo neighbour)))))
 
 
-(defn get-connected-idxs [facecode]
-  (filter #(not= nil %)
-          (map #(if (= %2 \1) %1 nil)
-               (range 12) facecode)))
+;(defn get-connected-idxs [facecode]
+;  (filter #(not= nil %)
+;          (map #(if (= %2 \1) %1 nil)
+;               (range 12) facecode)))
 
 
 (defn push-connected-neighbours-todo [pos]
@@ -191,7 +223,7 @@
       (contains? facecode-compatible [b a])))
 
 
-; determine if faces are compatible with rotation
+; determine if faces are compatible without rotation
 (defn facecodes-directly-compatible? [outercode innercode]
   (= 12 
      (count (filter #(true? %)
@@ -205,19 +237,30 @@
             (expand-tiles tileset))))
   
 
-(defn choose-tilecode [pos tileset]
+(defn choose-tilecode-old [pos tileset]
   (let [candidates (find-candidates pos tileset)]  
     (if (seq candidates)
       (nth candidates (rand-int (count candidates)))
       "xxxxxxxxxxxx")))
   
 
+(defn choose-tilecode [pos tileset]
+  (let [candidates (find-candidates pos tileset)
+        candidates-filtered (filter #(> (count (get-connected-idxs %)) 1)
+                                    candidates)]  
+    (if (seq candidates-filtered)
+      (nth candidates-filtered (rand-int (count candidates-filtered)))
+      (if (seq candidates)
+        (nth candidates (rand-int (count candidates)))
+        "xxxxxxxxxxxx"))))
 ; _______________________________________________________________________
 
 
 ; this does facecode constrained tiling
 (defn make-tiling-iteration []
-  (if (seq @todo)
+  (if (and
+        (seq @todo)
+        (< (+ (count @todo) (count @tiles)) max-tiles ))
     (let [new-pos (dequeue-todo)
           new-code (choose-tilecode new-pos @working-tileset)]
       (if (and (not= new-code "xxxxxxxxxxxx")

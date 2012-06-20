@@ -12,7 +12,7 @@
 (def model-scale (atom 200))
 (def frame (atom 0))
 
-(def num-gliders 30)
+(def num-gliders 50)
 
 (def camera-pos (atom [0 0 0]))
 (def camera-lookat (atom [0 0 0]))
@@ -91,12 +91,12 @@
 ;      ;(random-tileset)
 ;      ))
 
-  (if (> (count @tiles) max-tiles)
-    (do
-      (init-tiler)
-      (make-tiling-iteration)
-      (init-gliders num-gliders)
-    ))
+;  (if (> (count @tiles) max-tiles)
+;    (do
+;      (init-tiler)
+;      (make-tiling-iteration)
+;      (init-gliders num-gliders)
+;    ))
 
   (update-gliders)
   (swap! frame + 1)

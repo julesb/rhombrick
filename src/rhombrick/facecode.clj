@@ -47,10 +47,18 @@
 (defn is-facecode-rotation-of? [a b]
   (boolean (some #{a} (rotations b))))
 
+
+(defn get-connected-idxs [facecode]
+  (filter #(not= nil %)
+          (map #(if (= %2 \1) %1 nil)
+               (range 12) facecode)))
+
+
 (def all-facecodes (generate-face-codes))
 (def normalised-facecodes (atom {}))
 (def normalised-facecodes-set (atom #{}))
 (def normalised-facecodes-sorted (atom []))
+(def normalised-facecodes-grouped (atom {}))
 
 ; returns true if the given facecode or any of its rotations
 ; exists in the normalised set, otherwise false.
@@ -60,6 +68,30 @@
                          (rotations facecode))))
      0))
 
+
+; Group by number of connected edges. The distribution of rotation invariant
+; tiles for number of connections happens to have an interesting symmetry:
+; (doseq [g (keys tilegroups)] 
+;   (println g (count (tilegroups g)))) 
+; 0 1
+; 1 1
+; 2 6
+; 3 19
+; 4 43
+; 5 66
+; 6 80
+; 7 66
+; 8 43
+; 9 19
+; 10 6
+; 11 1
+; 12 1
+
+(defn group-by-num-connected [facecodes]
+  (group-by #(count (get-connected-idxs %)) facecodes))
+
+(defn make-tilegroups []
+  (group-by-num-connected @normalised-facecodes-sorted))
 
 ;
 ; Construct a set consisting of a subset of all possible facecodes.
@@ -74,9 +106,17 @@
 ;
 
 (defn build-normalised-facecode-set []
-  (doseq [code all-facecodes]
-    (if (not (is-in-normalised-set? code))
-      (swap! normalised-facecodes-set conj code)))
-  (reset! normalised-facecodes-sorted (vec (sort @normalised-facecodes-set))))
+  (do
+    (doseq [code all-facecodes]
+      (if (not (is-in-normalised-set? code))
+        (swap! normalised-facecodes-set conj code)))
+    (reset! normalised-facecodes-sorted 
+            (vec (sort @normalised-facecodes-set)))
+    (reset! normalised-facecodes-grouped
+            (make-tilegroups))
+    nil))
+ 
+
+
 
 
