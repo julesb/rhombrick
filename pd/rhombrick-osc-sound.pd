@@ -1,0 +1,33 @@
+#N canvas 560 22 556 456 10;
+#X floatatom 111 131 3 0 0 0 - - -;
+#X floatatom 138 131 3 0 0 0 - - -;
+#X floatatom 165 131 3 0 0 0 - - -;
+#X floatatom 192 131 3 0 0 0 - - -;
+#X text 71 130 from;
+#X obj -56 184 unpackOSC;
+#X obj -56 211 pipelist;
+#X obj 111 107 unpack 0 0 0 0 0;
+#X floatatom 220 131 8 0 0 0 - - -;
+#X obj 46 84 route received from;
+#X text 86 152 bytes;
+#X text 63 60 Open [packOSC-help] to send packets to this patch.;
+#X text 14 206 If the OSC packet has a timetag \, [pipelist] will delay
+it until the time occurs;
+#X text 15 169 [unpackOSC] parses lists of floats (only integers on
+[0..255]) as OSC packets.;
+#X obj -60 284 print;
+#X obj -56 60 udpreceive 4242;
+#X obj 31 301 routeOSC /test;
+#X obj 37 345 print;
+#X connect 5 0 6 0;
+#X connect 5 1 6 1;
+#X connect 6 0 16 0;
+#X connect 7 0 0 0;
+#X connect 7 1 1 0;
+#X connect 7 2 2 0;
+#X connect 7 3 3 0;
+#X connect 7 4 8 0;
+#X connect 9 1 7 0;
+#X connect 15 0 5 0;
+#X connect 15 1 9 0;
+#X connect 16 0 17 0;
