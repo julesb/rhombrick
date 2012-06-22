@@ -6,10 +6,8 @@
         [rhombrick.tiling-render]
         [rhombrick.vector]
         [rhombrick.glider]
-        [overtone.osc]))
-
-(def OSCPORT 4242)
-(def client (osc-client "localhost" OSCPORT))
+        ;[overtone.osc]
+        ))
 
 (def mouse-position (atom [0 0]))
 (def view-scale (atom 1.0))
@@ -62,8 +60,8 @@
     ;(println @gliders)
     ;(init-todo)
 
-    (doseq [val (range 10)]
-      (osc-send client "/test" "i" (float val)))
+;    (doseq [val (range 10)]
+;      (osc-send client "/test" "i" (float val)))
 
 
     (println "bezier test: " (bezier-point 1.0 2.0 3.0 4.0 0.5))
@@ -111,7 +109,7 @@
   (update-gliders)
   (swap! frame + 1)
   (background 32 32 192)
-  ;(lights)    
+   
   ;(reset-matrix)
   ;(push-matrix)
 
@@ -153,8 +151,8 @@
                  @camera-aspect-ratio
                  @camera-near-clip
                  @camera-far-clip)
-
-  ;(light-falloff 0.0 0.1 0.0) 
+  (lights)  
+  ;(light-falloff 0.5 0.0 0.0) 
   ;(light-specular 255 255 255)
   (stroke 0 255 255 128)
   (stroke-weight 1)
@@ -177,13 +175,15 @@
     (stroke-weight 1)
 
     (draw-gliders)
+    (draw-face-list)
+    
 
     (draw-tiling)
 
     ;(draw-gliders)
 
     (stroke-weight 1)
-    (draw-todo)
+    ;(draw-todo)
 
     (fill 192 192 192 255)
     (draw-todo-head)

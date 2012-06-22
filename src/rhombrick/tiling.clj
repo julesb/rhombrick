@@ -57,7 +57,8 @@
 
 (defn init-tiler []
   (reset! tiles {})
-  (init-todo))
+  (init-todo)
+  (reset! face-list #{}))
 
 ; _______________________________________________________________________
 
@@ -74,11 +75,11 @@
   (reset! working-tileset #{})
   (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 2) ]
+  (doseq [code (get-n-rand-tilecode-from-group 4 2) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
-      (swap! working-tileset conj code))
-  ;(doseq [code (get-n-rand-tilecode-from-group 1 4) ]
+  ;(doseq [code (get-n-rand-tilecode-from-group 1 3) ]
+  ;    (swap! working-tileset conj code))
+  ;(doseq [code (get-n-rand-tilecode-from-group 1 12) ]
   ;    (swap! working-tileset conj code))
   (println "working tileset: " @working-tileset)
   )
@@ -130,6 +131,9 @@
 
 (defn get-neighbour [pos face]
   (vec3-add pos (rd-neighbour-offsets face)))
+
+(defn get-neighbours [pos]
+  (vec (map #(get-neighbour pos %) (range 12))))
 
 
 (defn tileable? [pos]
@@ -257,6 +261,67 @@
 ; _______________________________________________________________________
 
 
+
+;(def face-list (atom #{}))
+
+
+(defn face-idxs-to-verts [face-idxs]
+  (vec (map #(rd-verts %) face-idxs)))
+
+(defn facelist-contains-rotations? [face-verts]
+  (or
+    (> (count (filter #(contains? @face-list %)
+                      (rotations-vec face-verts)))
+       0)
+    (> (count (filter #(contains? @face-list %)
+                      (rotations-vec (vec (reverse face-verts)))))
+       0)   
+       ))
+
+
+(defn remove-from-facelist [face-verts]
+    (let [face-rots (concat (rotations-vec face-verts) 
+                            (rotations-vec (reverse face-verts)))]
+        (doseq [f face-rots]
+          (if (contains? @face-list f)
+            (swap! face-list disj f)))))
+      
+  
+
+; we dont need to check every face in the face list here
+; only need to check the neighbours.
+(defn add-tile-to-facelist [pos]
+  (doseq [f rd-faces]
+    (let [fv (face-idxs-to-verts f)
+          fvw (vec (map #(vec3-add pos (vec3-scale % 0.5)) fv))]
+    (if (not (facelist-contains-rotations? fvw))
+      (swap! face-list conj fvw)
+      (do
+        (remove-from-facelist fvw))))))
+
+
+;(defn get-rd-faces-world-coords [pos]
+; (vec (map #(vec3-add pos (face-idxs-to-verts %)) rd-faces)))
+
+
+
+(defn build-face-list []
+  (reset! face-list #{})
+  (doseq [tile-pos (keys @tiles)]
+    (doseq [i (range 12)]
+      (let [face-verts (face-idxs-to-verts (rd-faces i))
+            actual-verts (vec (map #(vec3-add tile-pos 
+                                              (vec3-scale % 0.5))
+                                   face-verts))]
+        (if (not (facelist-contains-rotations? actual-verts))
+          (swap! face-list conj actual-verts))))))
+  
+
+
+; _______________________________________________________________________
+
+
+
 ; this does facecode constrained tiling
 (defn make-tiling-iteration []
   (if (and
@@ -268,6 +333,7 @@
                (= (count new-code) 12))
         (do
           (make-tile new-pos new-code)
+          (add-tile-to-facelist new-pos)
           (push-connected-neighbours-todo new-pos))
         (make-tile new-pos "xxxxxxxxxxxx")))))
 

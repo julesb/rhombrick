@@ -7,6 +7,7 @@
         [rhombrick.glider]))
 
 
+
 ; _______________________________________________________________________
 
 (defn draw-rhomb-verts []
@@ -51,8 +52,9 @@
 ; _______________________________________________________________________
 
 (defn draw-face-list []
-  (fill 0 255 0 255)
+  (fill 64 64 128 240)
   (stroke 0 0 0 255)
+  (stroke-weight 8)
   (doseq [face-verts @face-list]
     (let [v0 (face-verts 0)
           v1 (face-verts 1)
@@ -120,40 +122,12 @@
 
 ; _______________________________________________________________________
 
-(defn draw-gliders-old []
-  (do
-    ;(fill 255 0 0 128)
-    (sphere 0.25)
-    ;(println @gliders)
-    (doseq [glider @gliders]
-      (let [t (glider :time)
-            entry-idx (glider :entry-face-idx)
-            exit-idx (glider :exit-face-idx)
-            p1 (vec3-scale (co-verts entry-idx) 0.5)
-            p2 (vec3-scale p1 0.5)
-            p4 (vec3-scale (co-verts exit-idx) 0.5)
-            p3 (vec3-scale p4 0.5)
-            bx (vec (map #(% 0) [p1 p2 p3 p4]))
-            by (vec (map #(% 1) [p1 p2 p3 p4]))
-            bz (vec (map #(% 2) [p1 p2 p3 p4]))
-            gx (bezier-point (bx 0) (bx 1) (bx 2) (bx 3) t)
-            gy (bezier-point (by 0) (by 1) (by 2) (by 3) t)
-            gz (bezier-point (bz 0) (bz 1) (bz 2) (bz 3) t)
-            pos (vec3-add [gx gy gz] (glider :current-tile))
-            ]
-        ;(sphere 10)))))
-        (with-translation pos
-          (apply fill (glider :color))
-          ;(scale 0.5)
-          ;(sphere 0.2)
-          (box 0.025 0.025 0.025)
-                          )))))
-
 
 (defn draw-gliders []
   (do
     ;(fill 255 0 0 128)
     ;(sphere 0.25)
+
     (doseq [glider @gliders]
       (let [pos (get-glider-pos (glider :id))
             col (glider :color)]
@@ -164,8 +138,10 @@
           ;(scale 0.5)
           ;(sphere 0.2)
           (if (= (glider :id) 1) 
-            (point-light 255 255 255 ;(col 0) (col 1) (col 2)
-                       (pos 0) (pos 1) (- (pos 2) 0)))
+             (point-light 64 64 255 ;(col 0) (col 1) (col 2)
+                      0 0 0))
+            ;(point-light 255 255 255 ;(col 0) (col 1) (col 2)
+            ;           (pos 0) (pos 1) (- (pos 2) 0)))
           (box 0.015 0.015 0.015))))))
 
 
@@ -226,53 +202,6 @@
       (no-fill)
       (draw-faces rd-verts rd-faces nil)
       (pop-matrix))))
-
-; _______________________________________________________________________
-
-;(def face-list (atom #{}))
-
-
-(defn face-idxs-to-verts [face-idxs]
-  (vec (map #(rd-verts %) face-idxs)))
-
-(defn facelist-contains-rotations? [face-verts]
-  (or
-    (> (count (filter #(contains? @face-list %)
-                      (rotations-vec face-verts)))
-       0)
-    (> (count (filter #(contains? @face-list %)
-                      (rotations-vec (vec (reverse face-verts)))))
-       0)   
-       ))
-
-; we dont need to check every face in the face list here
-; only need to check the neighbours.
-(defn add-tile-to-facelist [pos]
-  (doseq [f rd-faces
-          fv (face-idxs-to-verts f)
-          fvw (map #(vec3-add pos (vec3-scale % 0.5)) fv)]
-    (if (not (facelist-contains-rotations? fvw))
-      (swap! face-list conj fvw)
-      ; remove from facelist...
-       )))
-
-
-;(defn get-rd-faces-world-coords [pos]
-; (vec (map #(vec3-add pos (face-idxs-to-verts %)) rd-faces)))
-
-
-
-(defn build-face-list []
-  (reset! face-list #{})
-  (doseq [tile-pos (keys @tiles)]
-    (doseq [i (range 12)]
-      (let [face-verts (face-idxs-to-verts (rd-faces i))
-            actual-verts (vec (map #(vec3-add tile-pos 
-                                              (vec3-scale % 0.5))
-                                   face-verts))]
-        (if (not (facelist-contains-rotations? actual-verts))
-          (swap! face-list conj actual-verts))))))
-  
 
 ; _______________________________________________________________________
 

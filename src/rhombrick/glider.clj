@@ -4,10 +4,15 @@
         [rhombrick.vector]
         [rhombrick.staticgeometry]
         [rhombrick.facecode]
+        [overtone.osc]
     ))
 
 (def gliders (atom []))
 (def max-glider-id (atom 0))
+
+(def OSCPORT 4242)
+(def client (osc-client "localhost" OSCPORT))
+
 
 ; _______________________________________________________________________
 
@@ -176,6 +181,11 @@
                                                    next-entry-face-idx )]
           (if (is-traversable? next-tile-code)
             (do
+              (if (and 
+                    (= (glider :id) 1)
+                    (> (count (get-connected-idxs next-tile-code)) 2))
+                (osc-send client "/test" "boundary" (float (glider :id))))
+
               (update-glider-value (glider :id)
                                    :time (- new-glider-time
                                             (int new-glider-time)))
@@ -189,14 +199,17 @@
 
             ; the next tile is not traversable or doesnt exist
             ; so reverse direction
-            (let [old-entry-idx (glider :entry-face-idx)
-                  old-exit-idx (glider :exit-face-idx)]
-              (update-glider-value (glider :id) :entry-face-idx
-                                                old-exit-idx)
-              (update-glider-value (glider :id) :exit-face-idx
-                                                old-entry-idx)
-              (update-glider-value (glider :id) :time 0.0)
-              )
+            (do
+              (if (= (glider :id) 1)
+                (osc-send client "/test" "hitblock" (float (glider :id))))
+              (let [old-entry-idx (glider :entry-face-idx)
+                    old-exit-idx (glider :exit-face-idx)]
+                (update-glider-value (glider :id) :entry-face-idx
+                                                  old-exit-idx)
+                (update-glider-value (glider :id) :exit-face-idx
+                                                  old-entry-idx)
+                (update-glider-value (glider :id) :time 0.0)
+                ))
               ))
         
         ; still in tile so just increment time/pos
