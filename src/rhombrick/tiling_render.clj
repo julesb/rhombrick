@@ -48,6 +48,22 @@
         (vertex (v3 0) (v3 1) (v3 2))
         (end-shape))))
 
+; _______________________________________________________________________
+
+(defn draw-face-list []
+  (fill 0 255 0 255)
+  (stroke 0 0 0 255)
+  (doseq [face-verts @face-list]
+    (let [v0 (face-verts 0)
+          v1 (face-verts 1)
+          v2 (face-verts 2)
+          v3 (face-verts 3)]
+      (begin-shape :quads)
+      (vertex (v0 0) (v0 1) (v0 2))
+      (vertex (v1 0) (v1 1) (v1 2))
+      (vertex (v2 0) (v2 1) (v2 2))
+      (vertex (v3 0) (v3 1) (v3 2))
+      (end-shape))))
 
 ; _______________________________________________________________________
 
@@ -178,8 +194,8 @@
         ;(sphere 0.125)
         (no-fill))
         )
-    (if (> num-connected 2)
-      (fill 2 255 8 64))
+    ;(if (> num-connected 2)
+    ;  (fill 2 255 8 64))
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))))
     ;))
@@ -210,6 +226,53 @@
       (no-fill)
       (draw-faces rd-verts rd-faces nil)
       (pop-matrix))))
+
+; _______________________________________________________________________
+
+;(def face-list (atom #{}))
+
+
+(defn face-idxs-to-verts [face-idxs]
+  (vec (map #(rd-verts %) face-idxs)))
+
+(defn facelist-contains-rotations? [face-verts]
+  (or
+    (> (count (filter #(contains? @face-list %)
+                      (rotations-vec face-verts)))
+       0)
+    (> (count (filter #(contains? @face-list %)
+                      (rotations-vec (vec (reverse face-verts)))))
+       0)   
+       ))
+
+; we dont need to check every face in the face list here
+; only need to check the neighbours.
+(defn add-tile-to-facelist [pos]
+  (doseq [f rd-faces
+          fv (face-idxs-to-verts f)
+          fvw (map #(vec3-add pos (vec3-scale % 0.5)) fv)]
+    (if (not (facelist-contains-rotations? fvw))
+      (swap! face-list conj fvw)
+      ; remove from facelist...
+       )))
+
+
+;(defn get-rd-faces-world-coords [pos]
+; (vec (map #(vec3-add pos (face-idxs-to-verts %)) rd-faces)))
+
+
+
+(defn build-face-list []
+  (reset! face-list #{})
+  (doseq [tile-pos (keys @tiles)]
+    (doseq [i (range 12)]
+      (let [face-verts (face-idxs-to-verts (rd-faces i))
+            actual-verts (vec (map #(vec3-add tile-pos 
+                                              (vec3-scale % 0.5))
+                                   face-verts))]
+        (if (not (facelist-contains-rotations? actual-verts))
+          (swap! face-list conj actual-verts))))))
+  
 
 ; _______________________________________________________________________
 

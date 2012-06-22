@@ -5,7 +5,11 @@
         [rhombrick.tiling]
         [rhombrick.tiling-render]
         [rhombrick.vector]
-        [rhombrick.glider]))
+        [rhombrick.glider]
+        [overtone.osc]))
+
+(def OSCPORT 4242)
+(def client (osc-client "localhost" OSCPORT))
 
 (def mouse-position (atom [0 0]))
 (def view-scale (atom 1.0))
@@ -42,6 +46,7 @@
 
 (defn setup []
     (smooth)
+    (frame-rate 30)
     (sphere-detail 12)
     (update-camera)
     ;(display-filter :blur 10)
@@ -56,6 +61,11 @@
     (init-gliders num-gliders)
     ;(println @gliders)
     ;(init-todo)
+
+    (doseq [val (range 10)]
+      (osc-send client "/test" "i" (float val)))
+
+
     (println "bezier test: " (bezier-point 1.0 2.0 3.0 4.0 0.5))
     )
     ;(doseq [code @normalised-facecodes]
@@ -118,16 +128,16 @@
         d  (dist (@camera-pos 0) (@camera-pos 1) (@camera-pos 2)
                  (g 0) (g 1) (g 2))
         dir (vec3-normalize (vec3-sub g @camera-pos))
-        newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.035)))
+        newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.045)))
         cl-d (dist (@camera-lookat 0) (@camera-lookat 1) (@camera-lookat 2)
                  (g 0) (g 1) (g 2))
         cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
         new-camera-lookat (vec3-add @camera-lookat 
                                     (vec3-scale cl-dir
-                                                (* cl-d 0.2)))]
+                                                (* cl-d 0.25)))]
     (reset! camera-lookat new-camera-lookat)    
     (reset! camera-pos newpos)
-    (camera (newpos 0) (newpos 1) (newpos 2)
+    (camera (newpos 0) (newpos 1) (- (newpos 2) 10)
             (new-camera-lookat 0) (new-camera-lookat 1) (new-camera-lookat 2)
             0 0 1))
 
@@ -159,7 +169,10 @@
     ;(rotate-x (* @frame 0.00351471))
     ;(rotate-y (* @frame 0.0035236))
     ;(rotate-z (* @frame 0.0035123))
-
+    
+    ;(build-face-list) 
+    ;(draw-face-list)
+    
     (stroke 255 255 255 192)
     (stroke-weight 1)
 
@@ -245,7 +258,7 @@
   :title "rhombrick"
   :setup setup 
   :draw draw
-  :size [1400 800]
+  :size [1900 1100]
   :renderer :opengl 
   :key-typed key-typed
   :mouse-moved mouse-moved)

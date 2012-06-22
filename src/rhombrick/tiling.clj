@@ -21,6 +21,7 @@
 
 (def auto-delete-max-lonlieness (atom 1))
 
+(def face-list (atom #{}))
 
     
 ; _______________________________________________________________________
@@ -73,7 +74,7 @@
   (reset! working-tileset #{})
   (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 2 2) ]
+  (doseq [code (get-n-rand-tilecode-from-group 1 2) ]
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
       (swap! working-tileset conj code))

@@ -32,6 +32,17 @@
        (range 4096)))
 
 
+
+(defn rotate-vec [v]
+  (vec (concat (rest v) [(first v)])))
+
+(defn rotations-vec [v]
+    (loop [n (count v)
+           accum [v]]
+      (if (> n 1)
+        (recur (dec n) (conj accum (rotate-vec (last accum))))
+        (vec accum))))
+
 ; rotate a string one char to the left
 (defn rotate-str [s]
   (apply str (concat (rest s) [(first s)])))
