@@ -6,45 +6,29 @@
         [rhombrick.tiling-render]
         [rhombrick.vector]
         [rhombrick.glider]
+        [rhombrick.camera]
         ;[overtone.osc]
-        ))
+        )
+  (:gen-class))
 
 (def mouse-position (atom [0 0]))
 (def view-scale (atom 1.0))
-(def model-scale (atom 200))
+(def model-scale (atom 50))
 (def frame (atom 0))
 
 (def num-gliders 50)
 
-(def camera-pos (atom [0 0 0]))
-(def camera-lookat (atom [0 0 0]))
-(def camera-fov (atom 60.0))
-(def camera-aspect-ratio (atom 1.0))
-(def camera-near-clip (atom 10))
-(def camera-far-clip (atom 1000))
-
+(def last-render-time (atom 0))
 ; _______________________________________________________________________
 ; Rendering and events 
 
-(defn update-camera []
-  (reset! camera-aspect-ratio (/ (width) (height)))
-  (let [fov-rad (radians @camera-fov)
-        camz  (/ (/ (height) 2.0) (tan (/ fov-rad 2.0)))
-        near (/ camz 100.0)
-        far (* camz 10.0) ]
-    (reset! camera-near-clip near)
-    (reset! camera-far-clip far)
-    (println "fov:" @camera-fov
-             "aspect:" @camera-aspect-ratio
-             "near: " @camera-near-clip
-             "far" @camera-far-clip)))
 
 ; _______________________________________________________________________
 
 
 (defn setup []
     (smooth)
-    (frame-rate 30)
+    (frame-rate 60)
     (sphere-detail 12)
     (update-camera)
     ;(display-filter :blur 10)
@@ -88,7 +72,16 @@
 
 ; _______________________________________________________________________
 
+(defn mouse-delta [scale-factor]
+  (let [dx (- (mouse-x) (pmouse-x))
+        dy (- (mouse-y) (pmouse-y))]
+    (vec3-scale [dx dy 0] scale-factor)))
+
+
 (defn draw []
+  (let [frame-start-time (System/nanoTime)]
+  ;(let [frame-start-time (millis)]
+    
   (make-tiling-iteration)
   ;(auto-seed-todo)
 ;  (if (= (count @todo) 0)
@@ -113,39 +106,58 @@
   ;(reset-matrix)
   ;(push-matrix)
 
-; attach cam to glider 1, lookat glider 2
-;  (if (> (count @gliders) 1)
-;    (let [cam-pos (vec3-scale (get-glider-pos 1) @model-scale)
-;          cam-lookat (vec3-scale (get-glider-pos 2) @model-scale) ]
-;      (camera (cam-pos 0) (cam-pos 1) (- (cam-pos 2) 10)
-;              (cam-lookat 0) (cam-lookat 1) (cam-lookat 2)
-;              0 0 1)))
+ ;attach cam to glider 1, lookat glider 2
+ ; (if (> (count @gliders) 1)
+ ;   (let [cam-pos (vec3-scale (get-glider-pos 1) @model-scale)
+ ;         cam-lookat (vec3-scale (get-glider-pos 2) @model-scale) ]
+ ;     (camera (cam-pos 0) (cam-pos 1) (- (cam-pos 2) 10)
+ ;             (cam-lookat 0) (cam-lookat 1) (cam-lookat 2)
+ ;             0 0 1)))
    
-; rubber band camera to glider
-  (let [g (vec3-scale (get-glider-pos 1) @model-scale)
-        d  (dist (@camera-pos 0) (@camera-pos 1) (@camera-pos 2)
-                 (g 0) (g 1) (g 2))
-        dir (vec3-normalize (vec3-sub g @camera-pos))
-        newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.045)))
-        cl-d (dist (@camera-lookat 0) (@camera-lookat 1) (@camera-lookat 2)
-                 (g 0) (g 1) (g 2))
-        cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
-        new-camera-lookat (vec3-add @camera-lookat 
-                                    (vec3-scale cl-dir
-                                                (* cl-d 0.25)))]
-    (reset! camera-lookat new-camera-lookat)    
-    (reset! camera-pos newpos)
-    (camera (newpos 0) (newpos 1) (- (newpos 2) 10)
-            (new-camera-lookat 0) (new-camera-lookat 1) (new-camera-lookat 2)
-            0 0 1))
+(cond
+  ; rubber band camera to glider
+  (= @camera-mode 0)
+    (do
+      (let [g (vec3-scale (get-glider-pos 1) @model-scale)
+            d  (dist (@camera-pos 0)
+                     (@camera-pos 1)
+                     (@camera-pos 2)
+                     (g 0) (g 1) (g 2))
+            dir (vec3-normalize (vec3-sub g @camera-pos))
+            newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.040)))
+            cl-d (dist (@camera-lookat 0)
+                       (@camera-lookat 1)
+                       (@camera-lookat 2)
+                     (g 0) (g 1) (g 2))
+            cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
+            new-camera-lookat (vec3-add @camera-lookat 
+                                        (vec3-scale cl-dir
+                                                    (* cl-d 0.25)))]
+        (reset! camera-lookat new-camera-lookat)    
+        (reset! camera-pos newpos)
+        (camera (newpos 0) (newpos 1) (- (newpos 2) 3)
+                (new-camera-lookat 0)
+                (new-camera-lookat 1)
+                (new-camera-lookat 2)
+                0 0 1)))
+  ; camera follows paths
+  (= @camera-mode 1)
+    (do
+      (if (> (count @gliders) 1)
+        (let [cam-pos (vec3-scale (get-glider-pos 1) @model-scale)
+              cam-lookat (vec3-scale (get-glider-nextpos 1) @model-scale) ]
+          (camera (cam-pos 0) (cam-pos 1) (- (cam-pos 2) 1)
+                  (cam-lookat 0) (cam-lookat 1) (- (cam-lookat 2) 1)
+                  0 0 1))))
+  ; mouse/keyboard camera control
+  (= @camera-mode 2)
+    (do
+      (let [md (mouse-delta 0.005)]
+        (do-camera-transform @camera-pos
+                             (* 1.0 (md 1))
+                             (* -1.0 (md 0)))))
 
-; camera follows paths
-;  (if (> (count @gliders) 1)
-;    (let [cam-pos (vec3-scale (get-glider-pos 1) @model-scale)
-;          cam-lookat (vec3-scale (get-glider-nextpos 1) @model-scale) ]
-;      (camera (cam-pos 0) (cam-pos 1) (- (cam-pos 2) 10)
-;              (cam-lookat 0) (cam-lookat 1) (- (cam-lookat 2) 10)
-;              0 0 1)))
+  )
 
   (perspective (radians @camera-fov) 
                  @camera-aspect-ratio
@@ -153,7 +165,7 @@
                  @camera-far-clip)
   (lights)  
   ;(light-falloff 0.5 0.0 0.0) 
-  ;(light-specular 255 255 255)
+  (light-specular 255 0 0)
   (stroke 0 255 255 128)
   (stroke-weight 1)
   (no-fill)
@@ -174,13 +186,9 @@
     (stroke 255 255 255 192)
     (stroke-weight 1)
 
-    (draw-gliders)
+    (draw-gliders @frame)
     (draw-face-list)
-    
-
     (draw-tiling)
-
-    ;(draw-gliders)
 
     (stroke-weight 1)
     ;(draw-todo)
@@ -207,8 +215,13 @@
 ;   (pop-matrix)
 ;  (ortho)
   ;(translate [700 400 0])
-  (draw-info)
-  )
+  ;(draw-info)
+  (reset! last-render-time
+          (float (/ (- (System/nanoTime) frame-start-time) 1000000.0)))
+
+  (if (= (mod @frame 150) 0)
+   (println "last-render-time: " @last-render-time))
+  ))
 
 
 
@@ -219,7 +232,9 @@
    \, #(do
          (swap! model-scale + 1.0)
          (println "model-scale: " @model-scale))
-   \. #(swap! model-scale - 1.0)
+   \. #(do
+        (swap! model-scale - 1.0)
+        (println "model-scale: " @model-scale))
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
          (init-tiler)
@@ -237,6 +252,22 @@
    \= #(do
          (swap! camera-fov + 1)
          (update-camera))
+   \c #(do
+         (let [m (mod (inc @camera-mode) camera-num-modes)]
+         (reset! camera-mode m)))
+   \w #(do
+         (let [dir (get-camera-dir)]
+           (swap! camera-pos vec3-add (vec3-scale dir 10.0))))
+   \s #(do
+         (let [dir (get-camera-dir)]
+           (swap! camera-pos vec3-sub (vec3-scale dir 10.0))))
+   \a #(do
+         (let [dir (get-camera-x-dir)]
+           (swap! camera-pos vec3-sub (vec3-scale dir 10.0))))
+   \d #(do
+         (let [dir (get-camera-x-dir)]
+           (swap! camera-pos vec3-add (vec3-scale dir 10.0)))) 
+
    })
 
 ; _______________________________________________________________________

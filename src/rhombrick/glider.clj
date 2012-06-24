@@ -160,12 +160,23 @@
 
 ; _______________________________________________________________________
 
+
+(defn get-glider [id]
+  (first (filter #(= (% :id) id) @gliders)))
+
+
 (defn update-gliders-test []
   (doseq [glider @gliders]
     (let [next-tile-pos [0 0 0]
           new-glider-time (mod (+ (glider :time) (glider :speed)) 1.0) ]
       (update-glider-value (glider :id) :time new-glider-time))))
         
+(defn on-camera-tile? [gid]
+  (= ((get-glider gid) :currrent-tile)
+    ((get-glider 1) :current-tile)))
+
+
+
 
 
 (defn update-gliders []
@@ -185,6 +196,7 @@
                     (= (glider :id) 1)
                     (> (count (get-connected-idxs next-tile-code)) 2))
                 (osc-send client "/test" "boundary" (float (glider :id))))
+
 
               (update-glider-value (glider :id)
                                    :time (- new-glider-time

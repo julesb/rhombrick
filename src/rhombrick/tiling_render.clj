@@ -52,9 +52,10 @@
 ; _______________________________________________________________________
 
 (defn draw-face-list []
-  (fill 64 64 128 240)
-  (stroke 0 0 0 255)
-  (stroke-weight 8)
+  (fill 64 64 128 192)
+  (stroke 128 128 255 192)
+  (stroke-weight 1)
+  ;(no-stroke)
   (doseq [face-verts @face-list]
     (let [v0 (face-verts 0)
           v1 (face-verts 1)
@@ -123,11 +124,11 @@
 ; _______________________________________________________________________
 
 
-(defn draw-gliders []
+(defn draw-gliders [frame]
   (do
     ;(fill 255 0 0 128)
     ;(sphere 0.25)
-
+    (stroke-weight 4)
     (doseq [glider @gliders]
       (let [pos (get-glider-pos (glider :id))
             col (glider :color)]
@@ -142,8 +143,14 @@
                       0 0 0))
             ;(point-light 255 255 255 ;(col 0) (col 1) (col 2)
             ;           (pos 0) (pos 1) (- (pos 2) 0)))
-          (box 0.015 0.015 0.015))))))
-
+            (push-matrix)
+            (rotate-x (* frame (+ (glider :id) 20) 0.00351471))
+            (rotate-y (* frame (+ (glider :id) 20) 0.00352363))
+            ;(rotate-z (* frame (glider :id) 0.0035123))
+            (box 0.01 0.01 0.01)
+            (pop-matrix)
+                          )))))
+      
 
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
@@ -171,7 +178,7 @@
         (no-fill))
         )
     ;(if (> num-connected 2)
-    ;  (fill 2 255 8 64))
+    ;  (fill 255 128 64 128))
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))))
     ;))
