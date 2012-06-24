@@ -32,6 +32,7 @@
             ds [(.x d) (.y d) (.z d)]]
     ds)) 
 
+
 (defn get-camera-x-dir []
   (let [x (.mult @cam (new PVector 1 0 0) (new PVector 0 0 0))
             y (.mult @cam (new PVector 0 1 0) (new PVector 0 0 0))
@@ -40,6 +41,7 @@
             dx (.cross d y)]
     (.normalize dx)
     [(.x dx) (.y dx) (.z dx)] ))
+
 
 (defn do-camera-transform [pos x y]
   (do

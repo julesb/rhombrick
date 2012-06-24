@@ -75,12 +75,12 @@
   (reset! working-tileset #{})
   (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 4 2) ]
+  (doseq [code (get-n-rand-tilecode-from-group 2 2) ]
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
       (swap! working-tileset conj code))
-;  (doseq [code (get-n-rand-tilecode-from-group 1 12) ]
-;      (swap! working-tileset conj code))
+  (doseq [code (get-n-rand-tilecode-from-group 0 12) ]
+      (swap! working-tileset conj code))
   (println "working tileset: " @working-tileset)
   )
 

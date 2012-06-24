@@ -19,6 +19,9 @@
 (def num-gliders 50)
 
 (def last-render-time (atom 0))
+
+(def keys-down (atom #{}))
+
 ; _______________________________________________________________________
 ; Rendering and events 
 
@@ -255,6 +258,10 @@
    \c #(do
          (let [m (mod (inc @camera-mode) camera-num-modes)]
          (reset! camera-mode m)))
+   })
+
+(def key-movement-map
+  {
    \w #(do
          (let [dir (get-camera-dir)]
            (swap! camera-pos vec3-add (vec3-scale dir 10.0))))
@@ -266,16 +273,34 @@
            (swap! camera-pos vec3-sub (vec3-scale dir 10.0))))
    \d #(do
          (let [dir (get-camera-x-dir)]
-           (swap! camera-pos vec3-add (vec3-scale dir 10.0)))) 
-
+           (swap! camera-pos vec3-add (vec3-scale dir 10.0))))
    })
 
 ; _______________________________________________________________________
+
+(defn do-movement-keys []
+  (doseq [k @keys-down]
+    (if (contains? key-movement-map k)
+      (do
+        ((key-movement-map k))))))
+    
 
 (defn key-typed []
   (let [keychar (raw-key)]
     (if (contains? key-command-map keychar)
       ((key-command-map keychar)))))
+
+
+(defn key-pressed []
+  (swap! keys-down conj (raw-key))
+  (do-movement-keys))
+
+
+(defn key-released []
+  (swap! keys-down disj (raw-key))
+  (do-movement-keys))
+
+
 
 ; _______________________________________________________________________
 
@@ -292,6 +317,8 @@
   :size [1900 1100]
   :renderer :opengl 
   :key-typed key-typed
+  :key-pressed key-pressed
+  :key-released key-released
   :mouse-moved mouse-moved)
 
 
