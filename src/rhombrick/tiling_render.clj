@@ -54,7 +54,7 @@
 (defn draw-face-list []
   (fill 64 64 128 255)
   (stroke 128 128 255 192)
-  (stroke-weight 1)
+  (stroke-weight 2)
   ;(no-stroke)
   (doseq [face-verts @face-list]
     (let [v0 (face-verts 0)
@@ -67,7 +67,7 @@
       (vertex (v2 0) (v2 1) (v2 2))
       (vertex (v3 0) (v3 1) (v3 2))
       (end-shape)
-      (line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
+      ;(line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
       )))
 
 ; _______________________________________________________________________
@@ -154,9 +154,11 @@
                           )))))
       
 
+
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
-        num-connected (count (filter #(= \1 %) code))]
+        num-connected (count (filter #(= \1 %) code))
+        col (rd-face-colors (mod num-connected 12))]
 ;    (if (= code "xxxxxxxxxxxx")
 ;      (do 
 ;        (fill 32 32 96 255)
@@ -166,8 +168,9 @@
 ;        (draw-faces rd-verts rd-faces nil)
 ;        (pop-matrix)
 ;        (no-fill)))
-      
-    (stroke 150 150 255 128)
+     
+    (stroke (col 0) (col 1) (col 2) 92) 
+    ;(stroke 150 150 255 128)
     
     (if (= num-connected 1)
       (let [p (co-verts (first (get-connected-idxs code)))]
@@ -225,7 +228,7 @@
         (scale 0.5)
         ;(stroke-weight 2)
         ;(stroke 0 0 0  192)
-        (stroke-weight 8)
+        (stroke-weight 16)
         ;(stroke 150 150 255 64)
         (stroke 0 0 0 64)
         (no-fill) 

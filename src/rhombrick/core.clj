@@ -1,5 +1,6 @@
 (ns rhombrick.core
   (:use [quil.core]
+        [quil.applet]
         [rhombrick.facecode]
         [rhombrick.staticgeometry]
         [rhombrick.tiling]
@@ -7,20 +8,40 @@
         [rhombrick.vector]
         [rhombrick.glider]
         [rhombrick.camera]
+        
         ;[overtone.osc]
         )
   (:gen-class))
 
+(import java.awt.Robot)
+(def robot (new java.awt.Robot))
+
 (def mouse-position (atom [0 0]))
 (def view-scale (atom 1.0))
-(def model-scale (atom 50))
-(def frame (atom 0))
+(def model-scale (atom 200))
+;(def frame (atom 0))
 
 (def num-gliders 50)
 
 (def last-render-time (atom 0))
 
 (def keys-down (atom #{}))
+
+(def mousewarp-pos (atom [946 506]))
+(def last-mouse-delta (atom [0 0]))
+
+(def my-applet (atom nil))
+
+; _______________________________________________________________________
+
+
+(defn get-location-on-screen []
+  (let [p (.getLocationOnScreen @my-applet)
+        x (.x p)
+        y (.y p)]
+    ;(reset! mousewarp-pos [(- (/ (width) 2) (* x 2))
+    ;                       (- (/ (height) 2) (* y 2)) ])
+    [x y]))
 
 ; _______________________________________________________________________
 ; Rendering and events 
@@ -30,6 +51,15 @@
 
 
 (defn setup []
+    (println "applet:" my-applet)
+    
+    ;(println (.frame (current-applet)))
+    (println "screen pos" (get-location-on-screen))
+    (println "screen size:" (width) (height))
+    ;(println "frame:" (.getLocation (.frame @my-applet)))
+    ;(.mouseMove robot 0 0)
+    ;(.mouseMove robot (/ (width) 2) (/ (height) 2))
+    
     (smooth)
     (frame-rate 60)
     (sphere-detail 12)
@@ -49,7 +79,8 @@
 
 ;    (doseq [val (range 10)]
 ;      (osc-send client "/test" "i" (float val)))
-
+    ;(reset! mousewarp-pos [(mouse-x) (mouse-y)])
+    (println "mouse:" @mousewarp-pos)
 
     (println "bezier test: " (bezier-point 1.0 2.0 3.0 4.0 0.5))
     )
@@ -75,10 +106,18 @@
 
 ; _______________________________________________________________________
 
-(defn mouse-delta [scale-factor]
+(defn mouse-delta-old [scale-factor]
   (let [dx (- (mouse-x) (pmouse-x))
         dy (- (mouse-y) (pmouse-y))]
     (vec3-scale [dx dy 0] scale-factor)))
+
+(defn mouse-delta [scale-factor]
+  (let [dx (- (mouse-x) (@mousewarp-pos 0))
+        dy (- (mouse-y) (@mousewarp-pos 1))]
+    (vec3-scale [dx dy 0] scale-factor)))
+
+
+
 ; _______________________________________________________________________
 
 (def key-command-map
@@ -108,7 +147,11 @@
          (update-camera))
    \c #(do
          (let [m (mod (inc @camera-mode) camera-num-modes)]
-         (reset! camera-mode m)))
+         (reset! camera-mode m)
+         ;(if (= @camera-mode 2)
+         ;  (no-cursor)
+         ;  (cursor)))
+        ))
    })
 
 (def key-movement-map
@@ -139,7 +182,9 @@
 (defn key-typed []
   (let [keychar (raw-key)]
     (if (contains? key-command-map keychar)
-      ((key-command-map keychar)))))
+      ((key-command-map keychar)))
+    ;(println keychar)
+    ))
 
 
 (defn key-pressed []
@@ -153,13 +198,23 @@
   ;(do-movement-keys)
   )
 
+; _______________________________________________________________________
+
+(defn mouse-moved []
+  (let [x (mouse-x) y (mouse-y)
+        delta [(- (mouse-x) (@mousewarp-pos 0))
+               (- (mouse-y) (@mousewarp-pos 1)) 0]]
+    (reset! last-mouse-delta (vec3-scale delta 0.01))
+    (reset! (state :mouse-position) [x y])))
+
 
 
 ; _______________________________________________________________________
 
 
-
 (defn draw []
+  ;(println "applet:" (.getLocationOnScreen @my-applet))
+  ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
   ;(let [frame-start-time (millis)]
   (do-movement-keys) 
@@ -181,7 +236,7 @@
 ;    ))
 
   (update-gliders)
-  (swap! frame + 1)
+  ;(swap! frame + 1)
   (background 32 32 192)
    
   ;(reset-matrix)
@@ -233,10 +288,13 @@
   ; mouse/keyboard camera control
   (= @camera-mode 2)
     (do
-      (let [md (mouse-delta 0.005)]
+      (let [md @last-mouse-delta ]
+        ;(println "mouse delta: " md)
         (do-camera-transform @camera-pos
                              (* 1.0 (md 1))
-                             (* -1.0 (md 0)))))
+                             (* -1.0 (md 0)))
+        (reset! last-mouse-delta (mouse-delta 0.0001)))
+      (.mouseMove robot (/ (width) 2) (/ (height) 2)))
 
   )
 
@@ -267,7 +325,7 @@
     (stroke 255 255 255 192)
     (stroke-weight 1)
 
-    (draw-gliders @frame)
+    (draw-gliders (frame-count))
     (draw-face-list)
     (draw-tiling)
 
@@ -297,21 +355,19 @@
 ;  (ortho)
   ;(translate [700 400 0])
   ;(draw-info)
-  (reset! last-render-time
-          (float (/ (- (System/nanoTime) frame-start-time) 1000000.0)))
 
-  (if (= (mod @frame 150) 0)
+
+  (reset! last-render-time
+          (float (/ (- (System/nanoTime)
+                       frame-start-time)
+                    1000000.0)))
+
+  (if (= (mod (frame-count) 150) 0)
    (println "last-render-time: " @last-render-time))
   ))
 
 
 
-
-; _______________________________________________________________________
-
-(defn mouse-moved []
-  (let [x (mouse-x) y (mouse-y)]
-    (reset! (state :mouse-position) [x y])))
 
 ; _______________________________________________________________________
  
@@ -329,3 +385,4 @@
 
 ;(sketch-start rhombrick)
 
+(reset! my-applet rhombrick)

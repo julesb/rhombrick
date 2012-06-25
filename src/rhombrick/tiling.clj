@@ -75,11 +75,13 @@
   (reset! working-tileset #{})
   (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 2 2) ]
+  (doseq [code (get-n-rand-tilecode-from-group 6 2) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
+  (doseq [code (get-n-rand-tilecode-from-group 0 3) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 0 12) ]
+  (doseq [code (get-n-rand-tilecode-from-group 0 4) ]
+      (swap! working-tileset conj code))
+  (doseq [code (get-n-rand-tilecode-from-group 1 12) ]
       (swap! working-tileset conj code))
   (println "working tileset: " @working-tileset)
   )
@@ -300,22 +302,20 @@
         (remove-from-facelist fvw))))))
 
 
-;(defn get-rd-faces-world-coords [pos]
-; (vec (map #(vec3-add pos (face-idxs-to-verts %)) rd-faces)))
 
-
-
-(defn build-face-list []
-  (reset! face-list #{})
-  (doseq [tile-pos (keys @tiles)]
-    (doseq [i (range 12)]
-      (let [face-verts (face-idxs-to-verts (rd-faces i))
-            actual-verts (vec (map #(vec3-add tile-pos 
-                                              (vec3-scale % 0.5))
-                                   face-verts))]
-        (if (not (facelist-contains-rotations? actual-verts))
-          (swap! face-list conj actual-verts))))))
-  
+; this builds the entire face list based on the contents of @tiles
+; very slow
+;(defn build-face-list []
+;  (reset! face-list #{})
+;  (doseq [tile-pos (keys @tiles)]
+;    (doseq [i (range 12)]
+;      (let [face-verts (face-idxs-to-verts (rd-faces i))
+;            actual-verts (vec (map #(vec3-add tile-pos 
+;                                              (vec3-scale % 0.5))
+;                                   face-verts))]
+;        (if (not (facelist-contains-rotations? actual-verts))
+;          (swap! face-list conj actual-verts))))))
+; 
 
 
 ; _______________________________________________________________________
