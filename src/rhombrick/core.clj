@@ -79,12 +79,90 @@
   (let [dx (- (mouse-x) (pmouse-x))
         dy (- (mouse-y) (pmouse-y))]
     (vec3-scale [dx dy 0] scale-factor)))
+; _______________________________________________________________________
+
+(def key-command-map
+  {
+   \, #(do
+         (swap! model-scale + 1.0)
+         (println "model-scale: " @model-scale))
+   \. #(do
+        (swap! model-scale - 1.0)
+        (println "model-scale: " @model-scale))
+   ;\r #(make-cubic-tiling 10 10 10)
+   \r #(do
+         (init-tiler)
+         (make-tiling-iteration)
+         (init-gliders num-gliders))
+   \R #(do 
+         (init-tiler)
+         (random-tileset)
+         (make-tiling-iteration)
+         (init-gliders num-gliders)
+         )
+   \- #(do 
+         (swap! camera-fov - 1)
+         (update-camera))
+   \= #(do
+         (swap! camera-fov + 1)
+         (update-camera))
+   \c #(do
+         (let [m (mod (inc @camera-mode) camera-num-modes)]
+         (reset! camera-mode m)))
+   })
+
+(def key-movement-map
+  {
+   \w #(do
+         (let [dir (get-camera-dir)]
+           (swap! camera-pos vec3-add (vec3-scale dir 10.0))))
+   \s #(do
+         (let [dir (get-camera-dir)]
+           (swap! camera-pos vec3-sub (vec3-scale dir 10.0))))
+   \a #(do
+         (let [dir (get-camera-x-dir)]
+           (swap! camera-pos vec3-sub (vec3-scale dir 10.0))))
+   \d #(do
+         (let [dir (get-camera-x-dir)]
+           (swap! camera-pos vec3-add (vec3-scale dir 10.0))))
+   })
+
+
+
+(defn do-movement-keys []
+  (doseq [k @keys-down]
+    (if (contains? key-movement-map k)
+      (do
+        ((key-movement-map k))))))
+    
+
+(defn key-typed []
+  (let [keychar (raw-key)]
+    (if (contains? key-command-map keychar)
+      ((key-command-map keychar)))))
+
+
+(defn key-pressed []
+  (swap! keys-down conj (raw-key))
+  ;(do-movement-keys)
+  )
+
+
+(defn key-released []
+  (swap! keys-down disj (raw-key))
+  ;(do-movement-keys)
+  )
+
+
+
+; _______________________________________________________________________
+
 
 
 (defn draw []
   (let [frame-start-time (System/nanoTime)]
   ;(let [frame-start-time (millis)]
-    
+  (do-movement-keys) 
   (make-tiling-iteration)
   ;(auto-seed-todo)
 ;  (if (= (count @todo) 0)
@@ -226,79 +304,6 @@
    (println "last-render-time: " @last-render-time))
   ))
 
-
-
-; _______________________________________________________________________
-
-(def key-command-map
-  {
-   \, #(do
-         (swap! model-scale + 1.0)
-         (println "model-scale: " @model-scale))
-   \. #(do
-        (swap! model-scale - 1.0)
-        (println "model-scale: " @model-scale))
-   ;\r #(make-cubic-tiling 10 10 10)
-   \r #(do
-         (init-tiler)
-         (make-tiling-iteration)
-         (init-gliders num-gliders))
-   \R #(do 
-         (init-tiler)
-         (random-tileset)
-         (make-tiling-iteration)
-         (init-gliders num-gliders)
-         )
-   \- #(do 
-         (swap! camera-fov - 1)
-         (update-camera))
-   \= #(do
-         (swap! camera-fov + 1)
-         (update-camera))
-   \c #(do
-         (let [m (mod (inc @camera-mode) camera-num-modes)]
-         (reset! camera-mode m)))
-   })
-
-(def key-movement-map
-  {
-   \w #(do
-         (let [dir (get-camera-dir)]
-           (swap! camera-pos vec3-add (vec3-scale dir 10.0))))
-   \s #(do
-         (let [dir (get-camera-dir)]
-           (swap! camera-pos vec3-sub (vec3-scale dir 10.0))))
-   \a #(do
-         (let [dir (get-camera-x-dir)]
-           (swap! camera-pos vec3-sub (vec3-scale dir 10.0))))
-   \d #(do
-         (let [dir (get-camera-x-dir)]
-           (swap! camera-pos vec3-add (vec3-scale dir 10.0))))
-   })
-
-; _______________________________________________________________________
-
-(defn do-movement-keys []
-  (doseq [k @keys-down]
-    (if (contains? key-movement-map k)
-      (do
-        ((key-movement-map k))))))
-    
-
-(defn key-typed []
-  (let [keychar (raw-key)]
-    (if (contains? key-command-map keychar)
-      ((key-command-map keychar)))))
-
-
-(defn key-pressed []
-  (swap! keys-down conj (raw-key))
-  (do-movement-keys))
-
-
-(defn key-released []
-  (swap! keys-down disj (raw-key))
-  (do-movement-keys))
 
 
 
