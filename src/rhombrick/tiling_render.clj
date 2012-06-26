@@ -70,6 +70,56 @@
       ;(line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
       )))
 
+
+
+; _______________________________________________________________________
+
+(defn draw-selected-tile [pos]
+  (let [code (@tiles pos)
+        num-connected (count (filter #(= \1 %) code))
+        col (rd-face-colors (mod num-connected 12))]
+    (no-fill)
+    ;(fill (col 0) (col 1) (col 2) 64)
+    (stroke (col 0) (col 1) (col 2) 192)
+    (stroke-weight 8)
+    (with-translation pos
+      (scale 0.5)
+      (draw-faces rd-verts rd-faces nil))))
+   
+
+
+(defn draw-neighbours [pos]
+  (no-fill)
+  (stroke 128 128 128 128)
+  (stroke-weight 1)
+
+  (let [ipos (vec (map int pos))]
+  (doseq [n (get-neighbours ipos)]
+    (with-translation n
+    (scale 0.5)
+    (draw-faces rd-verts rd-faces nil)
+    ))))
+
+; _______________________________________________________________________
+
+
+(defn draw-curve-boundary-points [pos]
+  ;(fill 32 32 255 128)
+  (let [code (@tiles pos)
+        num-connected (count (filter #(= \1 %) code))
+        col (rd-face-colors (mod num-connected 12))]
+    (no-stroke)
+    (fill (col 0) (col 1) (col 2) 240)
+    (with-translation pos
+      (scale 0.5)
+      (doseq [i (range 12)]
+        (if (not= (.charAt code i) \0)
+         (with-translation (co-verts i)
+          (scale 0.02)
+          ;(sphere 0.05)
+          (draw-faces rd-verts rd-faces nil)
+                           ))))))
+                                    
 ; _______________________________________________________________________
 
 
@@ -152,13 +202,20 @@
             (box 0.01 0.01 0.01)
             (pop-matrix)
                           )))))
-      
+     
+
+; _______________________________________________________________________
 
 
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (count (filter #(= \1 %) code))
-        col (rd-face-colors (mod num-connected 12))]
+        col (rd-face-colors (mod num-connected 12))
+        fill-col (rd-face-colors 
+                   (connecting-faces (mod num-connected 12)))
+        ;col-idx (mod (Integer/parseInt code 2) 12)
+        ]
+
 ;    (if (= code "xxxxxxxxxxxx")
 ;      (do 
 ;        (fill 32 32 96 255)
@@ -170,6 +227,7 @@
 ;        (no-fill)))
      
     (stroke (col 0) (col 1) (col 2) 92) 
+    ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
     ;(stroke 150 150 255 128)
     
     (if (= num-connected 1)
@@ -184,8 +242,21 @@
         )
     ;(if (> num-connected 2)
     ;  (fill 255 128 64 128))
+    
+    ;(if (> num-connected 2)
+    ;  (begin-shape))
+
     (doseq [endpoints endpoint-pairs]
-      (draw-curve (endpoints 0) (endpoints 1)))))
+      (push-matrix)
+      (scale 0.01)
+      (box 1 1 1)
+      (pop-matrix)
+      (draw-curve (endpoints 0) (endpoints 1)))
+    
+    ;(if (> num-connected 2)
+    ;  (end-shape))
+
+      ))
     ;))
 ; _______________________________________________________________________
 

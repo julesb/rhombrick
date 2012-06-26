@@ -21,7 +21,7 @@
 (def model-scale (atom 200))
 ;(def frame (atom 0))
 
-(def num-gliders 50)
+(def num-gliders 100)
 
 (def last-render-time (atom 0))
 
@@ -31,6 +31,9 @@
 (def last-mouse-delta (atom [0 0]))
 
 (def my-applet (atom nil))
+
+(def draw-facelist? (atom false))
+
 
 ; _______________________________________________________________________
 
@@ -152,6 +155,9 @@
          ;  (no-cursor)
          ;  (cursor)))
         ))
+    \f #(do
+         (swap! draw-facelist? not)
+         (println "draw facelist: " @draw-facelist?))
    })
 
 (def key-movement-map
@@ -237,7 +243,8 @@
 
   (update-gliders)
   ;(swap! frame + 1)
-  (background 32 32 192)
+  ;(background 32 32 192)
+  (background 0 0 0)
    
   ;(reset-matrix)
   ;(push-matrix)
@@ -260,7 +267,7 @@
                      (@camera-pos 2)
                      (g 0) (g 1) (g 2))
             dir (vec3-normalize (vec3-sub g @camera-pos))
-            newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.040)))
+            newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.020)))
             cl-d (dist (@camera-lookat 0)
                        (@camera-lookat 1)
                        (@camera-lookat 2)
@@ -268,7 +275,7 @@
             cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
             new-camera-lookat (vec3-add @camera-lookat 
                                         (vec3-scale cl-dir
-                                                    (* cl-d 0.25)))]
+                                                    (* cl-d 0.15)))]
         (reset! camera-lookat new-camera-lookat)    
         (reset! camera-pos newpos)
         (camera (newpos 0) (newpos 1) (- (newpos 2) 3)
@@ -302,7 +309,7 @@
                  @camera-aspect-ratio
                  @camera-near-clip
                  @camera-far-clip)
-  (lights)  
+  ;(lights)  
   ;(light-falloff 0.5 0.0 0.0) 
   (light-specular 255 0 0)
   (stroke 0 255 255 128)
@@ -326,7 +333,9 @@
     (stroke-weight 1)
 
     (draw-gliders (frame-count))
-    (draw-face-list)
+    (if @draw-facelist?
+      (draw-face-list))
+    
     (draw-tiling)
 
     (stroke-weight 1)
@@ -334,6 +343,11 @@
 
     (fill 192 192 192 255)
     (draw-todo-head)
+    (lights) 
+    (let [glider-tile ((get-glider 1) :current-tile)]
+      (draw-neighbours glider-tile)
+      (draw-curve-boundary-points glider-tile)
+      (draw-selected-tile glider-tile))
     
     ;(no-fill)
     ;(stroke-weight 1)

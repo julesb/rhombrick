@@ -170,7 +170,7 @@
 			</array>
 			<key>volume</key>
 			<array>
-				<real>0.45240923762321472</real>
+				<real>0.83551448583602905</real>
 			</array>
 		</dict>
 		<key>synth list</key>
@@ -742,7 +742,7 @@
 						<string>MIDI 0 0</string>
 					</dict>
 					<key>volume</key>
-					<real>0.38548481464385986</real>
+					<real>0.53725457191467285</real>
 				</dict>
 				<dict>
 					<key>active</key>
@@ -1034,7 +1034,7 @@
 						</dict>
 					</array>
 					<key>mute</key>
-					<integer>1</integer>
+					<integer>0</integer>
 					<key>name</key>
 					<string>Stereo Mix</string>
 					<key>output assignments</key>
@@ -1044,7 +1044,7 @@
 					<key>pan angle</key>
 					<real>1</real>
 					<key>pan azimuth</key>
-					<real>-0.51111108064651489</real>
+					<real>0.0</real>
 					<key>pan distance</key>
 					<real>1</real>
 					<key>pan elevation</key>
@@ -1066,7 +1066,7 @@
 						<string>MIDI 1 0</string>
 					</dict>
 					<key>volume</key>
-					<real>0.61577928066253662</real>
+					<real>0.9834175705909729</real>
 				</dict>
 				<dict>
 					<key>active</key>
