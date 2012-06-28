@@ -13,6 +13,7 @@
         )
   (:gen-class))
 
+(import processing.core.PImage)
 (import java.awt.Robot)
 (def robot (new java.awt.Robot))
 
@@ -21,7 +22,7 @@
 (def model-scale (atom 200))
 ;(def frame (atom 0))
 
-(def num-gliders 100)
+(def num-gliders 50)
 
 (def last-render-time (atom 0))
 
@@ -33,8 +34,8 @@
 (def my-applet (atom nil))
 
 (def draw-facelist? (atom false))
-
-
+(def draw-editor? (atom false))
+  
 ; _______________________________________________________________________
 
 
@@ -55,7 +56,13 @@
 
 (defn setup []
     (println "applet:" my-applet)
-    
+     
+    ;(reset! rhomb-tex (load-image "cave_texture_01-512x512.png"))
+    ;(reset! rhomb-tex (load-image "testpattern4po6.png"))
+    (reset! rhomb-tex (load-image "gradient.jpg"))
+    (println "texture:" @rhomb-tex)
+    (texture-mode :normalized)
+      
     ;(println (.frame (current-applet)))
     (println "screen pos" (get-location-on-screen))
     (println "screen size:" (width) (height))
@@ -157,7 +164,11 @@
         ))
     \f #(do
          (swap! draw-facelist? not)
-         (println "draw facelist: " @draw-facelist?))
+         (println "draw facelist? " @draw-facelist?))
+    \` #(do
+         (swap! draw-editor? not)
+         (println "draw editor? " @draw-editor?))
+
    })
 
 (def key-movement-map
@@ -245,7 +256,7 @@
   ;(swap! frame + 1)
   ;(background 32 32 192)
   (background 0 0 0)
-   
+  ;(lights)
   ;(reset-matrix)
   ;(push-matrix)
 
@@ -275,10 +286,10 @@
             cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
             new-camera-lookat (vec3-add @camera-lookat 
                                         (vec3-scale cl-dir
-                                                    (* cl-d 0.15)))]
+                                                    (* cl-d 0.1)))]
         (reset! camera-lookat new-camera-lookat)    
         (reset! camera-pos newpos)
-        (camera (newpos 0) (newpos 1) (- (newpos 2) 3)
+        (camera (newpos 0) (newpos 1) (- (newpos 2) 20)
                 (new-camera-lookat 0)
                 (new-camera-lookat 1)
                 (new-camera-lookat 2)
@@ -311,13 +322,15 @@
                  @camera-far-clip)
   ;(lights)  
   ;(light-falloff 0.5 0.0 0.0) 
-  (light-specular 255 0 0)
+  ;(light-specular 255 0 0)
   (stroke 0 255 255 128)
   (stroke-weight 1)
   (no-fill)
   ;(sphere 2000)
   (box 2000 2000 2000)
-  (let [[mx my] @(state :mouse-position)] 
+ 
+
+  (let [[mx my] @(state :mouse-position)]
     (push-matrix)
     (scale @model-scale)
     ;(rotate-x (* (- my 400) -0.01))
@@ -331,29 +344,41 @@
     
     (stroke 255 255 255 192)
     (stroke-weight 1)
-
+    (light-falloff 1.0 0.2 0.0)
     (draw-gliders (frame-count))
-    (if @draw-facelist?
-      (draw-face-list))
-    
+    (lights)
+    ;(ambient-light 64 64 64)
+    (when @draw-facelist?
+      (draw-face-list-textured))
+    ;(draw-gliders (frame-count)) 
     (draw-tiling)
 
-    (stroke-weight 1)
+    ;(stroke-weight 1)
     ;(draw-todo)
 
     (fill 192 192 192 255)
-    (draw-todo-head)
-    (lights) 
-    (let [glider-tile ((get-glider 1) :current-tile)]
-      (draw-neighbours glider-tile)
-      (draw-curve-boundary-points glider-tile)
-      (draw-selected-tile glider-tile))
-    
-    ;(no-fill)
-    ;(stroke-weight 1)
-    ;(stroke 255 255 255 255)
-    ;(draw-normalized-facecodes @frame )
+    (if (seq @todo)
+      (draw-todo-head))
+
+    ;(lights) 
+    (let [selected-tile ((get-glider 1) :current-tile)
+          tile-color (get-group-color selected-tile)]
+      (draw-neighbours selected-tile)
+      (draw-curve-boundary-points selected-tile)
+      (draw-selected-tile selected-tile)
+      ;(point-light (tile-color 0) (tile-color 1) (tile-color 2)
+      ;                (selected-tile 0) (selected-tile 1) (selected-tile 2))
+      )
+  
+
     (pop-matrix)
+    (if @draw-editor?  
+      (do
+      (no-fill)
+      (stroke-weight 1)
+      (stroke 255 255 255 255)
+      (draw-normalized-facecodes (frame-count))))
+
 
   )
 ;  (if (> (count @tiles) max-tiles)

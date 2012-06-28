@@ -43,11 +43,11 @@
     [(.x dx) (.y dx) (.z dx)] ))
 
 
-(defn do-camera-transform [pos x y]
+(defn do-camera-transform [pos x-rot y-rot]
   (do
     (let [cam-new @cam]
-      (.rotateX cam-new x)
-      (.rotateY cam-new y)
+      (.rotateX cam-new x-rot)
+      (.rotateY cam-new y-rot)
       (let [x (.mult cam-new (new PVector 1 0 0) (new PVector 0 0 0))
             y (.mult cam-new (new PVector 0 1 0) (new PVector 0 0 0))
             d (.cross x y)

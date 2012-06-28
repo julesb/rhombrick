@@ -7,6 +7,7 @@
         [rhombrick.glider]))
 
 
+(def rhomb-tex (atom nil))
 
 ; _______________________________________________________________________
 
@@ -25,7 +26,25 @@
 
 ; _______________________________________________________________________
 
+(defn get-group-color [code]
+  (rd-face-colors (mod (count (get-connected-idxs code))
+                       12)))
 
+(defn draw-connected-faces [code]
+  (let [col (get-group-color code)]
+    (fill (col 0) (col 1) (col 2) 128)
+    (doseq [idx (get-connected-idxs code)]
+      (let [vert-idx (rd-faces idx)
+            v0 (rd-verts (vert-idx 0))
+            v1 (rd-verts (vert-idx 1))
+            v2 (rd-verts (vert-idx 2))
+            v3 (rd-verts (vert-idx 3))]
+        (begin-shape :quads)
+        (vertex (v0 0) (v0 1) (v0 2))
+        (vertex (v1 0) (v1 1) (v1 2))
+        (vertex (v2 0) (v2 1) (v2 2))
+        (vertex (v3 0) (v3 1) (v3 2))
+        (end-shape)))))
 
 (defn draw-faces [verts faces colors]
   (doseq [i (range (count faces))]
@@ -53,15 +72,17 @@
 
 (defn draw-face-list []
   (fill 64 64 128 255)
-  (stroke 128 128 255 192)
-  (stroke-weight 2)
-  ;(no-stroke)
+  ;(stroke 128 128 255 192)
+  ;(stroke-weight 2)
+  (no-stroke)
   (doseq [face-verts @face-list]
     (let [v0 (face-verts 0)
           v1 (face-verts 1)
           v2 (face-verts 2)
           v3 (face-verts 3)]
+       
       (begin-shape :quads)
+      ;(texture @rhomb-tex)
       (vertex (v0 0) (v0 1) (v0 2))
       (vertex (v1 0) (v1 1) (v1 2))
       (vertex (v2 0) (v2 1) (v2 2))
@@ -71,6 +92,28 @@
       )))
 
 
+(defn draw-face-list-textured []
+  (fill 255 255 255 255)
+  ;(stroke 128 128 255 192)
+  ;(stroke-weight 2)
+  (no-stroke)
+  (doseq [face-verts @face-list]
+    (let [v0 (face-verts 0)
+          v1 (face-verts 1)
+          v2 (face-verts 2)
+          v3 (face-verts 3)
+          tex-coord-inset (/ 1.0 7.0)]
+       
+      (begin-shape :quads)
+      (texture @rhomb-tex)
+      (vertex (v0 0) (v0 1) (v0 2) tex-coord-inset 0.5)
+      (vertex (v1 0) (v1 1) (v1 2) 0.5 0.0)
+      (vertex (v2 0) (v2 1) (v2 2) (- 1.0 tex-coord-inset) 0.5)
+      (vertex (v3 0) (v3 1) (v3 2) 0.5 1.0)
+
+      (end-shape)
+      ;(line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
+      )))
 
 ; _______________________________________________________________________
 
@@ -81,7 +124,7 @@
     (no-fill)
     ;(fill (col 0) (col 1) (col 2) 64)
     (stroke (col 0) (col 1) (col 2) 192)
-    (stroke-weight 8)
+    (stroke-weight 4)
     (with-translation pos
       (scale 0.5)
       (draw-faces rd-verts rd-faces nil))))
@@ -90,7 +133,7 @@
 
 (defn draw-neighbours [pos]
   (no-fill)
-  (stroke 128 128 128 128)
+  (stroke 0 0 0 128)
   (stroke-weight 1)
 
   (let [ipos (vec (map int pos))]
@@ -181,6 +224,7 @@
     ;(fill 255 0 0 128)
     ;(sphere 0.25)
     (stroke-weight 4)
+    (let [tile-color (get-group-color (@tiles ((get-glider 1) :current-tile)))]
     (doseq [glider @gliders]
       (let [pos (get-glider-pos (glider :id))
             col (glider :color)]
@@ -191,8 +235,10 @@
           ;(scale 0.5)
           ;(sphere 0.2)
           (if (= (glider :id) 1) 
-             (point-light 64 64 255 ;(col 0) (col 1) (col 2)
-                      0 0 0))
+             (point-light (tile-color 0) (tile-color 1) (tile-color 2)
+                          0 0 0))
+                          ;(pos 0) (pos 1) (pos 2)))
+
             ;(point-light 255 255 255 ;(col 0) (col 1) (col 2)
             ;           (pos 0) (pos 1) (- (pos 2) 0)))
             (push-matrix)
@@ -201,7 +247,7 @@
             ;(rotate-z (* frame (glider :id) 0.0035123))
             (box 0.01 0.01 0.01)
             (pop-matrix)
-                          )))))
+                          ))))))
      
 
 ; _______________________________________________________________________
@@ -247,10 +293,10 @@
     ;  (begin-shape))
 
     (doseq [endpoints endpoint-pairs]
-      (push-matrix)
-      (scale 0.01)
-      (box 1 1 1)
-      (pop-matrix)
+      ;(push-matrix)
+      ;(scale 0.01)
+      ;(box 1 1 1)
+      ;(pop-matrix)
       (draw-curve (endpoints 0) (endpoints 1)))
     
     ;(if (> num-connected 2)
@@ -262,6 +308,10 @@
 
 
 (defn draw-normalized-facecodes [frame]
+  (fill 0 0 0 240)
+  (with-translation [0 0 -5]
+    (box 200 130 1))
+  
   (doseq [i (range (count @normalised-facecodes-sorted))]
     (let [x (* 5 (+ -15 (mod i 30)))
           y (* 5 (+ -10 (/ i 20)))
@@ -274,6 +324,8 @@
       ;(rotate-x (* frame 0.041471))
       ;(rotate-y (+ (* x y) (* frame 0.051471)))
       ;(rotate-x (+ (* x y) (* frame 0.041471)))
+
+
 
       (stroke-weight 2)
       (stroke 255 255 255 192)
