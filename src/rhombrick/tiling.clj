@@ -71,27 +71,27 @@
   (map (fn [a] (rand-nth (@normalised-facecodes-grouped g)))
          (range n)))
 
-(defn random-tileset []
+(defn random-tileset-from-groups []
   (reset! working-tileset #{})
-  (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
+  (doseq [code (get-n-rand-tilecode-from-group 0 1) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 4 2) ]
+  (doseq [code (get-n-rand-tilecode-from-group 0 2) ]
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 4) ]
+  (doseq [code (get-n-rand-tilecode-from-group 0 4) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 5) ]
+  (doseq [code (get-n-rand-tilecode-from-group 0 5) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 8) ]
+  (doseq [code (get-n-rand-tilecode-from-group 0 8) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 12) ]
+  (doseq [code (get-n-rand-tilecode-from-group 0 12) ]
       (swap! working-tileset conj code))
   (println "working tileset: " @working-tileset)
   )
 
 
-(defn random-tileset1 []
+(defn random-tileset []
   (let [num-tiles (+ 1 (rand-int 5))]
     (reset! working-tileset #{})
     (swap! working-tileset conj "100000000000")
@@ -359,11 +359,87 @@
 
 ; _______________________________________________________________________
 
+;
+; 1. Place a random tile in the center of the grid
+;
+;    - Add its neighbours to the todo list:
+; 
+; 2. Make a list of empty locations in the grid with abutting non-empty 
+; edges. If there are no such locations, halt. 
+;
+; Otherwise, if there are any sites where only either one or zero 
+; types of tile could be added, restrict the list to just these sites.
+; From the list, choose the location closest to the center of the
+; assemblage. 
+
+; 3. If there is no tile that fits at that location, or if it can be
+; determined that for any tile that might be added the assemblage will
+; become non-completable (see next section), perform backtracking. That
+; is, remove some number of tiles from the assemblage in the reverse
+; order to which they were added (see the section after next).
+;
+; 4. Otherwise choose a tile at random from the remaining possibilities,
+; and put it at the location.
+;
+; 5. Go to step 2.
 
 
 
+; returns a list of todo locations with 0 or 1 matching tiles
+(defn find-best-positions []
+  (filter #(= (count (find-candidates % @working-tileset)) 1)
+          @todo))
+
+(defn find-any-positions []
+  (filter #(>= (count (find-candidates % @working-tileset)) 2)
+          @todo))
+
+; receive a vector of positions and return the closest to the center
+; ie the vector with the shortest length. If there are more that one
+; equal to the shortest then return a random one. 
+(defn find-closest-to-center [positions]
+  (let [lengths (into {} (map #(vec [%1 (vec3-length %1)]) positions))
+        sorted-lengths (sort-by #(vec3-length (key %)) lengths)
+        min-length ((first sorted-lengths) 1)
+        tie-winners (filter #(= min-length (val %)) sorted-lengths) ]
+    (if (= 1 (count tie-winners))
+      ((first tie-winners) 0)
+      ((rand-nth tie-winners) 0))))
 
 
+
+(defn make-backtracking-tiling-iteration []
+  (let [best-candidates (find-best-positions)]
+    (if (> (count best-candidates) 0)
+      ; we have one or more locations with 0 or 1 matches
+      (let [new-pos (find-closest-to-center best-candidates)
+            new-code (choose-tilecode new-pos @working-tileset)]
+        ; choose tile and add to chosen position
+        (if (and (not= new-code "xxxxxxxxxxxx")
+                 (= (count new-code) 12))
+          (do
+            (make-tile new-pos new-code)
+            (add-tile-to-facelist new-pos)
+            (reset! todo (clojure.lang.PersistentQueue/EMPTY))
+            (push-neighbours-todo new-pos))
+          (make-tile new-pos "xxxxxxxxxxxx"))
+      )
+      ; else there are no positions with 0 or 1 (best) candidates, 
+      ; so see if the positions have other number of candidates
+      (let [candidates (find-any-positions)]
+          (if (> (count candidates) 0)
+            (let [new-pos (find-closest-to-center candidates)
+                  new-code (choose-tilecode new-pos @working-tileset)]
+              ; choose tile and add to chosen position)
+              (if (and (not= new-code "xxxxxxxxxxxx")
+                       (= (count new-code) 12))
+                (do
+                  (make-tile new-pos new-code)
+                  (add-tile-to-facelist new-pos)
+                  (reset! todo (clojure.lang.PersistentQueue/EMPTY))
+                  (push-neighbours-todo new-pos))
+                (make-tile new-pos "xxxxxxxxxxxx")) 
+            ))))))
 
 
 ; _______________________________________________________________________

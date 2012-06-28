@@ -173,8 +173,8 @@
         (push-matrix)
         (scale 0.5)
         ;(box 1 1 1)
-        ;(draw-faces rd-verts rd-faces nil)
-        (draw-faces rd-verts rd-faces rd-face-colors)
+        (draw-faces rd-verts rd-faces nil)
+        ;(draw-faces rd-verts rd-faces rd-face-colors)
         (pop-matrix)))))
 
 ; _______________________________________________________________________
@@ -234,9 +234,9 @@
           ;(apply fill (glider :color))
           ;(scale 0.5)
           ;(sphere 0.2)
-          (if (= (glider :id) 1) 
-             (point-light (tile-color 0) (tile-color 1) (tile-color 2)
-                          0 0 0))
+          ;(if (= (glider :id) 1) 
+          ;   (point-light (tile-color 0) (tile-color 1) (tile-color 2)
+          ;                0 0 0))
                           ;(pos 0) (pos 1) (pos 2)))
 
             ;(point-light 255 255 255 ;(col 0) (col 1) (col 2)
@@ -262,15 +262,16 @@
         ;col-idx (mod (Integer/parseInt code 2) 12)
         ]
 
-;    (if (= code "xxxxxxxxxxxx")
-;      (do 
-;        (fill 32 32 96 255)
-;        (stroke 0 0 0 192)
-;        (push-matrix)
-;        (scale 0.95)
-;        (draw-faces rd-verts rd-faces nil)
-;        (pop-matrix)
-;        (no-fill)))
+    (if (= code "xxxxxxxxxxxx")
+      (do 
+        ;(fill 32 32 96 255)
+        (no-fill)
+        (stroke 0 0 0 192)
+        (push-matrix)
+        (scale 0.95)
+        (draw-faces rd-verts rd-faces nil)
+        (pop-matrix)
+        (no-fill)))
      
     (stroke (col 0) (col 1) (col 2) 92) 
     ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)

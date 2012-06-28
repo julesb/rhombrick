@@ -64,7 +64,7 @@
     (texture-mode :normalized)
       
     ;(println (.frame (current-applet)))
-    (println "screen pos" (get-location-on-screen))
+    ;(println "screen pos" (get-location-on-screen))
     (println "screen size:" (width) (height))
     ;(println "frame:" (.getLocation (.frame @my-applet)))
     ;(.mouseMove robot 0 0)
@@ -82,7 +82,8 @@
     ;(make-cubic-tiling 10 10 10)
     ;(reset! tiles {})
     (init-tiler)
-    (make-tiling-iteration) ; needed so init-gliders works
+    ;(make-tiling-iteration) ; needed so init-gliders works
+    (make-backtracking-tiling-iteration)
     (init-gliders num-gliders)
     ;(println @gliders)
     ;(init-todo)
@@ -142,11 +143,13 @@
    \r #(do
          (init-tiler)
          (make-tiling-iteration)
+         (make-backtracking-tiling-iteration)
          (init-gliders num-gliders))
    \R #(do 
          (init-tiler)
          (random-tileset)
-         (make-tiling-iteration)
+         ;(make-tiling-iteration)
+         (make-backtracking-tiling-iteration)
          (init-gliders num-gliders)
          )
    \- #(do 
@@ -235,7 +238,8 @@
   (let [frame-start-time (System/nanoTime)]
   ;(let [frame-start-time (millis)]
   (do-movement-keys) 
-  (make-tiling-iteration)
+  ;(make-tiling-iteration)
+  (make-backtracking-tiling-iteration)
   ;(auto-seed-todo)
 ;  (if (= (count @todo) 0)
 ;    (do
@@ -344,7 +348,7 @@
     
     (stroke 255 255 255 192)
     (stroke-weight 1)
-    (light-falloff 1.0 0.2 0.0)
+    ;(light-falloff 1.0 0.2 0.0)
     (draw-gliders (frame-count))
     (lights)
     ;(ambient-light 64 64 64)
@@ -353,12 +357,13 @@
     ;(draw-gliders (frame-count)) 
     (draw-tiling)
 
-    ;(stroke-weight 1)
-    ;(draw-todo)
+    (no-fill)
+    (stroke-weight 1)
+    (draw-todo)
 
     (fill 192 192 192 255)
-    (if (seq @todo)
-      (draw-todo-head))
+    ;(if (seq @todo)
+    ;  (draw-todo-head))
 
     ;(lights) 
     (let [selected-tile ((get-glider 1) :current-tile)
@@ -424,4 +429,4 @@
 
 ;(sketch-start rhombrick)
 
-(reset! my-applet rhombrick)
+;(reset! my-applet rhombrick)
