@@ -1,19 +1,23 @@
 (ns rhombrick.tiling
   (:use [rhombrick.vector]
         [rhombrick.staticgeometry]
-        [rhombrick.facecode]))
+        [rhombrick.facecode]
+        [ordered.map]))
 
-(def max-tiles 500)
-(def tiles (atom {}))
-(def todo (atom (clojure.lang.PersistentQueue/EMPTY)))
+;(use 'ordered.map)
+
+(def max-tiles 100)
+;(def tiles (atom {}))
+(def tiles (atom (ordered-map)))
+
 
 (def working-tileset (atom #{
-                      "100000000000"
-                      "100000000100" 
+                      ;"100000000000"
+                      ;"100000000100" 
                       "110000000000"
-                      "000111000000"
-                      "000101010000"
-                      "100010001000"
+                      ;"000111000000"
+                      ;"000101010000"
+                      ;"100010001000"
                       ;"111111111111"
                       }))
 
@@ -23,9 +27,23 @@
 
 (def face-list (atom #{}))
 
-    
+
+
+ ;(filter #(and (has-neighbours? %) (tileable? %)) (keys @tiles)))
+
+
+
+(def untilable-codes (atom #{}))
+
+(defn init-untilable-codes []
+  (reset! untilable-codes #{}))
+
+(defn add-to-untilable-codes [code]
+  (swap! untilable-codes conj code))
+
 ; _______________________________________________________________________
 
+(def todo (atom (clojure.lang.PersistentQueue/EMPTY)))
 
 (defn init-todo []
   (do
@@ -51,14 +69,13 @@
   (if (not (in-todo? pos))
     (swap! todo conj pos)))
 
+; vvv slow vvv
+(defn delete-todo-item [pos]
+  (reset! todo 
+          (into (clojure.lang.PersistentQueue/EMPTY)
+                (filter #(not= % pos) @todo))))
 
-; _______________________________________________________________________
 
-
-(defn init-tiler []
-  (reset! tiles {})
-  (init-todo)
-  (reset! face-list #{}))
 
 ; _______________________________________________________________________
 
@@ -94,7 +111,7 @@
 (defn random-tileset []
   (let [num-tiles (+ 1 (rand-int 5))]
     (reset! working-tileset #{})
-    (swap! working-tileset conj "100000000000")
+    ;(swap! working-tileset conj "100000000000")
     (doseq [code (get-n-rand-tilecode num-tiles) ]
       (swap! working-tileset conj code))
     (println "working tileset: " @working-tileset)))
@@ -127,12 +144,12 @@
 
         ))
 
-(defn auto-seed-todo []
-  (if (= (count @todo) 0)
-    (do
-      (init-tiler)
-      ;(random-tileset)
-      )))
+;(defn auto-seed-todo []
+;  (if (= (count @todo) 0)
+;    (do
+;      (init-tiler)
+;      ;(random-tileset)
+;      )))
 ; _______________________________________________________________________
 
 (defn get-neighbour [pos face]
@@ -206,6 +223,10 @@
           (push-todo neighbour)))))
 
 
+
+
+
+
 (defn get-neighbour-abutting-face [pos face]
     (let [op-face (connecting-faces face)
           nb-pos (get-neighbour pos face)
@@ -268,6 +289,39 @@
 
 
 
+
+(def empty-positions (atom #{}))
+
+(defn init-empty-positions []
+  (reset! empty-positions #{}))
+
+(defn add-to-empty-positions [pos]
+  (if (< (+ (count @empty-positions)
+            (count @tiles))
+         max-tiles)
+    (swap! empty-positions conj pos)))
+
+
+(defn remove-from-empty-positions [pos]
+  (swap! empty-positions disj pos))
+
+(defn push-neighbours-to-empty-positions [pos]
+  (dotimes [face 12]
+    (let [neighbour (get-neighbour pos face)]
+      (if (tileable? neighbour)
+          (add-to-empty-positions neighbour)))))
+
+(defn update-empty-positions []
+  (do
+    (init-empty-positions)
+    (doseq [tile (keys @tiles)]
+      (doseq [n (get-neighbours tile)]
+        (if (tileable? n)
+          (add-to-empty-positions n))))))
+
+
+; _______________________________________________________________________
+
 ;(def face-list (atom #{}))
 
 
@@ -322,6 +376,28 @@
 ; 
 
 
+
+; _______________________________________________________________________
+
+
+(defn seed-tiler []
+  (let [pos [0 0 0]
+        code (choose-tilecode pos @working-tileset)]
+    (make-tile pos code) 
+    (push-neighbours-to-empty-positions pos)))
+
+; _______________________________________________________________________
+
+
+(defn init-tiler []
+  (reset! tiles {})
+  ;(init-todo)
+  (init-empty-positions)
+  (init-untilable-codes)
+  (seed-tiler)
+  (reset! face-list #{}))
+
+
 ; _______________________________________________________________________
 
 
@@ -358,12 +434,12 @@
 
 
 ; _______________________________________________________________________
-
+;
+; Backtracking tiler algorithm
+; ============================
 ;
 ; 1. Place a random tile in the center of the grid
 ;
-;    - Add its neighbours to the todo list:
-; 
 ; 2. Make a list of empty locations in the grid with abutting non-empty 
 ; edges. If there are no such locations, halt. 
 ;
@@ -384,18 +460,60 @@
 ; 5. Go to step 2.
 
 
+; Todo:
+; - Replace the todo persistent queue with a set called say abutting-spaces,
+; Ordering doesnt matter, the items are unique, and we need to be able to
+; remove arbitary items.
+;
+; - Replace @tiles which is currently a map, with something. We need to
+; preserve ordering so we can backtrack. clojure.lang.PersistentQueue
+; should do the job as we can just pop/dequeue when backtracking.
+;
+; Try these - Ordered sets and maps: https://clojars.org/search?q=ordered
+;
+;
+; - Implement a untilable-loci set, and when choosing a tile for a location,
+; if there is no matching tile, then add that locus (referred to as 
+; outer-facecode in previous tiler algorithm) to the untilable set. Also
+; when adding a tile, check if any locations which match entries in the
+; untilable set are created by adding the tile, and if so, choose a
+; different tile if possible.
+;
+; - Implement a random generator with power law distribution for choosing
+; the amount to backtrack:
+; 
+;                         P(n) ∝ (n + a)^−b
+;
+; where n is the number of tiles to remove (n > 0, integer), and the
+; parameters a and b define the personality of the assembler. The parameters
+; affect how long the assembler will take to finish, and may also bias the
+; result towards the emergence of one or another kind of feature. The
+; parameter values used in this chapter were a = 0.35, b = 3.
+;
+
+
+
+
+; _______________________________________________________________________
+
 
 ; returns a list of todo locations with 0 or 1 matching tiles
-(defn find-best-positions []
-  (filter #(= (count (find-candidates % @working-tileset)) 1)
-          @todo))
+; (this is according to the paper, but I dont understand the point
+; of returning locations with 0 matching tiles)
 
+(defn find-best-positions []
+  (filter #(< (count (find-candidates % @working-tileset)) 2)
+          @empty-positions))
+
+; returns a list of todo locations with any matching tiles
 (defn find-any-positions []
-  (filter #(>= (count (find-candidates % @working-tileset)) 2)
-          @todo))
+  (filter #(> (count (find-candidates % @working-tileset)) 0)
+          @empty-positions))
+
+; _______________________________________________________________________
 
 ; receive a vector of positions and return the closest to the center
-; ie the vector with the shortest length. If there are more that one
+; ie the vector with the shortest length. If there are more than one
 ; equal to the shortest then return a random one. 
 (defn find-closest-to-center [positions]
   (let [lengths (into {} (map #(vec [%1 (vec3-length %1)]) positions))
@@ -406,40 +524,84 @@
       ((first tie-winners) 0)
       ((rand-nth tie-winners) 0))))
 
+; _______________________________________________________________________
+
+(def autism 0.35)
+(def adhd 2.5)
+
+(defn get-backtrack-amount []
+  (let [t (count @tiles)]
+    (loop [n 1]
+      (if (or (> n (- t 1))
+              (> (rand)
+                 (Math/pow (/ n (+ n autism)) adhd)))
+        n
+        (recur (inc n))))))
+
+
+
+
+(defn backtrack []
+  (let [num-tiles (count @tiles)
+        n (get-backtrack-amount)
+        ;n (+ 1 (rand-int (/ num-tiles 4)))
+        ni (- num-tiles n)]
+    (println "tilecount:" num-tiles ", backtracking" n "tiles") 
+    ; remove n most recent @tiles
+    (reset! tiles (ordered-map (take ni @tiles)))
+    ; rebuild empty postion list
+    (update-empty-positions)))
+    
+
 
 
 (defn make-backtracking-tiling-iteration []
-  (let [best-candidates (find-best-positions)]
-    (if (> (count best-candidates) 0)
-      ; we have one or more locations with 0 or 1 matches
-      (let [new-pos (find-closest-to-center best-candidates)
-            new-code (choose-tilecode new-pos @working-tileset)]
-        ; choose tile and add to chosen position
-        (if (and (not= new-code "xxxxxxxxxxxx")
-                 (= (count new-code) 12))
-          (do
-            (make-tile new-pos new-code)
-            (add-tile-to-facelist new-pos)
-            (reset! todo (clojure.lang.PersistentQueue/EMPTY))
-            (push-neighbours-todo new-pos))
-          (make-tile new-pos "xxxxxxxxxxxx"))
-      )
-      ; else there are no positions with 0 or 1 (best) candidates, 
-      ; so see if the positions have other number of candidates
-      (let [candidates (find-any-positions)]
-          (if (> (count candidates) 0)
-            (let [new-pos (find-closest-to-center candidates)
-                  new-code (choose-tilecode new-pos @working-tileset)]
-              ; choose tile and add to chosen position)
-              (if (and (not= new-code "xxxxxxxxxxxx")
-                       (= (count new-code) 12))
-                (do
-                  (make-tile new-pos new-code)
-                  (add-tile-to-facelist new-pos)
-                  (reset! todo (clojure.lang.PersistentQueue/EMPTY))
-                  (push-neighbours-todo new-pos))
-                (make-tile new-pos "xxxxxxxxxxxx")) 
-            ))))))
+  (when (and (< (count @tiles) max-tiles)
+             (> (count @empty-positions) 0))
+    (let [best-positions (find-best-positions)]
+      (if (> (count best-positions) 0)
+        ; we have one or more locations with 0 or 1 matches
+        (let [new-pos (find-closest-to-center best-positions)
+              new-code (choose-tilecode new-pos @working-tileset)]
+          ; choose tile and add to chosen position
+          (if (and (not= new-code "xxxxxxxxxxxx")
+                   (= (count new-code) 12))
+            (do
+              (make-tile new-pos new-code)
+              (add-tile-to-facelist new-pos)
+              (remove-from-empty-positions new-pos)
+              (push-neighbours-to-empty-positions new-pos)
+              )
+
+            (do
+              ;(make-tile new-pos "xxxxxxxxxxxx")
+              (add-to-untilable-codes (get-outer-facecode new-pos))
+              ; do backtracking
+              (backtrack)
+              ))
+        )
+        ; else there are no positions with 0 or 1 (best) candidates, 
+        ; so see if the positions have other number of candidates
+        (let [positions (find-any-positions)]
+            (if (> (count positions) 0)
+              (let [new-pos (find-closest-to-center positions)
+                    new-code (choose-tilecode new-pos @working-tileset)]
+                ; choose tile and add to chosen position)
+                (if (and (not= new-code "xxxxxxxxxxxx")
+                         (= (count new-code) 12))
+                  (do
+                    (make-tile new-pos new-code)
+                    (add-tile-to-facelist new-pos)
+                    (remove-from-empty-positions new-pos)
+                    (push-neighbours-to-empty-positions new-pos)
+                    )
+                  (do
+                    ;(make-tile new-pos "xxxxxxxxxxxx")
+                    (add-to-untilable-codes (get-outer-facecode new-pos))
+                    ; do backtracking
+                    (backtrack)
+                    )) 
+              )))))))
 
 
 ; _______________________________________________________________________

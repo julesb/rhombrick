@@ -148,6 +148,7 @@
 
 (defn draw-curve-boundary-points [pos]
   ;(fill 32 32 255 128)
+  (when (contains? @tiles pos)
   (let [code (@tiles pos)
         num-connected (count (filter #(= \1 %) code))
         col (rd-face-colors (mod num-connected 12))]
@@ -161,7 +162,7 @@
           (scale 0.02)
           ;(sphere 0.05)
           (draw-faces rd-verts rd-faces nil)
-                           ))))))
+                           )))))))
                                     
 ; _______________________________________________________________________
 
@@ -264,12 +265,13 @@
 
     (if (= code "xxxxxxxxxxxx")
       (do 
-        ;(fill 32 32 96 255)
-        (no-fill)
-        (stroke 0 0 0 192)
+        (fill 255 32 32 128)
+        ;(no-fill)
+        (stroke 255 0 0 192)
         (push-matrix)
-        (scale 0.95)
-        (draw-faces rd-verts rd-faces nil)
+        (scale 0.05)
+        (box 1 1 1)
+        ;(draw-faces rd-verts rd-faces nil)
         (pop-matrix)
         (no-fill)))
      
@@ -352,7 +354,7 @@
         (scale 0.5)
         ;(stroke-weight 2)
         ;(stroke 0 0 0  192)
-        (stroke-weight 16)
+        (stroke-weight 4)
         ;(stroke 150 150 255 64)
         (stroke 0 0 0 64)
         (no-fill) 

@@ -257,12 +257,9 @@
 ;    ))
 
   (update-gliders)
-  ;(swap! frame + 1)
   ;(background 32 32 192)
   (background 0 0 0)
   ;(lights)
-  ;(reset-matrix)
-  ;(push-matrix)
 
  ;attach cam to glider 1, lookat glider 2
  ; (if (> (count @gliders) 1)
@@ -348,18 +345,20 @@
     
     (stroke 255 255 255 192)
     (stroke-weight 1)
-    ;(light-falloff 1.0 0.2 0.0)
-    (draw-gliders (frame-count))
+    
+    ;(draw-gliders (frame-count))
+    
     (lights)
+    ;(light-falloff 1.0 0.2 0.0)
     ;(ambient-light 64 64 64)
     (when @draw-facelist?
       (draw-face-list-textured))
-    ;(draw-gliders (frame-count)) 
+
     (draw-tiling)
 
-    (no-fill)
-    (stroke-weight 1)
-    (draw-todo)
+    ;(no-fill)
+    ;(stroke-weight 1)
+    ;(draw-todo)
 
     (fill 192 192 192 255)
     ;(if (seq @todo)
@@ -368,9 +367,9 @@
     ;(lights) 
     (let [selected-tile ((get-glider 1) :current-tile)
           tile-color (get-group-color selected-tile)]
-      (draw-neighbours selected-tile)
+      ;(draw-neighbours selected-tile)
       (draw-curve-boundary-points selected-tile)
-      (draw-selected-tile selected-tile)
+      ;(draw-selected-tile selected-tile)
       ;(point-light (tile-color 0) (tile-color 1) (tile-color 2)
       ;                (selected-tile 0) (selected-tile 1) (selected-tile 2))
       )
