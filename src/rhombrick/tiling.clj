@@ -6,15 +6,15 @@
 
 ;(use 'ordered.map)
 
-(def max-tiles 100)
+(def max-tiles 200)
 ;(def tiles (atom {}))
 (def tiles (atom (ordered-map)))
 
 
 (def working-tileset (atom #{
-                      ;"100000000000"
-                      ;"100000000100" 
-                      "110000000000"
+                      "100000000000"
+                      "100000000100" 
+                      ;"110000000000"
                       ;"000111000000"
                       ;"000101010000"
                       ;"100010001000"
@@ -32,14 +32,6 @@
  ;(filter #(and (has-neighbours? %) (tileable? %)) (keys @tiles)))
 
 
-
-(def untilable-codes (atom #{}))
-
-(defn init-untilable-codes []
-  (reset! untilable-codes #{}))
-
-(defn add-to-untilable-codes [code]
-  (swap! untilable-codes conj code))
 
 ; _______________________________________________________________________
 
@@ -88,17 +80,17 @@
   (map (fn [a] (rand-nth (@normalised-facecodes-grouped g)))
          (range n)))
 
-(defn random-tileset-from-groups []
+(defn random-tileset []
   (reset! working-tileset #{})
   (doseq [code (get-n-rand-tilecode-from-group 0 1) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 0 2) ]
+  (doseq [code (get-n-rand-tilecode-from-group 1 2) ]
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 0 4) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 0 5) ]
+  (doseq [code (get-n-rand-tilecode-from-group 1 5) ]
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 0 8) ]
       (swap! working-tileset conj code))
@@ -108,7 +100,7 @@
   )
 
 
-(defn random-tileset []
+(defn random-tileset-rand []
   (let [num-tiles (+ 1 (rand-int 5))]
     (reset! working-tileset #{})
     ;(swap! working-tileset conj "100000000000")
@@ -273,8 +265,17 @@
   (let [candidates (find-candidates pos tileset)]  
     (if (seq candidates)
       (nth candidates (rand-int (count candidates)))
-      "xxxxxxxxxxxx")))
-  
+      nil)))
+
+; choose a tilecode for a position, but make sure that adding the
+; tile doesnt create any untilable regions 
+(defn choose-nonblocking-tilecode [pos tileset]
+  (let [candidates (find-candidates pos tileset)
+        nb-candidates (filter #() candidates)]
+    (if (seq candidates)
+      (nth candidates (rand-int (count candidates)))
+      nil)))
+
 
 (defn choose-tilecode [pos tileset]
   (let [candidates (find-candidates pos tileset)
@@ -318,6 +319,35 @@
       (doseq [n (get-neighbours tile)]
         (if (tileable? n)
           (add-to-empty-positions n))))))
+
+
+
+(def dead-loci (atom #{}))
+
+(defn init-dead-loci []
+  (reset! dead-loci #{}))
+
+(defn add-to-dead-loci [code]
+  (swap! dead-loci conj code))
+
+;(defn creates-untilable-region? [pos]
+;  (> (count (filter #(= 0 (count (find-candidates % @working-tileset)))
+;                    (get-neighbours pos)))
+;     0))
+
+
+;(defn creates-untilable-region? [pos]
+;  (> (count (filter #(contains? dead-loci (get-outer-facecode %))
+;                     (get-neighbours pos))))
+;     0)
+
+(defn creates-untilable-region? [pos]
+  (let [neighbours (get-neighbours pos)
+        empty-neighbours (filter #(tileable? %) neighbours)
+        untileable-neighbours (filter #(contains? @dead-loci 
+                                                  (get-outer-facecode %))
+                                      empty-neighbours)]
+    (> (count untileable-neighbours) 0)))
 
 
 ; _______________________________________________________________________
@@ -393,7 +423,7 @@
   (reset! tiles {})
   ;(init-todo)
   (init-empty-positions)
-  (init-untilable-codes)
+  (init-dead-loci)
   (seed-tiler)
   (reset! face-list #{}))
 
@@ -510,6 +540,13 @@
   (filter #(> (count (find-candidates % @working-tileset)) 0)
           @empty-positions))
 
+
+(defn choose-positions []
+  (let [best (find-best-positions)]
+    (if (= (count best) 0)
+      (find-any-positions)
+      best)))
+  
 ; _______________________________________________________________________
 
 ; receive a vector of positions and return the closest to the center
@@ -526,8 +563,8 @@
 
 ; _______________________________________________________________________
 
-(def autism 0.35)
-(def adhd 2.5)
+(def autism 1.0)
+(def adhd 2.0)
 
 (defn get-backtrack-amount []
   (let [t (count @tiles)]
@@ -544,64 +581,49 @@
 (defn backtrack []
   (let [num-tiles (count @tiles)
         n (get-backtrack-amount)
-        ;n (+ 1 (rand-int (/ num-tiles 4)))
         ni (- num-tiles n)]
-    (println "tilecount:" num-tiles ", backtracking" n "tiles") 
-    ; remove n most recent @tiles
-    (reset! tiles (ordered-map (take ni @tiles)))
-    ; rebuild empty postion list
-    (update-empty-positions)))
+    (when (> (count @tiles) 1)
+      (println "tilecount:" num-tiles ", backtracking" n "tiles") 
+      ; remove n most recent @tiles
+      (reset! tiles (ordered-map (take ni @tiles)))
+      ; rebuild empty postion list
+      (update-empty-positions)
+      (init-dead-loci))))
     
+
 
 
 
 (defn make-backtracking-tiling-iteration []
   (when (and (< (count @tiles) max-tiles)
              (> (count @empty-positions) 0))
-    (let [best-positions (find-best-positions)]
-      (if (> (count best-positions) 0)
-        ; we have one or more locations with 0 or 1 matches
-        (let [new-pos (find-closest-to-center best-positions)
-              new-code (choose-tilecode new-pos @working-tileset)]
-          ; choose tile and add to chosen position
-          (if (and (not= new-code "xxxxxxxxxxxx")
-                   (= (count new-code) 12))
+    (let [positions (choose-positions)]
+      (if (> (count positions) 0)
+        (let [new-pos (find-closest-to-center positions)
+              new-code (choose-tilecode-old new-pos @working-tileset)]
+          (if (not= new-code nil)
             (do
               (make-tile new-pos new-code)
-              (add-tile-to-facelist new-pos)
-              (remove-from-empty-positions new-pos)
-              (push-neighbours-to-empty-positions new-pos)
-              )
-
+              (if (creates-untilable-region? new-pos)
+                (delete-tile new-pos)
+                (do
+                  (add-tile-to-facelist new-pos)
+                  (remove-from-empty-positions new-pos)
+                  (push-neighbours-to-empty-positions new-pos))))
             (do
-              ;(make-tile new-pos "xxxxxxxxxxxx")
-              (add-to-untilable-codes (get-outer-facecode new-pos))
-              ; do backtracking
+              (add-to-dead-loci (get-outer-facecode new-pos))
               (backtrack)
-              ))
-        )
-        ; else there are no positions with 0 or 1 (best) candidates, 
-        ; so see if the positions have other number of candidates
-        (let [positions (find-any-positions)]
-            (if (> (count positions) 0)
-              (let [new-pos (find-closest-to-center positions)
-                    new-code (choose-tilecode new-pos @working-tileset)]
-                ; choose tile and add to chosen position)
-                (if (and (not= new-code "xxxxxxxxxxxx")
-                         (= (count new-code) 12))
-                  (do
-                    (make-tile new-pos new-code)
-                    (add-tile-to-facelist new-pos)
-                    (remove-from-empty-positions new-pos)
-                    (push-neighbours-to-empty-positions new-pos)
-                    )
-                  (do
-                    ;(make-tile new-pos "xxxxxxxxxxxx")
-                    (add-to-untilable-codes (get-outer-facecode new-pos))
-                    ; do backtracking
-                    (backtrack)
-                    )) 
-              )))))))
+              )))
+        (println "no tileable positions")
+        ))))
+        
+
+
+
+
+; _______________________________________________________________________
+
+
 
 
 ; _______________________________________________________________________
