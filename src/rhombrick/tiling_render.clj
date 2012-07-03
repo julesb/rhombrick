@@ -178,6 +178,16 @@
         ;(draw-faces rd-verts rd-faces rd-face-colors)
         (pop-matrix)))))
 
+(defn draw-empty []
+  (fill 0 255 0 255)
+  (doseq [tile @empty-positions]
+    (let [pos tile]
+      (with-translation pos 
+        (scale 0.05)
+        (box 1 1 1)
+        ;(draw-faces rd-verts rd-faces nil)
+        ;(draw-faces rd-verts rd-faces rd-face-colors)
+        ))))
 ; _______________________________________________________________________
 
 
@@ -361,9 +371,9 @@
         (draw-facecode (@tiles pos))
         
         (stroke-weight 1)
-        (stroke 128 128 128 128)
+        (stroke 128 128 128 32)
         ;;(no-stroke)
-        ;(draw-faces rd-verts rd-faces nil)
+        (draw-faces rd-verts rd-faces nil)
         
         (stroke 0 255 0 32)
         ;(draw-todo)

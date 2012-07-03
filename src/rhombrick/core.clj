@@ -142,7 +142,7 @@
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
          (init-tiler)
-         (make-tiling-iteration)
+         ;(make-tiling-iteration)
          (make-backtracking-tiling-iteration)
          (init-gliders num-gliders))
    \R #(do 
@@ -364,15 +364,19 @@
     ;(if (seq @todo)
     ;  (draw-todo-head))
 
-    ;(lights) 
-    (let [selected-tile ((get-glider 1) :current-tile)
-          tile-color (get-group-color selected-tile)]
-      ;(draw-neighbours selected-tile)
-      (draw-curve-boundary-points selected-tile)
-      ;(draw-selected-tile selected-tile)
-      ;(point-light (tile-color 0) (tile-color 1) (tile-color 2)
-      ;                (selected-tile 0) (selected-tile 1) (selected-tile 2))
-      )
+    (if (seq @empty-positions)
+      (draw-empty))
+
+
+  ;(lights) 
+;      (let [selected-tile ((get-glider 1) :current-tile)
+;            tile-color (get-group-color selected-tile)]
+;        ;(draw-neighbours selected-tile)
+;        (draw-curve-boundary-points selected-tile)
+;        ;(draw-selected-tile selected-tile)
+;        ;(point-light (tile-color 0) (tile-color 1) (tile-color 2)
+;        ;                (selected-tile 0) (selected-tile 1) (selected-tile 2))
+;        )
   
 
     (pop-matrix)
