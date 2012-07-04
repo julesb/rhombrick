@@ -35,7 +35,7 @@
 
 (def draw-facelist? (atom false))
 (def draw-editor? (atom false))
-  
+(def draw-gliders? (atom false))  
 ; _______________________________________________________________________
 
 
@@ -58,8 +58,8 @@
     (println "applet:" my-applet)
      
     ;(reset! rhomb-tex (load-image "cave_texture_01-512x512.png"))
-    ;(reset! rhomb-tex (load-image "testpattern4po6.png"))
-    (reset! rhomb-tex (load-image "gradient.jpg"))
+    (reset! rhomb-tex (load-image "testpattern4po6.png"))
+    ;(reset! rhomb-tex (load-image "gradient.jpg"))
     (println "texture:" @rhomb-tex)
     (texture-mode :normalized)
       
@@ -167,10 +167,17 @@
         ))
     \f #(do
          (swap! draw-facelist? not)
+         (when @draw-facelist?
+           (build-face-list))
          (println "draw facelist? " @draw-facelist?))
     \` #(do
          (swap! draw-editor? not)
          (println "draw editor? " @draw-editor?))
+    \g #(do
+          (swap! draw-gliders? not)
+          (if draw-gliders?
+            (init-gliders num-gliders)))
+
 
    })
 
@@ -239,7 +246,9 @@
   ;(let [frame-start-time (millis)]
   (do-movement-keys) 
   ;(make-tiling-iteration)
-  (make-backtracking-tiling-iteration)
+  (when (= 0 (mod (frame-count) 1))
+    (make-backtracking-tiling-iteration))
+
   ;(auto-seed-todo)
 ;  (if (= (count @todo) 0)
 ;    (do
@@ -256,7 +265,9 @@
 ;      (init-gliders num-gliders)
 ;    ))
 
-  (update-gliders)
+  (when @draw-gliders?   
+    (update-gliders))
+    
   ;(background 32 32 192)
   (background 0 0 0)
   ;(lights)
@@ -279,7 +290,7 @@
                      (@camera-pos 2)
                      (g 0) (g 1) (g 2))
             dir (vec3-normalize (vec3-sub g @camera-pos))
-            newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.020)))
+            newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.030)))
             cl-d (dist (@camera-lookat 0)
                        (@camera-lookat 1)
                        (@camera-lookat 2)
@@ -287,7 +298,7 @@
             cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
             new-camera-lookat (vec3-add @camera-lookat 
                                         (vec3-scale cl-dir
-                                                    (* cl-d 0.1)))]
+                                                    (* cl-d 0.15)))]
         (reset! camera-lookat new-camera-lookat)    
         (reset! camera-pos newpos)
         (camera (newpos 0) (newpos 1) (- (newpos 2) 20)
@@ -324,11 +335,11 @@
   ;(lights)  
   ;(light-falloff 0.5 0.0 0.0) 
   ;(light-specular 255 0 0)
-  (stroke 0 255 255 128)
-  (stroke-weight 1)
-  (no-fill)
-  ;(sphere 2000)
-  (box 2000 2000 2000)
+
+;  (stroke 0 255 255 128)
+;  (stroke-weight 1)
+;  (no-fill)
+;  (box 2000 2000 2000)
  
 
   (let [[mx my] @(state :mouse-position)]
@@ -337,21 +348,31 @@
     ;(rotate-x (* (- my 400) -0.01))
     ;(rotate-y (* (- mx 700) 0.01))
     ;(rotate-x (* @frame 0.00351471))
-    ;(rotate-y (* @frame 0.0035236))
+    ;(rotate-y (* (frame-count) 0.0035236))
     ;(rotate-z (* @frame 0.0035123))
-    
-    ;(build-face-list) 
+
+  (stroke 0 255 255 128)
+  (stroke-weight 1)
+  (no-fill)
+  (box 10 10 10)
+ 
+;  (when @draw-facelist?
+;    (if (= 0 (mod (frame-count) 300))
+;      (build-face-list))) 
+
     ;(draw-face-list)
     
     (stroke 255 255 255 192)
     (stroke-weight 1)
     
-    ;(draw-gliders (frame-count))
+    (when @draw-gliders?
+      (draw-gliders (frame-count)))
     
     (lights)
     ;(light-falloff 1.0 0.2 0.0)
     ;(ambient-light 64 64 64)
     (when @draw-facelist?
+      ;(draw-face-list))
       (draw-face-list-textured))
 
     (draw-tiling)
@@ -368,15 +389,16 @@
       (draw-empty))
 
 
-  ;(lights) 
-;      (let [selected-tile ((get-glider 1) :current-tile)
-;            tile-color (get-group-color selected-tile)]
-;        ;(draw-neighbours selected-tile)
-;        (draw-curve-boundary-points selected-tile)
-;        ;(draw-selected-tile selected-tile)
-;        ;(point-light (tile-color 0) (tile-color 1) (tile-color 2)
-;        ;                (selected-tile 0) (selected-tile 1) (selected-tile 2))
-;        )
+  ;(lights)
+    (when @draw-gliders?
+      (let [selected-tile ((get-glider 1) :current-tile)
+            tile-color (get-group-color selected-tile)]
+        (draw-neighbours selected-tile)
+        (draw-curve-boundary-points selected-tile)
+        (draw-selected-tile selected-tile)
+        (point-light (tile-color 0) (tile-color 1) (tile-color 2)
+                     (selected-tile 0) (selected-tile 1) (selected-tile 2))
+        ))
   
 
     (pop-matrix)

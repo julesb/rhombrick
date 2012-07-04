@@ -26,12 +26,20 @@
 
 ; _______________________________________________________________________
 
+(defn get-tile-color [code]
+  (if (not= nil code)
+    (let [n (. Integer parseInt code 2)
+          c (mod n 12)]
+      (rd-face-colors c))
+    [255 0 0]))
+
+
 (defn get-group-color [code]
   (rd-face-colors (mod (count (get-connected-idxs code))
                        12)))
 
 (defn draw-connected-faces [code]
-  (let [col (get-group-color code)]
+  (let [col (get-tile-color code)]
     (fill (col 0) (col 1) (col 2) 128)
     (doseq [idx (get-connected-idxs code)]
       (let [vert-idx (rd-faces idx)
@@ -72,9 +80,9 @@
 
 (defn draw-face-list []
   (fill 64 64 128 255)
-  ;(stroke 128 128 255 192)
-  ;(stroke-weight 2)
-  (no-stroke)
+  (stroke 128 128 255 192)
+  (stroke-weight 2)
+  ;(no-stroke)
   (doseq [face-verts @face-list]
     (let [v0 (face-verts 0)
           v1 (face-verts 1)
@@ -120,7 +128,8 @@
 (defn draw-selected-tile [pos]
   (let [code (@tiles pos)
         num-connected (count (filter #(= \1 %) code))
-        col (rd-face-colors (mod num-connected 12))]
+        col (get-tile-color code)]
+        ;col (rd-face-colors (mod num-connected 12))]
     (no-fill)
     ;(fill (col 0) (col 1) (col 2) 64)
     (stroke (col 0) (col 1) (col 2) 192)
@@ -133,7 +142,7 @@
 
 (defn draw-neighbours [pos]
   (no-fill)
-  (stroke 0 0 0 128)
+  (stroke 128 128 128 32)
   (stroke-weight 1)
 
   (let [ipos (vec (map int pos))]
@@ -151,7 +160,7 @@
   (when (contains? @tiles pos)
   (let [code (@tiles pos)
         num-connected (count (filter #(= \1 %) code))
-        col (rd-face-colors (mod num-connected 12))]
+        col (get-tile-color code)] ;(rd-face-colors (mod num-connected 12))]
     (no-stroke)
     (fill (col 0) (col 1) (col 2) 240)
     (with-translation pos
@@ -167,19 +176,20 @@
 ; _______________________________________________________________________
 
 
-(defn draw-todo []
-  (doseq [tile  @todo]
-    (let [pos tile]
-      (with-translation pos 
-        (push-matrix)
-        (scale 0.5)
-        ;(box 1 1 1)
-        (draw-faces rd-verts rd-faces nil)
-        ;(draw-faces rd-verts rd-faces rd-face-colors)
-        (pop-matrix)))))
+;(defn draw-todo []
+;  (doseq [tile  @todo]
+;    (let [pos tile]
+;      (with-translation pos 
+;        (push-matrix)
+;        (scale 0.5)
+;        ;(box 1 1 1)
+;        (draw-faces rd-verts rd-faces nil)
+;        ;(draw-faces rd-verts rd-faces rd-face-colors)
+;        (pop-matrix)))))
+
 
 (defn draw-empty []
-  (fill 0 255 0 255)
+  (fill 0 255 0 192)
   (doseq [tile @empty-positions]
     (let [pos tile]
       (with-translation pos 
@@ -191,17 +201,17 @@
 ; _______________________________________________________________________
 
 
-(defn draw-todo-head []
-  ;(fill 255 255 0 255)
-  (stroke 128 128 255 220)
-  (stroke-weight 4)
-  (if (not (empty? @todo)) 
-    (with-translation (peek @todo)
-      (push-matrix)
-      (scale 0.55)
-      (draw-faces rd-verts rd-faces rd-face-colors)
-      (pop-matrix))))
-    ;(sphere 1)))
+;(defn draw-todo-head []
+;  ;(fill 255 255 0 255)
+;  (stroke 128 128 255 220)
+;  (stroke-weight 4)
+;  (if (not (empty? @todo)) 
+;    (with-translation (peek @todo)
+;      (push-matrix)
+;      (scale 0.55)
+;      (draw-faces rd-verts rd-faces rd-face-colors)
+;      (pop-matrix))))
+;    ;(sphere 1)))
 
 ; _______________________________________________________________________
 
@@ -267,13 +277,13 @@
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (count (filter #(= \1 %) code))
-        col (rd-face-colors (mod num-connected 12))
+        col (get-tile-color code); (rd-face-colors (mod num-connected 12))
         fill-col (rd-face-colors 
                    (connecting-faces (mod num-connected 12)))
         ;col-idx (mod (Integer/parseInt code 2) 12)
         ]
 
-    (if (= code "xxxxxxxxxxxx")
+    (if (= code nil)
       (do 
         (fill 255 32 32 128)
         ;(no-fill)
@@ -285,7 +295,7 @@
         (pop-matrix)
         (no-fill)))
      
-    (stroke (col 0) (col 1) (col 2) 92) 
+    (stroke (col 0) (col 1) (col 2) 128) 
     ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
     ;(stroke 150 150 255 128)
     
@@ -304,7 +314,8 @@
     
     ;(if (> num-connected 2)
     ;  (begin-shape))
-
+    (stroke-weight 8)
+    (stroke (col 0) (col 1) (col 2) 192)
     (doseq [endpoints endpoint-pairs]
       ;(push-matrix)
       ;(scale 0.01)
@@ -312,6 +323,15 @@
       ;(pop-matrix)
       (draw-curve (endpoints 0) (endpoints 1)))
     
+    (stroke-weight 2)
+    (stroke 255 255 255 192)
+    (doseq [endpoints endpoint-pairs]
+      ;(push-matrix)
+      ;(scale 0.01)
+      ;(box 1 1 1)
+      ;(pop-matrix)
+      (draw-curve (endpoints 0) (endpoints 1)))
+
     ;(if (> num-connected 2)
     ;  (end-shape))
 
@@ -364,16 +384,16 @@
         (scale 0.5)
         ;(stroke-weight 2)
         ;(stroke 0 0 0  192)
-        (stroke-weight 4)
+        (stroke-weight 8)
         ;(stroke 150 150 255 64)
         (stroke 0 0 0 64)
         (no-fill) 
         (draw-facecode (@tiles pos))
         
         (stroke-weight 1)
-        (stroke 128 128 128 32)
+        (stroke 128 128 128 24)
         ;;(no-stroke)
-        (draw-faces rd-verts rd-faces nil)
+        ;(draw-faces rd-verts rd-faces nil)
         
         (stroke 0 255 0 32)
         ;(draw-todo)

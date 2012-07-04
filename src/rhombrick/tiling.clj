@@ -6,15 +6,15 @@
 
 ;(use 'ordered.map)
 
-(def max-tiles 100)
+(def max-tiles 200)
 ;(def tiles (atom {}))
 (def tiles (atom (ordered-map)))
 
 
 (def working-tileset (atom #{
                       ;"100000000000"
-                      ;"100000000100" 
-                      "101000000000"
+                      "100000100000" 
+                      ;"111000000000"
                       ;"000111000000"
                       ;"000101010000"
                       ;"100010001000"
@@ -86,11 +86,40 @@
   (map (fn [a] (rand-nth (@normalised-facecodes-grouped g)))
          (range n)))
 
+
+(defn random-tileset-blah []
+  (reset! working-tileset #{})
+  (if (< (rand-int 100) 30)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 1)))
+  (if (< (rand-int 100) 50)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 2 2)))
+  (if (< (rand-int 100) 40)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 3)))
+  (if (< (rand-int 100) 20)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 4)))
+  (if (< (rand-int 100) 10)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 5)))
+  (if (< (rand-int 100) 10)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 6)))
+  (if (< (rand-int 100) 10)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 7)))
+  (if (< (rand-int 100) 10)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 8)))
+  (if (< (rand-int 100) 10)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 9)))
+  (if (< (rand-int 100) 10)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 10)))
+  (if (< (rand-int 100) 10)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 11)))
+  (if (< (rand-int 100) 10)
+    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 12)))
+)
+
 (defn random-tileset []
   (reset! working-tileset #{})
-  (doseq [code (get-n-rand-tilecode-from-group 0 1) ]
+  (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 2) ]
+  (doseq [code (get-n-rand-tilecode-from-group 6 2) ]
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
       (swap! working-tileset conj code))
@@ -100,7 +129,7 @@
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 0 8) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 0 12) ]
+  (doseq [code (get-n-rand-tilecode-from-group 1 12) ]
       (swap! working-tileset conj code))
   (println "working tileset: " @working-tileset)
   )
@@ -415,6 +444,12 @@
 
 
 
+(defn build-face-list []
+  (reset! face-list #{})
+  (doseq [tile (keys @tiles)]
+    (add-tile-to-facelist tile)))
+
+
 ; this builds the entire face list based on the contents of @tiles
 ; very slow
 ;(defn build-face-list []
@@ -623,7 +658,8 @@
       (update-empty-positions)
       (println "| tiles:" num-tiles 
                "| backtracked:" n)
-      ;(init-dead-loci)
+      (init-dead-loci)
+      ;(build-face-list)
       )))
     
 
@@ -633,9 +669,9 @@
     (let [positions (choose-positions)]
       (if (> (count positions) 0)
         (let [assemblage-center (reduce vec3-add (keys @tiles))
-              new-pos (find-closest-to-point positions assemblage-center)
-        ;(let [new-pos (find-closest-to-center positions)
-              new-code (choose-tilecode new-pos @working-tileset)]
+        ;      new-pos (find-closest-to-point positions assemblage-center)
+              new-pos (find-closest-to-center positions)
+              new-code (choose-tilecode-old new-pos @working-tileset)]
           (if (not= new-code nil)
             (do
               (make-tile new-pos new-code)
@@ -646,7 +682,7 @@
                   (do
                     (doseq [u untileable]
                       (add-to-dead-loci (get-outer-facecode u)))
-                    ;(delete-tile new-pos)
+                    (delete-tile new-pos)
                     (backtrack)
                     
                     )
