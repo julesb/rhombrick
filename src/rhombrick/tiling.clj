@@ -28,14 +28,11 @@
   [\1 \-]
   [\- \-]})
 
-;(def auto-delete-max-lonlieness (atom 1))
-
 (def face-list (atom #{}))
 
 ;(def assemblage-center (atom [0 0 0]))
 
 
- ;(filter #(and (has-neighbours? %) (tileable? %)) (keys @tiles)))
 
 
 
@@ -117,9 +114,9 @@
 
 (defn random-tileset []
   (reset! working-tileset #{})
-  (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
+  (doseq [code (get-n-rand-tilecode-from-group 0 1) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 6 2) ]
+  (doseq [code (get-n-rand-tilecode-from-group 2 2) ]
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
       (swap! working-tileset conj code))
@@ -554,33 +551,12 @@
 
 
 ; Todo:
-; - Replace the todo persistent queue with a set called say abutting-spaces,
-; Ordering doesnt matter, the items are unique, and we need to be able to
-; remove arbitary items.
+; fix rd-face to tilecode mapping so that opposite faces are 6 chars
+; apart in the tilecode.
 ;
-; - Replace @tiles which is currently a map, with something. We need to
-; preserve ordering so we can backtrack. clojure.lang.PersistentQueue
-; should do the job as we can just pop/dequeue when backtracking.
+; Investigate and fix tilecode rotations, simple string rotation
+; isn't correct as it is in 2d.
 ;
-; Try these - Ordered sets and maps: https://clojars.org/search?q=ordered
-;
-; - Implement a untilable-loci set, and when choosing a tile for a location,
-; if there is no matching tile, then add that locus (referred to as 
-; outer-facecode in previous tiler algorithm) to the untilable set. Also
-; when adding a tile, check if any locations which match entries in the
-; untilable set are created by adding the tile, and if so, choose a
-; different tile if possible.
-;
-; - Implement a random generator with power law distribution for choosing
-; the amount to backtrack:
-; 
-;                         P(n) ∝ (n + a)^−b
-;
-; where n is the number of tiles to remove (n > 0, integer), and the
-; parameters a and b define the personality of the assembler. The parameters
-; affect how long the assembler will take to finish, and may also bias the
-; result towards the emergence of one or another kind of feature. The
-; parameter values used in this chapter were a = 0.35, b = 3.
 ;
 
 

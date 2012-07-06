@@ -133,7 +133,7 @@
     (no-fill)
     ;(fill (col 0) (col 1) (col 2) 64)
     (stroke (col 0) (col 1) (col 2) 192)
-    (stroke-weight 4)
+    (stroke-weight 6)
     (with-translation pos
       (scale 0.5)
       (draw-faces rd-verts rd-faces nil))))
@@ -248,27 +248,27 @@
     (let [tile-color (get-group-color (@tiles ((get-glider 1) :current-tile)))]
     (doseq [glider @gliders]
       (let [pos (get-glider-pos (glider :id))
-            col (glider :color)]
-        ;(sphere 10)))))
-        (with-translation pos
-          (fill (col 0) (col 1) (col 2) 128)
-          ;(apply fill (glider :color))
-          ;(scale 0.5)
-          ;(sphere 0.2)
-          ;(if (= (glider :id) 1) 
-          ;   (point-light (tile-color 0) (tile-color 1) (tile-color 2)
-          ;                0 0 0))
-                          ;(pos 0) (pos 1) (pos 2)))
+            col (glider :color)
+            tile (glider :current-tile)]
+        (if (contains? @tiles tile)
+          (with-translation pos
+            (fill (col 0) (col 1) (col 2) 128)
+            ;(apply fill (glider :color))
+            ;(scale 0.5)
+            ;(sphere 0.2)
+            ;(if (= (glider :id) 1) 
+            ;   (point-light (tile-color 0) (tile-color 1) (tile-color 2)
+            ;                ;0 0 0))
+            ;                (pos 0) (pos 1) (pos 2)))
 
-            ;(point-light 255 255 255 ;(col 0) (col 1) (col 2)
-            ;           (pos 0) (pos 1) (- (pos 2) 0)))
-            (push-matrix)
-            (rotate-x (* frame (+ (glider :id) 20) 0.00351471))
-            (rotate-y (* frame (+ (glider :id) 20) 0.00352363))
-            ;(rotate-z (* frame (glider :id) 0.0035123))
-            (box 0.01 0.01 0.01)
-            (pop-matrix)
-                          ))))))
+              ;(point-light 255 255 255 ;(col 0) (col 1) (col 2)
+              ;           (pos 0) (pos 1) (- (pos 2) 0)))
+              (push-matrix)
+              (rotate-x (* frame (+ (glider :id) 20) 0.00351471))
+              (rotate-y (* frame (+ (glider :id) 20) 0.00352363))
+              ;(rotate-z (* frame (glider :id) 0.0035123))
+              (box 0.01 0.01 0.01)
+              (pop-matrix))))))))
      
 
 ; _______________________________________________________________________
@@ -278,6 +278,7 @@
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (count (filter #(= \1 %) code))
         col (get-tile-color code); (rd-face-colors (mod num-connected 12))
+        col2 (get-group-color code)
         fill-col (rd-face-colors 
                    (connecting-faces (mod num-connected 12)))
         ;col-idx (mod (Integer/parseInt code 2) 12)
@@ -309,12 +310,17 @@
         ;(sphere 0.125)
         (no-fill))
         )
-    ;(if (> num-connected 2)
-    ;  (fill 255 128 64 128))
-    
-    ;(if (> num-connected 2)
-    ;  (begin-shape))
+
     (stroke-weight 8)
+    (stroke (col2 0) (col2 1) (col2 2) 192)
+    (doseq [endpoints endpoint-pairs]
+      ;(push-matrix)
+      ;(scale 0.01)
+      ;(box 1 1 1)
+      ;(pop-matrix)
+      (draw-curve (endpoints 0) (endpoints 1)))
+    
+    (stroke-weight 4)
     (stroke (col 0) (col 1) (col 2) 192)
     (doseq [endpoints endpoint-pairs]
       ;(push-matrix)
@@ -322,26 +328,16 @@
       ;(box 1 1 1)
       ;(pop-matrix)
       (draw-curve (endpoints 0) (endpoints 1)))
-    
-    (stroke-weight 2)
-    (stroke 255 255 255 192)
-    (doseq [endpoints endpoint-pairs]
-      ;(push-matrix)
-      ;(scale 0.01)
-      ;(box 1 1 1)
-      ;(pop-matrix)
-      (draw-curve (endpoints 0) (endpoints 1)))
-
-    ;(if (> num-connected 2)
-    ;  (end-shape))
-
       ))
-    ;))
+
 ; _______________________________________________________________________
 
 
 (defn draw-normalized-facecodes [frame]
-  (fill 0 0 0 240)
+  (fill 0 0 0 192)
+  (stroke 128 128 128 128)
+  (stroke-weight 1)
+  (scale 5)
   (with-translation [0 0 -5]
     (box 200 130 1))
   
@@ -358,8 +354,6 @@
       ;(rotate-y (+ (* x y) (* frame 0.051471)))
       ;(rotate-x (+ (* x y) (* frame 0.041471)))
 
-
-
       (stroke-weight 2)
       (stroke 255 255 255 192)
       (no-fill)
@@ -375,17 +369,11 @@
 
 
 (defn draw-tiling []
-  ;(no-stroke)
-
   (doseq [tile (keys @tiles)]
     (let [pos tile]
       (with-translation pos 
-        ;(push-matrix)
         (scale 0.5)
-        ;(stroke-weight 2)
-        ;(stroke 0 0 0  192)
         (stroke-weight 8)
-        ;(stroke 150 150 255 64)
         (stroke 0 0 0 64)
         (no-fill) 
         (draw-facecode (@tiles pos))
@@ -397,6 +385,5 @@
         
         (stroke 0 255 0 32)
         ;(draw-todo)
-        ;(pop-matrix)
       ))))
 

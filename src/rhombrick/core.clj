@@ -36,6 +36,8 @@
 (def draw-facelist? (atom false))
 (def draw-editor? (atom false))
 (def draw-gliders? (atom false))  
+
+
 ; _______________________________________________________________________
 
 
@@ -60,6 +62,8 @@
     ;(reset! rhomb-tex (load-image "cave_texture_01-512x512.png"))
     (reset! rhomb-tex (load-image "testpattern4po6.png"))
     ;(reset! rhomb-tex (load-image "gradient.jpg"))
+    ;(reset! rhomb-tex (load-image "map-15Bsubset.jpg"))
+
     (println "texture:" @rhomb-tex)
     (texture-mode :normalized)
       
@@ -272,6 +276,15 @@
   (background 0 0 0)
   ;(lights)
 
+
+
+  (push-matrix)
+  ;(ortho)
+  ;(with-translation [(/ (width) 2) (/ (height) 2)]
+  ;(draw-normalized-facecodes (frame-count))
+  ;(pop-matrix)
+
+
  ;attach cam to glider 1, lookat glider 2
  ; (if (> (count @gliders) 1)
  ;   (let [cam-pos (vec3-scale (get-glider-pos 1) @model-scale)
@@ -301,11 +314,11 @@
                                                     (* cl-d 0.15)))]
         (reset! camera-lookat new-camera-lookat)    
         (reset! camera-pos newpos)
-        (camera (newpos 0) (newpos 1) (- (newpos 2) 20)
+        (camera (newpos 0) (newpos 1) (+ (newpos 2) 10)
                 (new-camera-lookat 0)
                 (new-camera-lookat 1)
                 (new-camera-lookat 2)
-                0 0 1)))
+                0 0 -1)))
   ; camera follows paths
   (= @camera-mode 1)
     (do
@@ -351,10 +364,10 @@
     ;(rotate-y (* (frame-count) 0.0035236))
     ;(rotate-z (* @frame 0.0035123))
 
-  (stroke 0 255 255 128)
-  (stroke-weight 1)
-  (no-fill)
-  (box 10 10 10)
+    (stroke 0 255 255 128)
+    (stroke-weight 1)
+    (no-fill)
+    (box 10 10 10)
  
 ;  (when @draw-facelist?
 ;    (if (= 0 (mod (frame-count) 300))
@@ -396,34 +409,35 @@
         (draw-neighbours selected-tile)
         (draw-curve-boundary-points selected-tile)
         (draw-selected-tile selected-tile)
-        (point-light (tile-color 0) (tile-color 1) (tile-color 2)
-                     (selected-tile 0) (selected-tile 1) (selected-tile 2))
+        ;(point-light (tile-color 0) (tile-color 1) (tile-color 2)
+        ;             (selected-tile 0) (selected-tile 1) (selected-tile 2))
         ))
-  
-
     (pop-matrix)
-    (if @draw-editor?  
-      (do
-      (no-fill)
-      (stroke-weight 1)
-      (stroke 255 255 255 255)
-      (draw-normalized-facecodes (frame-count))))
-
+;    (if @draw-editor?  
+;      (do
+;      (no-fill)
+;      (stroke-weight 1)
+;      (stroke 255 255 255 255)
+;      (draw-normalized-facecodes (frame-count))))
 
   )
-;  (if (> (count @tiles) max-tiles)
-;    (do
-;      (delete-fully-connected-tiles)
-;      (delete-nonconnected-tiles)
 ;      ;(dotimes [n 1]
 ;      ;  (if (= (mod @frame 1) 0)
 ;      ;    (delete-random-tile)))
 ;      ))
 
-;   (pop-matrix)
-;  (ortho)
-  ;(translate [700 400 0])
-  ;(draw-info)
+  (pop-matrix)
+
+  (camera)
+  (draw-info)
+    
+  (when @draw-editor?
+    (do
+      (hint :disable-depth-test)
+      (translate [(/ (width) 2) (/ (height) 2) 0])
+      (draw-normalized-facecodes (frame-count))
+       (hint :enable-depth-test)
+      ))
 
 
   (reset! last-render-time
