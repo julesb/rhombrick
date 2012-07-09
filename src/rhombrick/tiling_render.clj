@@ -26,12 +26,24 @@
 
 ; _______________________________________________________________________
 
-(defn get-tile-color [code]
+(defn get-tile-color-old [code]
   (if (not= nil code)
     (let [n (. Integer parseInt code 2)
           c (mod n 12)]
       (rd-face-colors c))
     [255 0 0]))
+
+(defn get-tile-color [code]
+  (if (not= nil code)
+    (let [rc (rotations code)
+          bvals (map #(. Integer parseInt % 2) rc)
+          n (first (sort bvals))
+          c (mod n 12)]
+      (rd-face-colors c))
+    [255 0 0]))
+          
+      
+
 
 
 (defn get-group-color [code]
@@ -245,6 +257,7 @@
     ;(fill 255 0 0 128)
     ;(sphere 0.25)
     (stroke-weight 4)
+    (stroke 255 255 192 192)
     (let [tile-color (get-group-color (@tiles ((get-glider 1) :current-tile)))]
     (doseq [glider @gliders]
       (let [pos (get-glider-pos (glider :id))
@@ -264,10 +277,12 @@
               ;(point-light 255 255 255 ;(col 0) (col 1) (col 2)
               ;           (pos 0) (pos 1) (- (pos 2) 0)))
               (push-matrix)
+              (scale 0.01)
               (rotate-x (* frame (+ (glider :id) 20) 0.00351471))
               (rotate-y (* frame (+ (glider :id) 20) 0.00352363))
               ;(rotate-z (* frame (glider :id) 0.0035123))
-              (box 0.01 0.01 0.01)
+              (draw-faces rd-verts rd-faces nil)
+              ;(box 0.01 0.01 0.01)
               (pop-matrix))))))))
      
 
@@ -334,7 +349,7 @@
 
 
 (defn draw-normalized-facecodes [frame]
-  (fill 0 0 0 192)
+  (fill 0 0 0 128)
   (stroke 128 128 128 128)
   (stroke-weight 1)
   (scale 5)
@@ -350,7 +365,7 @@
       (push-matrix)
       (translate [x y z])
       (rotate-y (* frame 0.051471))
-      ;(rotate-x (* frame 0.041471))
+      (rotate-x (* frame 0.041471))
       ;(rotate-y (+ (* x y) (* frame 0.051471)))
       ;(rotate-x (+ (* x y) (* frame 0.041471)))
 

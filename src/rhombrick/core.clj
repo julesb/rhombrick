@@ -32,6 +32,7 @@
 (def last-mouse-delta (atom [0 0]))
 
 (def my-applet (atom nil))
+(def frame (atom nil))
 
 (def draw-facelist? (atom false))
 (def draw-editor? (atom false))
@@ -165,10 +166,10 @@
    \c #(do
          (let [m (mod (inc @camera-mode) camera-num-modes)]
          (reset! camera-mode m)
-         ;(if (= @camera-mode 2)
-         ;  (no-cursor)
-         ;  (cursor)))
-        ))
+         (if (= @camera-mode 2)
+           (no-cursor)
+           (cursor)))
+        )
     \f #(do
          (swap! draw-facelist? not)
          (when @draw-facelist?
@@ -181,8 +182,13 @@
           (swap! draw-gliders? not)
           (if draw-gliders?
             (init-gliders num-gliders)))
-
-
+    \T #(do 
+         (swap! max-tiles inc)
+         (println "max tiles:" @max-tiles))
+    \t #(do 
+         (swap! max-tiles dec)
+         (println "max tiles:" @max-tiles))
+    
    })
 
 (def key-movement-map
@@ -376,7 +382,6 @@
     ;(draw-face-list)
     
     (stroke 255 255 255 192)
-    (stroke-weight 1)
     
     (when @draw-gliders?
       (draw-gliders (frame-count)))
@@ -389,14 +394,6 @@
       (draw-face-list-textured))
 
     (draw-tiling)
-
-    ;(no-fill)
-    ;(stroke-weight 1)
-    ;(draw-todo)
-
-    (fill 192 192 192 255)
-    ;(if (seq @todo)
-    ;  (draw-todo-head))
 
     (if (seq @empty-positions)
       (draw-empty))
@@ -413,31 +410,22 @@
         ;             (selected-tile 0) (selected-tile 1) (selected-tile 2))
         ))
     (pop-matrix)
-;    (if @draw-editor?  
-;      (do
-;      (no-fill)
-;      (stroke-weight 1)
-;      (stroke 255 255 255 255)
-;      (draw-normalized-facecodes (frame-count))))
-
   )
-;      ;(dotimes [n 1]
-;      ;  (if (= (mod @frame 1) 0)
-;      ;    (delete-random-tile)))
-;      ))
 
   (pop-matrix)
-
+  
+  ; 2d hud stuff
+  (hint :disable-depth-test)
   (camera)
+
   (draw-info)
     
   (when @draw-editor?
-    (do
-      (hint :disable-depth-test)
       (translate [(/ (width) 2) (/ (height) 2) 0])
       (draw-normalized-facecodes (frame-count))
-       (hint :enable-depth-test)
-      ))
+  )
+
+  (hint :enable-depth-test)
 
 
   (reset! last-render-time
@@ -465,6 +453,7 @@
   :key-released key-released
   :mouse-moved mouse-moved)
 
+;(reset! frame ((current-applet) meta :target-obj deref))
 
 ;(sketch-start rhombrick)
 

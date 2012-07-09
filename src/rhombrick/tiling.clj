@@ -6,19 +6,22 @@
 
 ;(use 'ordered.map)
 
-(def max-tiles 200)
+(def max-tiles (atom 200))
 ;(def tiles (atom {}))
 (def tiles (atom (ordered-map)))
 
 
 (def working-tileset (atom #{
                       ;"100000000000"
-                      "100000100000" 
+                      ;"100000100000" 
                       ;"111000000000"
                       ;"000111000000"
                       ;"000101010000"
                       ;"100010001000"
                       ;"111111111111"
+
+                      ;"000001000011"
+                      "000001001001"
                       }))
 
 (def facecode-compatible #{
@@ -114,9 +117,9 @@
 
 (defn random-tileset []
   (reset! working-tileset #{})
-  (doseq [code (get-n-rand-tilecode-from-group 0 1) ]
+  (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 2 2) ]
+  (doseq [code (get-n-rand-tilecode-from-group 0 2) ]
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
       (swap! working-tileset conj code))
@@ -126,9 +129,14 @@
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 0 8) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 12) ]
+  (doseq [code (get-n-rand-tilecode-from-group 0 12) ]
       (swap! working-tileset conj code))
+  
+; (swap! working-tileset conj "100000100000") 
+  ;(swap! working-tileset conj (first (get-n-rand-tilecode 1))) 
+
   (println "working tileset: " @working-tileset)
+
   )
 
 
@@ -331,7 +339,7 @@
 (defn add-to-empty-positions [pos]
   (if (< (+ (count @empty-positions)
             (count @tiles))
-         max-tiles)
+         @max-tiles)
     (swap! empty-positions conj pos)))
 
 
@@ -634,19 +642,19 @@
       (update-empty-positions)
       (println "| tiles:" num-tiles 
                "| backtracked:" n)
-      (init-dead-loci)
+      ;(init-dead-loci)
       ;(build-face-list)
       )))
     
 
 (defn make-backtracking-tiling-iteration []
-  (when (and (< (count @tiles) max-tiles)
+  (when (and (< (count @tiles) @max-tiles)
              (> (count @empty-positions) 0))
     (let [positions (choose-positions)]
       (if (> (count positions) 0)
         (let [assemblage-center (reduce vec3-add (keys @tiles))
-        ;      new-pos (find-closest-to-point positions assemblage-center)
-              new-pos (find-closest-to-center positions)
+              new-pos (find-closest-to-point positions assemblage-center)
+        ;      new-pos (find-closest-to-center positions)
               new-code (choose-tilecode-old new-pos @working-tileset)]
           (if (not= new-code nil)
             (do

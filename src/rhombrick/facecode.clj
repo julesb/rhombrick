@@ -11,9 +11,9 @@
 ; on the neighbouring block is 9. This essentially returns the index
 ; of the opposite face.
 
-(def connecting-faces [9 10 11 6 7 8 3 4 5 0 1 2])
+(def connecting-faces-orig [9 10 11 6 7 8 3 4 5 0 1 2])
 
-
+ (def connecting-faces [6 7 8 9 10 11 0 1 2 3 4 5])
 
 
 ; for testing

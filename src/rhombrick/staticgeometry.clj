@@ -68,7 +68,7 @@
                   [255   0 128] ;  8 pink
                   ])
 
-(def rd-neighbour-offsets [
+(def rd-neighbour-offsets-orig [
                        [ 1 -1  0]
                        [ 1  0  1]
                        [ 1  1  0]
@@ -82,7 +82,7 @@
                        [-1  0 -1]
                        [-1 -1  0]])
 
-(def rd-neighbour-offsets-wip [
+(def rd-neighbour-offsets [
                        [ 1 -1  0]
                        [ 1  0  1]
                        [ 1  1  0]
@@ -109,7 +109,7 @@
 ; faces of said polyhedron and are also used to 
 ; calculate face normals.
 
-(def co-verts [
+(def co-verts-orig [
                [ 1 -1  0] ;  0 red
                [ 1  0  1] ;  1 orange
                [ 1  1  0] ;  2 yellow
@@ -124,7 +124,7 @@
                [-1 -1  0] ;  8 dark yellow
                ])
 
-(def co-verts-wip [
+(def co-verts [
                        [ 1 -1  0]
                        [ 1  0  1]
                        [ 1  1  0]
