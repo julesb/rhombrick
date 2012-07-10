@@ -119,7 +119,7 @@
   (reset! working-tileset #{})
   (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 0 2) ]
+  (doseq [code (get-n-rand-tilecode-from-group 1 2) ]
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
       (swap! working-tileset conj code))
@@ -129,7 +129,7 @@
       (swap! working-tileset conj code))
   (doseq [code (get-n-rand-tilecode-from-group 0 8) ]
       (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 0 12) ]
+  (doseq [code (get-n-rand-tilecode-from-group 1 12) ]
       (swap! working-tileset conj code))
   
 ; (swap! working-tileset conj "100000100000") 

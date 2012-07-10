@@ -298,7 +298,7 @@
                    (connecting-faces (mod num-connected 12)))
         ;col-idx (mod (Integer/parseInt code 2) 12)
         ]
-
+    (push-style)
     (if (= code nil)
       (do 
         (fill 255 32 32 128)
@@ -343,6 +343,64 @@
       ;(box 1 1 1)
       ;(pop-matrix)
       (draw-curve (endpoints 0) (endpoints 1)))
+    (pop-style)
+      ))
+
+(defn draw-facecode-lite [code]
+  (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
+        num-connected (count (filter #(= \1 %) code))
+        col (get-tile-color code); (rd-face-colors (mod num-connected 12))
+        col2 (get-group-color code)
+        fill-col (rd-face-colors 
+                   (connecting-faces (mod num-connected 12)))
+        ;col-idx (mod (Integer/parseInt code 2) 12)
+        ]
+    (push-style)
+    (if (= code nil)
+      (do 
+        (fill 255 32 32 128)
+        ;(no-fill)
+        (stroke 255 0 0 192)
+        (push-matrix)
+        (scale 0.05)
+        (box 1 1 1)
+        ;(draw-faces rd-verts rd-faces nil)
+        (pop-matrix)
+        (no-fill)))
+     
+    (stroke (col 0) (col 1) (col 2) 128)
+    ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
+    ;(stroke 150 150 255 128)
+    
+    (if (= num-connected 1)
+      (let [p (co-verts (first (get-connected-idxs code)))]
+        (line 0 0 0 (p 0) (p 1) (p 2))
+        
+        ;(no-stroke)
+        (fill 255 128 128 128)
+        (box 0.05125 0.05125 0.05125)
+        ;(sphere 0.125)
+        (no-fill))
+        )
+
+    (stroke-weight 4)
+    (stroke (col2 0) (col2 1) (col2 2) 192)
+    (doseq [endpoints endpoint-pairs]
+      ;(push-matrix)
+      ;(scale 0.01)
+      ;(box 1 1 1)
+      ;(pop-matrix)
+      (draw-curve (endpoints 0) (endpoints 1)))
+    
+    (stroke-weight 2)
+    (stroke (col 0) (col 1) (col 2) 192)
+    (doseq [endpoints endpoint-pairs]
+      ;(push-matrix)
+      ;(scale 0.01)
+      ;(box 1 1 1)
+      ;(pop-matrix)
+      (draw-curve (endpoints 0) (endpoints 1)))
+    (pop-style)
       ))
 
 ; _______________________________________________________________________

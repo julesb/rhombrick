@@ -8,7 +8,8 @@
         [rhombrick.vector]
         [rhombrick.glider]
         [rhombrick.camera]
-        
+        [rhombrick.button]
+        [rhombrick.editor]
         ;[overtone.osc]
         )
   (:gen-class))
@@ -242,10 +243,21 @@
         delta [(- (mouse-x) (@mousewarp-pos 0))
                (- (mouse-y) (@mousewarp-pos 1)) 0]]
     (reset! last-mouse-delta (vec3-scale delta 0.01))
-    (reset! (state :mouse-position) [x y])))
+    (reset! (state :mouse-position) [x y])
+    (when editor-visible?
+      (update-ui-state :mouse-x (mouse-x))
+      (update-ui-state :mouse-y (mouse-y)))
+    ))
 
 
+(defn mouse-pressed []
+  (println "mouse-pressed")
+  (update-ui-state :mouse-down true))
 
+(defn mouse-released []
+  (println "mouse-released")
+  (update-ui-state :mouse-down false))
+  
 ; _______________________________________________________________________
 
 
@@ -299,52 +311,51 @@
  ;             (cam-lookat 0) (cam-lookat 1) (cam-lookat 2)
  ;             0 0 1)))
    
-(cond
-  ; rubber band camera to glider
-  (= @camera-mode 0)
-    (do
-      (let [g (vec3-scale (get-glider-pos 1) @model-scale)
-            d  (dist (@camera-pos 0)
-                     (@camera-pos 1)
-                     (@camera-pos 2)
-                     (g 0) (g 1) (g 2))
-            dir (vec3-normalize (vec3-sub g @camera-pos))
-            newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.030)))
-            cl-d (dist (@camera-lookat 0)
-                       (@camera-lookat 1)
-                       (@camera-lookat 2)
-                     (g 0) (g 1) (g 2))
-            cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
-            new-camera-lookat (vec3-add @camera-lookat 
-                                        (vec3-scale cl-dir
-                                                    (* cl-d 0.15)))]
-        (reset! camera-lookat new-camera-lookat)    
-        (reset! camera-pos newpos)
-        (camera (newpos 0) (newpos 1) (+ (newpos 2) 10)
-                (new-camera-lookat 0)
-                (new-camera-lookat 1)
-                (new-camera-lookat 2)
-                0 0 -1)))
-  ; camera follows paths
-  (= @camera-mode 1)
-    (do
-      (if (> (count @gliders) 1)
-        (let [cam-pos (vec3-scale (get-glider-pos 1) @model-scale)
-              cam-lookat (vec3-scale (get-glider-nextpos 1) @model-scale) ]
-          (camera (cam-pos 0) (cam-pos 1) (- (cam-pos 2) 1)
-                  (cam-lookat 0) (cam-lookat 1) (- (cam-lookat 2) 1)
-                  0 0 1))))
-  ; mouse/keyboard camera control
-  (= @camera-mode 2)
-    (do
-      (let [md @last-mouse-delta ]
-        ;(println "mouse delta: " md)
-        (do-camera-transform @camera-pos
-                             (* 1.0 (md 1))
-                             (* -1.0 (md 0)))
-        (reset! last-mouse-delta (mouse-delta 0.0001)))
-      (.mouseMove robot (/ (width) 2) (/ (height) 2)))
-
+  (cond
+    (= @camera-mode 0)
+    ; rubber band camera to glider
+      (do
+        (let [g (vec3-scale (get-glider-pos 1) @model-scale)
+              d (dist (@camera-pos 0)
+                      (@camera-pos 1)
+                      (@camera-pos 2)
+                      (g 0) (g 1) (g 2))
+              dir (vec3-normalize (vec3-sub g @camera-pos))
+              newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.030)))
+              cl-d (dist (@camera-lookat 0)
+                         (@camera-lookat 1)
+                         (@camera-lookat 2)
+                       (g 0) (g 1) (g 2))
+              cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
+              new-camera-lookat (vec3-add @camera-lookat 
+                                          (vec3-scale cl-dir
+                                                      (* cl-d 0.15)))]
+          (reset! camera-lookat new-camera-lookat)    
+          (reset! camera-pos newpos)
+          (camera (newpos 0) (newpos 1) (+ (newpos 2) 10)
+                  (new-camera-lookat 0)
+                  (new-camera-lookat 1)
+                  (new-camera-lookat 2)
+                  0 0 -1)))
+    (= @camera-mode 1)
+    ; camera follows paths
+      (do
+        (if (> (count @gliders) 1)
+          (let [cam-pos (vec3-scale (get-glider-pos 1) @model-scale)
+                cam-lookat (vec3-scale (get-glider-nextpos 1) @model-scale)]
+            (camera (cam-pos 0) (cam-pos 1) (- (cam-pos 2) 1)
+                    (cam-lookat 0) (cam-lookat 1) (- (cam-lookat 2) 1)
+                    0 0 1))))
+    (= @camera-mode 2)
+    ; mouse/keyboard camera control
+      (do
+        (let [md @last-mouse-delta ]
+          ;(println "mouse delta: " md)
+          (do-camera-transform @camera-pos
+                               (* 1.0 (md 1))
+                               (* -1.0 (md 0)))
+          (reset! last-mouse-delta (mouse-delta 0.0001)))
+        (.mouseMove robot (/ (width) 2) (/ (height) 2)))
   )
 
   (perspective (radians @camera-fov) 
@@ -417,12 +428,18 @@
   ; 2d hud stuff
   (hint :disable-depth-test)
   (camera)
-
+  ;(ortho)
   (draw-info)
-    
+   
   (when @draw-editor?
-      (translate [(/ (width) 2) (/ (height) 2) 0])
-      (draw-normalized-facecodes (frame-count))
+    (draw-groups)
+    ;(draw-group-buttons [50 50] 
+    ;                    (@normalised-facecodes-grouped 6)
+    ;                    (frame-count))
+    ;(draw-buttons [50 50] (frame-count))
+  
+      ;(translate [(/ (width) 2) (/ (height) 2) 0])
+      ;(draw-normalized-facecodes (frame-count))
   )
 
   (hint :enable-depth-test)
@@ -451,7 +468,9 @@
   :key-typed key-typed
   :key-pressed key-pressed
   :key-released key-released
-  :mouse-moved mouse-moved)
+  :mouse-moved mouse-moved
+  :mouse-pressed mouse-pressed
+  :mouse-released mouse-released)
 
 ;(reset! frame ((current-applet) meta :target-obj deref))
 

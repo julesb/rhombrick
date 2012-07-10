@@ -1,12 +1,22 @@
 (ns rhombrick.button
-  (:use [quil.core]))
+  (:use [quil.core]
+        [rhombrick.tiling-render]))
 
-(def current-tileset (atom #{}))
 
-(def editor-visible? (atom false))
-(def button-width 64)
-(def button-height 64)
+(def button-width 32)
+(def button-height 32)
 (def button-space 8)
+
+(def button-fill [0 0 0 128])
+(def button-stroke [0 0 0 255])
+
+(def button-fill-hot [128 128 255 192])
+(def button-stroke-hot [0 0 192 192])
+
+(def button-fill-active [255 255 0 192])
+(def button-stroke-active [255 255 255 192])
+
+
 
 (def ui-state (atom {:mouse-x 0
                      :mouse-y 0
@@ -46,21 +56,6 @@
 ; _______________________________________________________________________
 
 
-(defn add-to-current-tileset [code]
-  (swap! current-tileset conj code))
-
-(defn remove-from-current-tileset [code]
-  (swap! current-tileset disj code))
-
-(defn init-editor []
-  (reset! current-tileset #{}))
-
-(defn set-current-tileset [tileset]
-  (reset! current-tileset tileset))
-
-; _______________________________________________________________________
-
-
 (defn button [x y code]
   (if (region-hit x y button-width button-height)
     (do
@@ -75,8 +70,10 @@
       (if (= (@ui-state :active-item) [x y])
         (do
           ; hot and active
-          (stroke 255 255 255 192)
-          (fill 255 128 128 255))
+          (apply stroke button-stroke-active)
+          (apply fill button-fill-active))
+          ;(stroke 255 255 255 192)
+          ;(fill 255 128 128 255))
         (do
           ; just hot
           (stroke 255 255 255 192)
@@ -84,33 +81,17 @@
       (do
         ; not hot, may be active
         (stroke 255 255 255 192)
-        (fill 128 128 128 128)))
+        (fill 0 0 0 192)))
 
     (rect x y button-width button-height)
 
-    (if (and
-          (not (@ui-state :mouse-down))
-          (= (@ui-state :hot-item) [x y])
-          (= (@ui-state :active-item) [x y]))
+    (if
+      (and
+        (not (@ui-state :mouse-down))
+        (= (@ui-state :hot-item) [x y])
+        (= (@ui-state :active-item) [x y]))
       true
       false))
 
 
-(defn draw-buttons [pos]
-  (stroke-weight 1)
-  (ui-prepare)
-  (doseq [xi (range 10)
-          yi (range 10)]
-    (let [x (+ (pos 0)
-               (* xi button-width)
-               (* xi button-space))
-          y (+ (pos 1)
-               (* yi button-height)
-               (* yi button-space))]
-    (if (button x y "111111111111")
-      (println @ui-state))))
-  (ui-finish))
 
-
-(defn draw-tile-groups []
-  )
