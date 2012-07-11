@@ -41,41 +41,6 @@
 
 ; _______________________________________________________________________
 
-;(def todo (atom (clojure.lang.PersistentQueue/EMPTY)))
-;
-;(defn init-todo []
-;  (do
-;    (reset! todo (clojure.lang.PersistentQueue/EMPTY))
-;    (swap! todo conj [0 0 0])))
-;
-;(defn pop-todo []
-;  (if (seq @todo)
-;    (let [top (last @todo)]
-;      (swap! todo pop )
-;      top)))
-;
-;(defn dequeue-todo []
-;  (if (seq @todo)
-;    (let [top (peek @todo)]
-;      (swap! todo pop)
-;      top)))
-;
-;(defn in-todo? [pos]
-;  (boolean (some #{pos} @todo)))
-;
-;(defn push-todo [pos]
-;  (if (not (in-todo? pos))
-;    (swap! todo conj pos)))
-;
-;; vvv slow vvv
-;(defn delete-todo-item [pos]
-;  (reset! todo 
-;          (into (clojure.lang.PersistentQueue/EMPTY)
-;                (filter #(not= % pos) @todo))))
-;
-;
-
-; _______________________________________________________________________
 
 (defn get-n-rand-tilecode [n]
   (vec 
@@ -176,12 +141,6 @@
 
         ))
 
-;(defn auto-seed-todo []
-;  (if (= (count @todo) 0)
-;    (do
-;      (init-tiler)
-;      ;(random-tileset)
-;      )))
 ; _______________________________________________________________________
 
 (defn get-neighbour [pos face]
@@ -220,37 +179,6 @@
 
 (defn has-neighbours? [pos]
   (not (zero? (neighbour-count pos))))
-
-
-;(defn delete-nonconnected-tiles []
-;  (doseq [tile (keys @tiles)]
-;    ;(if (not (has-neighbours? tile))
-;    (if (< (neighbour-count tile) @auto-delete-max-lonlieness)
-;      (delete-tile tile))))
-
-
-;(defn delete-fully-connected-tiles []
-;  (let [fc-tiles (filter #(= (neighbour-count %1) 12) (keys @tiles))]
-;    (doseq [tile fc-tiles]
-;      (delete-tile tile))))
-
-
-;(defn push-neighbours-todo [pos]
-;  (dotimes [face 12]
-;    (let [neighbour (get-neighbour pos face)]
-;      (if (tileable? neighbour)
-;          (push-todo neighbour)))))
-
-
-;(defn push-connected-neighbours-todo [pos]
-;  (doseq [idx (get-connected-idxs (@tiles pos))]
-;    (let [neighbour (get-neighbour pos idx)]
-;      (if (tileable? neighbour)
-;          (push-todo neighbour)))))
-;
-
-
-
 
 
 (defn get-neighbour-abutting-face [pos face]
@@ -485,31 +413,10 @@
 
 (defn init-tiler [tileset]
   (reset! tiles {})
-  ;(init-todo)
+  (reset! face-list #{})
   (init-empty-positions)
   (init-dead-loci)
-  (seed-tiler tileset)
-  (reset! face-list #{}))
-
-
-; _______________________________________________________________________
-
-
-
-; this does facecode constrained tiling
-;(defn make-tiling-iteration []
-;  (if (and
-;        (seq @todo)
-;        (< (+ (count @todo) (count @tiles)) max-tiles ))
-;    (let [new-pos (dequeue-todo)
-;          new-code (choose-tilecode new-pos @working-tileset)]
-;      (if (and (not= new-code "xxxxxxxxxxxx")
-;               (= (count new-code) 12))
-;        (do
-;          (make-tile new-pos new-code)
-;          (add-tile-to-facelist new-pos)
-;          (push-connected-neighbours-todo new-pos))
-;        (make-tile new-pos "xxxxxxxxxxxx")))))
+  (seed-tiler tileset))
 
 
 ; _______________________________________________________________________

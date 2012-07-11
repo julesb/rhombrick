@@ -269,52 +269,20 @@
   ;(println "applet:" (.getLocationOnScreen @my-applet))
   ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
-  ;(let [frame-start-time (millis)]
   (do-movement-keys) 
-  ;(make-tiling-iteration)
+
   (when (= 0 (mod (frame-count) 1))
     (make-backtracking-tiling-iteration @current-tileset))
-
-  ;(auto-seed-todo)
-;  (if (= (count @todo) 0)
-;    (do
-;      (init-tiler)
-;      (make-tiling-iteration)
-;      (init-gliders num-gliders)
-;      ;(random-tileset)
-;      ))
-
-;  (if (> (count @tiles) max-tiles)
-;    (do
-;      (init-tiler)
-;      (make-tiling-iteration)
-;      (init-gliders num-gliders)
-;    ))
 
   (when @draw-gliders?   
     (update-gliders))
     
   ;(background 32 32 192)
   (background 0 0 0)
-  ;(lights)
-
 
 
   (push-matrix)
-  ;(ortho)
-  ;(with-translation [(/ (width) 2) (/ (height) 2)]
-  ;(draw-normalized-facecodes (frame-count))
-  ;(pop-matrix)
 
-
- ;attach cam to glider 1, lookat glider 2
- ; (if (> (count @gliders) 1)
- ;   (let [cam-pos (vec3-scale (get-glider-pos 1) @model-scale)
- ;         cam-lookat (vec3-scale (get-glider-pos 2) @model-scale) ]
- ;     (camera (cam-pos 0) (cam-pos 1) (- (cam-pos 2) 10)
- ;             (cam-lookat 0) (cam-lookat 1) (cam-lookat 2)
- ;             0 0 1)))
-   
   (cond
     (= @camera-mode 0)
     ; rubber band camera to glider
@@ -368,15 +336,6 @@
                  @camera-aspect-ratio
                  @camera-near-clip
                  @camera-far-clip)
-  ;(lights)  
-  ;(light-falloff 0.5 0.0 0.0) 
-  ;(light-specular 255 0 0)
-
-;  (stroke 0 255 255 128)
-;  (stroke-weight 1)
-;  (no-fill)
-;  (box 2000 2000 2000)
- 
 
   (let [[mx my] @(state :mouse-position)]
     (push-matrix)
@@ -391,14 +350,6 @@
     (stroke-weight 1)
     (no-fill)
     (box 10 10 10)
- 
-;  (when @draw-facelist?
-;    (if (= 0 (mod (frame-count) 300))
-;      (build-face-list))) 
-
-    ;(draw-face-list)
-    
-    (stroke 255 255 255 192)
     
     (when @draw-gliders?
       (draw-gliders (frame-count)))
@@ -438,15 +389,7 @@
   ;(draw-info)
    
   (when @draw-editor?
-    (draw-groups)
-    ;(draw-group-buttons [50 50] 
-    ;                    (@normalised-facecodes-grouped 6)
-    ;                    (frame-count))
-    ;(draw-buttons [50 50] (frame-count))
-  
-      ;(translate [(/ (width) 2) (/ (height) 2) 0])
-      ;(draw-normalized-facecodes (frame-count))
-  )
+    (draw-groups))
 
   (hint :enable-depth-test)
 
