@@ -300,7 +300,7 @@
           (get-neighbours pos)))
 
 
-(defn choose-tilecode-old [pos tileset]
+(defn choose-tilecode [pos tileset]
   (let [candidates (find-candidates pos tileset)]  
     (if (seq candidates)
       (nth candidates (rand-int (count candidates)))
@@ -317,15 +317,15 @@
 
 
 
-(defn choose-tilecode [pos tileset]
-  (let [candidates (find-candidates pos tileset)
-        candidates-filtered (filter #(> (count (get-connected-idxs %)) 1)
-                                    candidates)]  
-    (if (seq candidates-filtered)
-      (nth candidates-filtered (rand-int (count candidates-filtered)))
-      (if (seq candidates)
-        (nth candidates (rand-int (count candidates)))
-        "xxxxxxxxxxxx"))))
+;(defn choose-tilecode [pos tileset]
+;  (let [candidates (find-candidates pos tileset)
+;        candidates-filtered (filter #(> (count (get-connected-idxs %)) 1)
+;                                    candidates)]  
+;    (if (seq candidates-filtered)
+;      (nth candidates-filtered (rand-int (count candidates-filtered)))
+;      (if (seq candidates)
+;        (nth candidates (rand-int (count candidates)))
+;        "xxxxxxxxxxxx"))))
 ; _______________________________________________________________________
 
 
@@ -474,21 +474,21 @@
 ; _______________________________________________________________________
 
 
-(defn seed-tiler []
+(defn seed-tiler [tileset]
   (let [pos [0 0 0]
-        code (choose-tilecode pos @working-tileset)]
+        code (choose-tilecode pos tileset)]
     (make-tile pos code) 
     (push-connected-neighbours-to-empty-positions pos)))
 
 ; _______________________________________________________________________
 
 
-(defn init-tiler []
+(defn init-tiler [tileset]
   (reset! tiles {})
   ;(init-todo)
   (init-empty-positions)
   (init-dead-loci)
-  (seed-tiler)
+  (seed-tiler tileset)
   (reset! face-list #{}))
 
 
@@ -574,19 +574,19 @@
 
 
 ; returns a list of todo locations with 0 or 1 matching tiles
-(defn find-best-positions []
-  (filter #(< (count (find-candidates % @working-tileset)) 2)
+(defn find-best-positions [tileset]
+  (filter #(< (count (find-candidates % tileset)) 2)
           @empty-positions))
 
 ; returns a list of todo locations with any matching tiles
-(defn find-any-positions []
-  (filter #(> (count (find-candidates % @working-tileset)) 0)
+(defn find-any-positions [tileset]
+  (filter #(> (count (find-candidates % tileset)) 0)
           @empty-positions))
 
-(defn choose-positions []
-  (let [best (find-best-positions)]
+(defn choose-positions [tileset]
+  (let [best (find-best-positions tileset)]
     (if (= (count best) 0)
-      (find-any-positions)
+      (find-any-positions tileset)
       best)))
   
 ; _______________________________________________________________________
@@ -647,20 +647,21 @@
       )))
     
 
-(defn make-backtracking-tiling-iteration []
+(defn make-backtracking-tiling-iteration [tileset]
   (when (and (< (count @tiles) @max-tiles)
-             (> (count @empty-positions) 0))
-    (let [positions (choose-positions)]
+             (> (count @empty-positions) 0)
+             (> (count tileset) 0))
+    (let [positions (choose-positions tileset)]
       (if (> (count positions) 0)
         (let [assemblage-center (reduce vec3-add (keys @tiles))
               new-pos (find-closest-to-point positions assemblage-center)
         ;      new-pos (find-closest-to-center positions)
-              new-code (choose-tilecode-old new-pos @working-tileset)]
+              new-code (choose-tilecode new-pos tileset)]
           (if (not= new-code nil)
             (do
               (make-tile new-pos new-code)
               (let [untileable (find-untilable-neighbours new-pos
-                                                          @working-tileset)]
+                                                          tileset)]
                 (if (> (count untileable) 0)
                 ;(if (creates-untilable-region? new-pos)
                   (do

@@ -87,9 +87,9 @@
     (build-normalised-facecode-set)
     ;(make-cubic-tiling 10 10 10)
     ;(reset! tiles {})
-    (init-tiler)
+    (init-tiler @current-tileset)
     ;(make-tiling-iteration) ; needed so init-gliders works
-    (make-backtracking-tiling-iteration)
+    (make-backtracking-tiling-iteration @current-tileset)
     (init-gliders num-gliders)
     ;(println @gliders)
     ;(init-todo)
@@ -147,15 +147,15 @@
         (println "model-scale: " @model-scale))
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
-         (init-tiler)
+         (init-tiler @current-tileset)
          ;(make-tiling-iteration)
-         (make-backtracking-tiling-iteration)
+         (make-backtracking-tiling-iteration @current-tileset)
          (init-gliders num-gliders))
    \R #(do 
-         (init-tiler)
+         (init-tiler @current-tileset)
          (random-tileset)
          ;(make-tiling-iteration)
-         (make-backtracking-tiling-iteration)
+         (make-backtracking-tiling-iteration @current-tileset)
          (init-gliders num-gliders)
          )
    \- #(do 
@@ -178,6 +178,8 @@
          (println "draw facelist? " @draw-facelist?))
     \` #(do
          (swap! draw-editor? not)
+         (if @draw-editor?
+           (cursor))
          (println "draw editor? " @draw-editor?))
     \g #(do
           (swap! draw-gliders? not)
@@ -242,9 +244,11 @@
   (let [x (mouse-x) y (mouse-y)
         delta [(- (mouse-x) (@mousewarp-pos 0))
                (- (mouse-y) (@mousewarp-pos 1)) 0]]
-    (reset! last-mouse-delta (vec3-scale delta 0.01))
-    (reset! (state :mouse-position) [x y])
-    (when editor-visible?
+    (when (not @draw-editor?)
+      (reset! last-mouse-delta (vec3-scale delta 0.01))
+      (reset! (state :mouse-position) [x y]))
+    
+    (when @draw-editor?
       (update-ui-state :mouse-x (mouse-x))
       (update-ui-state :mouse-y (mouse-y)))
     ))
@@ -269,7 +273,7 @@
   (do-movement-keys) 
   ;(make-tiling-iteration)
   (when (= 0 (mod (frame-count) 1))
-    (make-backtracking-tiling-iteration))
+    (make-backtracking-tiling-iteration @current-tileset))
 
   ;(auto-seed-todo)
 ;  (if (= (count @todo) 0)
@@ -349,13 +353,15 @@
     (= @camera-mode 2)
     ; mouse/keyboard camera control
       (do
-        (let [md @last-mouse-delta ]
-          ;(println "mouse delta: " md)
-          (do-camera-transform @camera-pos
-                               (* 1.0 (md 1))
-                               (* -1.0 (md 0)))
-          (reset! last-mouse-delta (mouse-delta 0.0001)))
-        (.mouseMove robot (/ (width) 2) (/ (height) 2)))
+          (let [md @last-mouse-delta ]
+            ;(println "mouse delta: " md)
+            (do-camera-transform @camera-pos
+                                 (* 1.0 (md 1))
+                                 (* -1.0 (md 0)))
+            (if (not @draw-editor?)
+              (do
+                (reset! last-mouse-delta (mouse-delta 0.0001))
+                (.mouseMove robot (/ (width) 2) (/ (height) 2))))))
   )
 
   (perspective (radians @camera-fov) 
@@ -429,7 +435,7 @@
   (hint :disable-depth-test)
   (camera)
   ;(ortho)
-  (draw-info)
+  ;(draw-info)
    
   (when @draw-editor?
     (draw-groups)

@@ -75,10 +75,6 @@
             v3 (verts (vert-idx 3))
             col (if (seq colors) (colors i) 0)]
         
-        ;(no-fill)
-        ;(stroke 0 0 255 128)
-        ;(fill 0 0 0 32)
-        ;(no-stroke)
         (if (seq colors)
           (fill (/ (col 0) 3.0) (/ (col 1) 3.0) (/ (col 2) 3.0) 255 ))
         (begin-shape :quads)
@@ -87,6 +83,21 @@
         (vertex (v2 0) (v2 1) (v2 2))
         (vertex (v3 0) (v3 1) (v3 2))
         (end-shape))))
+
+(defn draw-faces-lite [verts faces col]
+  (apply stroke col)
+  (doseq [i (range (count faces))]
+    (let [vert-idx (faces i)
+          v0 (verts (vert-idx 0))
+          v1 (verts (vert-idx 1))
+          v2 (verts (vert-idx 2))
+          v3 (verts (vert-idx 3))]
+      (begin-shape :quads)
+      (vertex (v0 0) (v0 1) (v0 2))
+      (vertex (v1 0) (v1 1) (v1 2))
+      (vertex (v2 0) (v2 1) (v2 2))
+      (vertex (v3 0) (v3 1) (v3 2))
+      (end-shape))))
 
 ; _______________________________________________________________________
 
@@ -256,6 +267,7 @@
   (do
     ;(fill 255 0 0 128)
     ;(sphere 0.25)
+    (push-style)
     (stroke-weight 4)
     (stroke 255 255 192 192)
     (let [tile-color (get-group-color (@tiles ((get-glider 1) :current-tile)))]
@@ -283,7 +295,9 @@
               ;(rotate-z (* frame (glider :id) 0.0035123))
               (draw-faces rd-verts rd-faces nil)
               ;(box 0.01 0.01 0.01)
-              (pop-matrix))))))))
+              (pop-matrix))))))
+    (pop-style)
+    ))
      
 
 ; _______________________________________________________________________
@@ -375,24 +389,12 @@
     (if (= num-connected 1)
       (let [p (co-verts (first (get-connected-idxs code)))]
         (line 0 0 0 (p 0) (p 1) (p 2))
-        
-        ;(no-stroke)
         (fill 255 128 128 128)
         (box 0.05125 0.05125 0.05125)
-        ;(sphere 0.125)
         (no-fill))
         )
 
     (stroke-weight 4)
-    (stroke (col2 0) (col2 1) (col2 2) 192)
-    (doseq [endpoints endpoint-pairs]
-      ;(push-matrix)
-      ;(scale 0.01)
-      ;(box 1 1 1)
-      ;(pop-matrix)
-      (draw-curve (endpoints 0) (endpoints 1)))
-    
-    (stroke-weight 2)
     (stroke (col 0) (col 1) (col 2) 192)
     (doseq [endpoints endpoint-pairs]
       ;(push-matrix)
@@ -400,43 +402,52 @@
       ;(box 1 1 1)
       ;(pop-matrix)
       (draw-curve (endpoints 0) (endpoints 1)))
+    
+;    (stroke-weight 2)
+;    (stroke (col 0) (col 1) (col 2) 192)
+;    (doseq [endpoints endpoint-pairs]
+;      ;(push-matrix)
+;      ;(scale 0.01)
+;      ;(box 1 1 1)
+;      ;(pop-matrix)
+;      (draw-curve (endpoints 0) (endpoints 1)))
     (pop-style)
       ))
 
 ; _______________________________________________________________________
 
 
-(defn draw-normalized-facecodes [frame]
-  (fill 0 0 0 128)
-  (stroke 128 128 128 128)
-  (stroke-weight 1)
-  (scale 5)
-  (with-translation [0 0 -5]
-    (box 200 130 1))
-  
-  (doseq [i (range (count @normalised-facecodes-sorted))]
-    (let [x (* 5 (+ -15 (mod i 30)))
-          y (* 5 (+ -10 (/ i 20)))
-          z 0
-          code (nth @normalised-facecodes-sorted i)]
-      
-      (push-matrix)
-      (translate [x y z])
-      (rotate-y (* frame 0.051471))
-      (rotate-x (* frame 0.041471))
-      ;(rotate-y (+ (* x y) (* frame 0.051471)))
-      ;(rotate-x (+ (* x y) (* frame 0.041471)))
-
-      (stroke-weight 2)
-      (stroke 255 255 255 192)
-      (no-fill)
-      (draw-facecode code)
-      
-      (stroke-weight 1)
-      (stroke 128 128 128 64)
-      (no-fill)
-      (draw-faces rd-verts rd-faces nil)
-      (pop-matrix))))
+;(defn draw-normalized-facecodes [frame]
+;  (fill 0 0 0 128)
+;  (stroke 128 128 128 128)
+;  (stroke-weight 1)
+;  (scale 5)
+;  (with-translation [0 0 -5]
+;    (box 200 130 1))
+;  
+;  (doseq [i (range (count @normalised-facecodes-sorted))]
+;    (let [x (* 5 (+ -15 (mod i 30)))
+;          y (* 5 (+ -10 (/ i 20)))
+;          z 0
+;          code (nth @normalised-facecodes-sorted i)]
+;      
+;      (push-matrix)
+;      (translate [x y z])
+;      (rotate-y (* frame 0.051471))
+;      (rotate-x (* frame 0.041471))
+;      ;(rotate-y (+ (* x y) (* frame 0.051471)))
+;      ;(rotate-x (+ (* x y) (* frame 0.041471)))
+;
+;      (stroke-weight 2)
+;      (stroke 255 255 255 192)
+;      (no-fill)
+;      (draw-facecode code)
+;      
+;      (stroke-weight 1)
+;      (stroke 128 128 128 64)
+;      (no-fill)
+;      (draw-faces rd-verts rd-faces nil)
+;      (pop-matrix))))
 
 ; _______________________________________________________________________
 

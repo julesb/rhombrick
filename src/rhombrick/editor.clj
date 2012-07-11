@@ -6,9 +6,9 @@
         [rhombrick.button]
         [rhombrick.staticgeometry]))
 
-(def current-tileset (atom #{}))
+(def current-tileset (atom #{"001001001001" "000001000001"}))
 
-(def editor-visible? (atom false))
+;(def editor-visible? (atom false))
 
 (defn add-to-current-tileset [code]
   (swap! current-tileset conj code))
@@ -60,7 +60,9 @@
 (defn draw-group-buttons [pos codes frame]
   ;(ui-prepare)
   (doseq [i (range (count codes))]
-    (let [x (+ (pos 0)
+    (let [code (codes i)
+          in-current-tileset? (contains? @current-tileset code)
+          x (+ (pos 0)
                (* (int (mod i buttons-per-row))
                   (+ button-width button-space)))
           y (+ (pos 1)
@@ -68,14 +70,27 @@
                   (+ button-height button-space)))
           bx (+ x (/ button-width 2))
           by (+ y (/ button-height 2))
+          gc (get-group-color code)
+          col [(gc 0) (gc 1) (gc 2) 64]
           ]
-      (button x y "111111111111")
+      (if (button x y "111111111111")
+        (do
+          ; pressed
+          (if in-current-tileset?
+            (remove-from-current-tileset code)
+            (add-to-current-tileset code))
+          (init-tiler @current-tileset)
+          (println "tileset:" @current-tileset)))
+
       (with-translation [bx by]
         (scale (/ button-width 4))
         (rotate-y (* frame 0.051471))
-        (stroke 128 128 128 128)
+        ;(apply stroke col)
         (no-fill)
-        (draw-faces rd-verts rd-faces nil)
+        (if in-current-tileset?
+          (stroke-weight 8)
+          (stroke-weight 1))
+        (draw-faces-lite rd-verts rd-faces col)
         (draw-facecode-lite (codes i)))))
   ;(ui-finish)
 )
@@ -96,6 +111,7 @@
 
 (defn draw-groups []
   (ui-prepare)
+  (stroke-weight 1)
   (doseq [g @normalised-facecodes-grouped]
     (let [i (key g)
           y-offset (+ 32 
