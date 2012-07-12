@@ -7,17 +7,22 @@
         [rhombrick.staticgeometry]))
 
 (def current-tileset (atom #{"001001001001" "000001000001"}))
-
-;(def editor-visible? (atom false))
+;(def current-tileset-colors {})
 
 (defn add-to-current-tileset [code]
-  (swap! current-tileset conj code))
+  (let [col (compute-tile-color code)]
+    (doseq [rc (rotations code)]
+      (swap! current-tileset-colors assoc rc col)))
+  (swap! current-tileset conj code)
+  (println "current tileset colors:" @current-tileset-colors))
 
 (defn remove-from-current-tileset [code]
+  (swap! current-tileset-colors dissoc code)
   (swap! current-tileset disj code))
 
 (defn init-editor []
-  (reset! current-tileset #{}))
+  (reset! current-tileset #{})
+  )
 
 (defn set-current-tileset [tileset]
   (reset! current-tileset tileset))
@@ -26,34 +31,34 @@
   )
 ; _______________________________________________________________________
 
-(defn draw-buttons [pos frame]
-  (stroke-weight 1)
-  (ui-prepare)
-  (doseq [xi (range 10)
-          yi (range 10)]
-    (let [x (+ (pos 0)
-               (* xi button-width)
-               (* xi button-space))
-          y (+ (pos 1)
-               (* yi button-height)
-               (* yi button-space))]
-
-      (if (button x y "111111111111")
-        (println @ui-state))
-      
-      (let [bx (+ x (/ button-width 2))
-            by (+ y (/ button-width 2))
-            code (nth @normalised-facecodes-grouped (+ xi (* yi 10)))]
-        (with-translation [bx by]
-          (scale (/ button-width 4))
-          (rotate-y (* frame 0.051471))
-          (stroke 128 128 128 128)
-          (no-fill)
-          (draw-faces rd-verts rd-faces nil)
-          (draw-facecode code)))
-
-      ))
-  (ui-finish))
+;(defn draw-buttons [pos frame]
+;  (stroke-weight 1)
+;  (ui-prepare)
+;  (doseq [xi (range 10)
+;          yi (range 10)]
+;    (let [x (+ (pos 0)
+;               (* xi button-width)
+;               (* xi button-space))
+;          y (+ (pos 1)
+;               (* yi button-height)
+;               (* yi button-space))]
+;
+;      (if (button x y "111111111111")
+;        (println @ui-state))
+;      
+;      (let [bx (+ x (/ button-width 2))
+;            by (+ y (/ button-width 2))
+;            code (nth @normalised-facecodes-grouped (+ xi (* yi 10)))]
+;        (with-translation [bx by]
+;          (scale (/ button-width 4))
+;          (rotate-y (* frame 0.051471))
+;          (stroke 128 128 128 128)
+;          (no-fill)
+;          (draw-faces rd-verts rd-faces nil)
+;          (draw-facecode code)))
+;
+;      ))
+;  (ui-finish))
 
 (def buttons-per-row 32)
 
@@ -110,6 +115,9 @@
                  12 40})
 
 (defn draw-groups []
+  (stroke 128 128 128 128)
+  (fill 0 0 0 192)
+  (rect 40 20 1300 1010)
   (ui-prepare)
   (stroke-weight 1)
   (doseq [g @normalised-facecodes-grouped]

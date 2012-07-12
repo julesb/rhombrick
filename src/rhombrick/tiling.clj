@@ -560,7 +560,9 @@
              (> (count tileset) 0))
     (let [positions (choose-positions tileset)]
       (if (> (count positions) 0)
-        (let [assemblage-center (reduce vec3-add (keys @tiles))
+        (let [assemblage-center (vec3-scale (reduce vec3-add (keys @tiles))
+                                            (/ 1 (count @tiles)))
+        ;(let [assemblage-center (reduce vec3-add (keys @tiles))
               new-pos (find-closest-to-point positions assemblage-center)
         ;      new-pos (find-closest-to-center positions)
               new-code (choose-tilecode new-pos tileset)]

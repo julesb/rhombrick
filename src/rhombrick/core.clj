@@ -62,8 +62,8 @@
     (println "applet:" my-applet)
      
     ;(reset! rhomb-tex (load-image "cave_texture_01-512x512.png"))
-    (reset! rhomb-tex (load-image "testpattern4po6.png"))
-    ;(reset! rhomb-tex (load-image "gradient.jpg"))
+    ;(reset! rhomb-tex (load-image "testpattern4po6.png"))
+    (reset! rhomb-tex (load-image "gradient.jpg"))
     ;(reset! rhomb-tex (load-image "map-15Bsubset.jpg"))
 
     (println "texture:" @rhomb-tex)
@@ -78,7 +78,7 @@
     
     (smooth)
     (frame-rate 60)
-    (sphere-detail 12)
+    ;(sphere-detail 12)
     (update-camera)
     ;(display-filter :blur 10)
     (text-font (load-font "FreeMono-16.vlw"))
@@ -383,12 +383,14 @@
   (pop-matrix)
   
   ; 2d hud stuff
-  (hint :disable-depth-test)
-  (camera)
+  ;(hint :disable-depth-test)
+  ;(camera)
   ;(ortho)
   ;(draw-info)
    
   (when @draw-editor?
+    (hint :disable-depth-test)
+    (camera)
     (draw-groups))
 
   (hint :enable-depth-test)

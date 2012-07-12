@@ -43,6 +43,7 @@
 (defn vec3-scale [v s]
   [(* (v 0) s) (* (v 1) s) (* (v 2) s)])
 
+
 (defn vec3-length [[x y z]]
   (Math/sqrt (+ (* x x) (* y y) (* z z))))
 

@@ -72,20 +72,14 @@
           ; hot and active
           (apply stroke button-stroke-active)
           (apply fill button-fill-active))
-          ;(stroke 255 255 255 192)
-          ;(fill 255 128 128 255))
         (do
           ; just hot
           (apply stroke button-stroke-hot)
           (apply fill button-fill-hot)))
-          ;(stroke 255 255 255 192)
-          ;(fill 128 128 255 192)))
       (do
         ; not hot, may be active
         (apply stroke button-stroke)
         (apply fill button-fill)))
-        ;(stroke 255 255 255 192)
-        ;(fill 0 0 0 192)))
 
     (rect x y button-width button-height)
 
