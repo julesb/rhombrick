@@ -10,6 +10,7 @@
 ;(def tiles (atom {}))
 (def tiles (atom (ordered-map)))
 
+(def tiler-iterations (atom 0))
 
 (def working-tileset (atom #{
                       ;"100000000000"
@@ -33,7 +34,7 @@
 
 (def face-list (atom #{}))
 
-;(def assemblage-center (atom [0 0 0]))
+(def assemblage-center (atom [0 0 0]))
 
 
 
@@ -143,6 +144,16 @@
 
 ; _______________________________________________________________________
 
+(defn update-assemblage-center [new-pos]
+  (let [new-center (vec3-scale (vec3-add new-pos @assemblage-center)
+                               (/ 1 (count @tiles)))]
+    (reset! assemblage-center new-center)))
+
+(defn find-assemblage-center []
+  (vec3-scale (reduce vec3-add (keys @tiles))
+              (/ 1 (count @tiles))))
+
+
 (defn get-neighbour [pos face]
   (vec3-add pos (rd-neighbour-offsets face)))
 
@@ -155,7 +166,7 @@
 
 
 (defn make-tile [pos facecode]
-  (if (tileable? pos)
+  (when (tileable? pos)
     (swap! tiles assoc pos facecode)))
 
 
@@ -163,9 +174,9 @@
   (swap! tiles dissoc pos))
 
 
-(defn delete-random-tile []
-  (let [to-delete (rand-nth (keys @tiles))]
-    (swap! tiles dissoc to-delete)))
+;(defn delete-random-tile []
+;  (let [to-delete (rand-nth (keys @tiles))]
+;    (swap! tiles dissoc to-delete)))
 
 
 (defn neighbour-states [pos]
@@ -184,7 +195,6 @@
 (defn get-neighbour-abutting-face [pos face]
     (let [op-face (connecting-faces face)
           nb-pos (get-neighbour pos face)
-          ;nb-code (@tiles nb-pos)
           nb-face-idx op-face ]
       (if (tileable? nb-pos)
         \-
@@ -224,8 +234,11 @@
   
 
 (defn find-untilable-neighbours [pos tileset]
-  (filter #(= 0 (count (find-candidates % tileset)))
-          (get-neighbours pos)))
+  (let [un (filter #(= 0 (count (find-candidates % tileset)))
+                   (get-neighbours pos))]
+    (if (> (count un) 0)
+      un
+      nil)))
 
 
 (defn choose-tilecode [pos tileset]
@@ -234,26 +247,16 @@
       (nth candidates (rand-int (count candidates)))
       nil)))
 
+
 ; choose a tilecode for a position, but make sure that adding the
 ; tile doesnt create any untilable regions 
-(defn choose-nonblocking-tilecode [pos tileset]
-  (let [candidates (find-candidates pos tileset)
-        nb-candidates (filter #() candidates)]
-    (if (seq candidates)
-      (nth candidates (rand-int (count candidates)))
-      nil)))
-
-
-
-;(defn choose-tilecode [pos tileset]
+;(defn choose-nonblocking-tilecode [pos tileset]
 ;  (let [candidates (find-candidates pos tileset)
-;        candidates-filtered (filter #(> (count (get-connected-idxs %)) 1)
-;                                    candidates)]  
-;    (if (seq candidates-filtered)
-;      (nth candidates-filtered (rand-int (count candidates-filtered)))
-;      (if (seq candidates)
-;        (nth candidates (rand-int (count candidates)))
-;        "xxxxxxxxxxxx"))))
+;        nb-candidates (filter #(not (contains? dead-loci  %)) candidates)]
+;    (if (seq nb-candidates)
+;      (nth nb-candidates (rand-int (count nb-candidates)))
+;      nil)))
+
 ; _______________________________________________________________________
 
 
@@ -263,6 +266,7 @@
 
 (defn init-empty-positions []
   (reset! empty-positions #{}))
+
 
 (defn add-to-empty-positions [pos]
   (if (< (+ (count @empty-positions)
@@ -274,18 +278,19 @@
 (defn remove-from-empty-positions [pos]
   (swap! empty-positions disj pos))
 
+
 (defn push-neighbours-to-empty-positions [pos]
   (dotimes [face 12]
     (let [neighbour (get-neighbour pos face)]
       (if (tileable? neighbour)
           (add-to-empty-positions neighbour)))))
 
+
  (defn push-connected-neighbours-to-empty-positions [pos]
   (doseq [idx (get-connected-idxs (@tiles pos))]
     (let [neighbour (get-neighbour pos idx)]
       (if (tileable? neighbour)
           (add-to-empty-positions neighbour)))))
-
  
 
 (defn update-empty-positions-nonconnected []
@@ -313,7 +318,7 @@
 (defn add-to-dead-loci [code]
   (do
     (swap! dead-loci conj code)
-    ;(println "dead-loci:" @dead-loci)
+    (println "dead-loci:" @dead-loci)
     ))
 
 ;(defn creates-untilable-region? [pos]
@@ -413,6 +418,7 @@
 
 (defn init-tiler [tileset]
   (reset! tiles {})
+  (reset! tiler-iterations 0)
   (reset! face-list #{})
   (init-empty-positions)
   (init-dead-loci)
@@ -422,20 +428,9 @@
 ; _______________________________________________________________________
 
 
-
-; this does plain space filling with no facecode constraints
-;(defn make-tiling-iteration-basic []
-;  (if (seq @todo)
-;    (let [new-pos (dequeue-todo)]
-;      (make-tile new-pos "111111111111")
-;      (push-neighbours-todo new-pos))))
-
 (defn rotate-str-n [s n]
   (nth (rotations s) n))
 
-
-;(defn update-assemblage-center []
-;  (reset! assemblage-center (reduce vec3-add (keys @tiles))))
 
 
 ; _______________________________________________________________________
@@ -526,8 +521,8 @@
 (def autism 1.0)
 (def adhd 2.0) ; lower = more adhd
 
-(defn compute-backtrack-amount []
-  (let [t (count @tiles)]
+(defn compute-backtrack-amount [num-tiles]
+  (let [t num-tiles]
     (loop [n 1]
       (if (or (> n (- t 1))
               (> (rand)
@@ -537,12 +532,10 @@
 
 (defn backtrack []
   (let [num-tiles (count @tiles)
-        n (compute-backtrack-amount)
+        n (compute-backtrack-amount num-tiles)
         ni (- num-tiles n)]
-    (when (and (> (count @tiles) 1)
+    (when (and (> num-tiles 1)
                (< n num-tiles))
-
-      ;(println "tilecount:" num-tiles ", backtracking" n "tiles")
       ; remove n most recent @tiles
       (reset! tiles (ordered-map (take ni @tiles)))
       ;(update-assemblage-center)
@@ -555,6 +548,39 @@
     
 
 (defn make-backtracking-tiling-iteration [tileset]
+  (when (and (< (count @tiles) @max-tiles)
+             (> (count @empty-positions) 0)
+             (> (count tileset) 0))
+    (when-let [positions (choose-positions tileset)]
+      (let [new-pos (find-closest-to-point positions (find-assemblage-center))
+            new-code (choose-tilecode new-pos tileset)]
+        (if (nil? new-code)
+          (do
+            (println "new code is nil")
+            (add-to-dead-loci (get-outer-facecode new-pos))
+            (backtrack))
+          (do
+            (make-tile new-pos new-code)
+            (if-let [untileable (find-untilable-neighbours new-pos tileset)]
+              (do
+                (doseq [u untileable]
+                  (add-to-dead-loci (get-outer-facecode u)))
+                (delete-tile new-pos)
+                (backtrack))
+              (do
+                (add-tile-to-facelist new-pos)
+                (push-connected-neighbours-to-empty-positions new-pos)
+                (remove-from-empty-positions new-pos)
+                ;(update-assemblage-center new-pos)
+                ))))))
+    (swap! tiler-iterations inc)))
+       
+
+; _______________________________________________________________________
+
+
+
+(defn make-backtracking-tiling-iteration-orig [tileset]
   (when (and (< (count @tiles) @max-tiles)
              (> (count @empty-positions) 0)
              (> (count tileset) 0))
@@ -593,8 +619,6 @@
               )))
         (println "no tileable positions")
         ))))
-        
-
 
 
 

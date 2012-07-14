@@ -148,8 +148,6 @@
   (let [code (@tiles pos)
         num-connected (count (filter #(= \1 %) code))
         col (get-tile-color code)]
-        ;col (rd-face-colors (mod num-connected 12))]
-        
     (no-fill)
     ;(fill (col 0) (col 1) (col 2) 64)
     (stroke (col 0) (col 1) (col 2) 192)

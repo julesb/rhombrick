@@ -14,6 +14,7 @@
     (doseq [rc (rotations code)]
       (swap! current-tileset-colors assoc rc col)))
   (swap! current-tileset conj code)
+  (init-dead-loci)
   (println "current tileset colors:" @current-tileset-colors))
 
 (defn remove-from-current-tileset [code]

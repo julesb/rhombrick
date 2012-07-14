@@ -20,7 +20,7 @@
 
 (def mouse-position (atom [0 0]))
 (def view-scale (atom 1.0))
-(def model-scale (atom 200))
+(def model-scale (atom 50))
 ;(def frame (atom 0))
 
 (def num-gliders 50)
@@ -59,37 +59,35 @@
 
 
 (defn setup []
-    (println "applet:" my-applet)
+    ;(println "applet:" my-applet)
      
     ;(reset! rhomb-tex (load-image "cave_texture_01-512x512.png"))
     ;(reset! rhomb-tex (load-image "testpattern4po6.png"))
     (reset! rhomb-tex (load-image "gradient.jpg"))
     ;(reset! rhomb-tex (load-image "map-15Bsubset.jpg"))
 
-    (println "texture:" @rhomb-tex)
+    ;(println "texture:" @rhomb-tex)
     (texture-mode :normalized)
       
     ;(println (.frame (current-applet)))
     ;(println "screen pos" (get-location-on-screen))
-    (println "screen size:" (width) (height))
+    ;(println "screen size:" (width) (height))
     ;(println "frame:" (.getLocation (.frame @my-applet)))
     ;(.mouseMove robot 0 0)
     ;(.mouseMove robot (/ (width) 2) (/ (height) 2))
     
     (smooth)
     (frame-rate 60)
-    ;(sphere-detail 12)
     (update-camera)
-    ;(display-filter :blur 10)
+    (println "setting font")
     (text-font (load-font "FreeMono-16.vlw"))
-    ;(text-mode :screen)
     (set-state! :mouse-position (atom [0 0]))
+    (println "building normalised faced set")
     (build-normalised-facecode-set)
-    ;(make-cubic-tiling 10 10 10)
-    ;(reset! tiles {})
+    (println "initialising tiler")
     (init-tiler @current-tileset)
     ;(make-tiling-iteration) ; needed so init-gliders works
-    (make-backtracking-tiling-iteration @current-tileset)
+    ;(make-backtracking-tiling-iteration @current-tileset)
     (init-gliders num-gliders)
     ;(println @gliders)
     ;(init-todo)
@@ -97,9 +95,10 @@
 ;    (doseq [val (range 10)]
 ;      (osc-send client "/test" "i" (float val)))
     ;(reset! mousewarp-pos [(mouse-x) (mouse-y)])
-    (println "mouse:" @mousewarp-pos)
+    ;(println "mouse:" @mousewarp-pos)
 
-    (println "bezier test: " (bezier-point 1.0 2.0 3.0 4.0 0.5))
+    ;(println "bezier test: " (bezier-point 1.0 2.0 3.0 4.0 0.5))
+    (println "setup done")
     )
     ;(doseq [code @normalised-facecodes]
     ; (println code))
@@ -132,8 +131,6 @@
   (let [dx (- (mouse-x) (@mousewarp-pos 0))
         dy (- (mouse-y) (@mousewarp-pos 1))]
     (vec3-scale [dx dy 0] scale-factor)))
-
-
 
 ; _______________________________________________________________________
 
@@ -273,6 +270,8 @@
 
   (when (= 0 (mod (frame-count) 1))
     (make-backtracking-tiling-iteration @current-tileset))
+  
+;  (println "iterations: " @tiler-iterations)
 
   (when @draw-gliders?   
     (update-gliders))
@@ -340,11 +339,6 @@
   (let [[mx my] @(state :mouse-position)]
     (push-matrix)
     (scale @model-scale)
-    ;(rotate-x (* (- my 400) -0.01))
-    ;(rotate-y (* (- mx 700) 0.01))
-    ;(rotate-x (* @frame 0.00351471))
-    ;(rotate-y (* (frame-count) 0.0035236))
-    ;(rotate-z (* @frame 0.0035123))
 
     (stroke 0 255 255 128)
     (stroke-weight 1)
@@ -386,11 +380,11 @@
   ;(hint :disable-depth-test)
   ;(camera)
   ;(ortho)
-  ;(draw-info)
-   
+  (hint :disable-depth-test)
+  (draw-info)
+  (camera)
+
   (when @draw-editor?
-    (hint :disable-depth-test)
-    (camera)
     (draw-groups))
 
   (hint :enable-depth-test)
