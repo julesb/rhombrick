@@ -37,7 +37,7 @@
 
 (def draw-facelist? (atom false))
 (def draw-editor? (atom false))
-(def draw-gliders? (atom false))  
+(def draw-gliders? (atom false))
 
 
 ; _______________________________________________________________________
@@ -127,12 +127,15 @@
         dy (- (mouse-y) (pmouse-y))]
     (vec3-scale [dx dy 0] scale-factor)))
 
+
 (defn mouse-delta [scale-factor]
   (let [dx (- (mouse-x) (@mousewarp-pos 0))
         dy (- (mouse-y) (@mousewarp-pos 1))]
     (vec3-scale [dx dy 0] scale-factor)))
 
+
 ; _______________________________________________________________________
+
 
 (def key-command-map
   {
@@ -145,13 +148,11 @@
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
          (init-tiler @current-tileset)
-         ;(make-tiling-iteration)
          (make-backtracking-tiling-iteration @current-tileset)
          (init-gliders num-gliders))
    \R #(do 
          (init-tiler @current-tileset)
          (random-tileset)
-         ;(make-tiling-iteration)
          (make-backtracking-tiling-iteration @current-tileset)
          (init-gliders num-gliders)
          )
@@ -166,8 +167,7 @@
          (reset! camera-mode m)
          (if (= @camera-mode 2)
            (no-cursor)
-           (cursor)))
-        )
+           (cursor))))
     \f #(do
          (swap! draw-facelist? not)
          (when @draw-facelist?
@@ -188,8 +188,20 @@
     \t #(do 
          (swap! max-tiles dec)
          (println "max tiles:" @max-tiles))
-    
+    \[ #(do
+          (swap! adhd - 0.1)
+          (println "adhd:" @adhd "auti:" @autism))
+    \] #(do
+          (swap! adhd + 0.1)
+          (println "adhd:" @adhd "auti:" @autism))
+    \{ #(do
+          (swap! autism - 0.1)
+          (println "adhd:" @adhd "auti:" @autism))
+    \} #(do
+          (swap! autism + 0.1)
+          (println "adhd:" @adhd "auti:" @autism))
    })
+
 
 (def key-movement-map
   {
@@ -211,17 +223,14 @@
 
 (defn do-movement-keys []
   (doseq [k @keys-down]
-    (if (contains? key-movement-map k)
-      (do
-        ((key-movement-map k))))))
+    (when (contains? key-movement-map k)
+      ((key-movement-map k)))))
     
 
 (defn key-typed []
   (let [keychar (raw-key)]
-    (if (contains? key-command-map keychar)
-      ((key-command-map keychar)))
-    ;(println keychar)
-    ))
+    (when (contains? key-command-map keychar)
+      ((key-command-map keychar)))))
 
 
 (defn key-pressed []
@@ -263,7 +272,6 @@
 
 
 (defn draw []
-  ;(println "applet:" (.getLocationOnScreen @my-applet))
   ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
   (do-movement-keys) 
@@ -271,14 +279,11 @@
   (when (= 0 (mod (frame-count) 1))
     (make-backtracking-tiling-iteration @current-tileset))
   
-;  (println "iterations: " @tiler-iterations)
-
   (when @draw-gliders?   
     (update-gliders))
     
   ;(background 32 32 192)
   (background 0 0 0)
-
 
   (push-matrix)
 
@@ -351,13 +356,14 @@
     (lights)
     ;(light-falloff 1.0 0.2 0.0)
     ;(ambient-light 64 64 64)
+
+    (draw-tiling)
+    
     (when @draw-facelist?
       ;(draw-face-list))
       (draw-face-list-textured))
 
-    (draw-tiling)
-
-    (if (seq @empty-positions)
+    (when (seq @empty-positions)
       (draw-empty))
 
 
@@ -396,7 +402,10 @@
                     1000000.0)))
 
   (if (= (mod (frame-count) 150) 0)
-   (println "last-render-time: " @last-render-time))
+   (println "last-render-time: " @last-render-time
+            "tiles:" (count @tiles)
+            "adhd:" @adhd "auti:" @autism
+            ))
   ))
 
 

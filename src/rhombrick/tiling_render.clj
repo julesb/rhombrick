@@ -120,8 +120,8 @@
 
 
 (defn draw-face-list-textured []
-  (fill 255 255 255 255)
-  ;(stroke 128 128 255 192)
+  ;(tint 192 192 255 255)
+  ;(stroke 0 0 0 192)
   ;(stroke-weight 2)
   (no-stroke)
   (doseq [face-verts @face-list]
@@ -160,7 +160,7 @@
 
 (defn draw-neighbours [pos]
   (no-fill)
-  (stroke 128 128 128 32)
+  (stroke 128 128 128 64)
   (stroke-weight 1)
 
   (let [ipos (vec (map int pos))]

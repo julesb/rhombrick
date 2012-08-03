@@ -48,6 +48,7 @@
     (map (fn [a] (rand-nth (take 352 (seq @normalised-facecodes-sorted))))
          (range n))))
 
+
 (defn get-n-rand-tilecode-from-group [n g]
   (map (fn [a] (rand-nth (@normalised-facecodes-grouped g)))
          (range n)))
@@ -80,6 +81,7 @@
   (if (< (rand-int 100) 10)
     (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 12)))
 )
+
 
 (defn random-tileset []
   (reset! working-tileset #{})
@@ -115,7 +117,6 @@
     (println "working tileset: " @working-tileset)))
  
 
-
 (defn random-tileset-old []
   (let [num-tiles 1
         tiles (repeat num-tiles 
@@ -144,10 +145,12 @@
 
 ; _______________________________________________________________________
 
+
 (defn update-assemblage-center [new-pos]
   (let [new-center (vec3-scale (vec3-add new-pos @assemblage-center)
                                (/ 1 (count @tiles)))]
     (reset! assemblage-center new-center)))
+
 
 (defn find-assemblage-center []
   (vec3-scale (reduce vec3-add (keys @tiles))
@@ -156,6 +159,7 @@
 
 (defn get-neighbour [pos face]
   (vec3-add pos (rd-neighbour-offsets face)))
+
 
 (defn get-neighbours [pos]
   (vec (map #(get-neighbour pos %) (range 12))))
@@ -172,11 +176,6 @@
 
 (defn delete-tile [pos]
   (swap! tiles dissoc pos))
-
-
-;(defn delete-random-tile []
-;  (let [to-delete (rand-nth (keys @tiles))]
-;    (swap! tiles dissoc to-delete)))
 
 
 (defn neighbour-states [pos]
@@ -210,6 +209,11 @@
 ; when choosing a tile
 (defn expand-tiles [tiles]
   (set (flatten (map #(rotations %) tiles))))
+
+
+(defn expand-tiles-experiment [tiles]
+  (set (flatten (map #(rotations %) (conj tiles (vec (map reverse tiles)))))))
+
 
 
 ; compares single digits of two facecodes, using the
@@ -264,6 +268,7 @@
 
 (def empty-positions (atom #{}))
 
+
 (defn init-empty-positions []
   (reset! empty-positions #{}))
 
@@ -293,13 +298,14 @@
           (add-to-empty-positions neighbour)))))
  
 
-(defn update-empty-positions-nonconnected []
-  (do
-    (init-empty-positions)
-    (doseq [tile (keys @tiles)]
-      (doseq [n (get-neighbours tile)]
-        (if (tileable? n)
-          (add-to-empty-positions n))))))
+;(defn update-empty-positions-nonconnected []
+;  (do
+;    (init-empty-positions)
+;    (doseq [tile (keys @tiles)]
+;      (doseq [n (get-neighbours tile)]
+;        (if (tileable? n)
+;          (add-to-empty-positions n))))))
+
 
 
 (defn update-empty-positions []
@@ -315,10 +321,11 @@
 (defn init-dead-loci []
   (reset! dead-loci #{}))
 
+
 (defn add-to-dead-loci [code]
   (do
     (swap! dead-loci conj code)
-    (println "dead-loci:" @dead-loci)
+    ;(println "dead-loci:" @dead-loci)
     ))
 
 ;(defn creates-untilable-region? [pos]
@@ -341,13 +348,9 @@
     (> (count untileable-neighbours) 0)))
 
 
-; _______________________________________________________________________
-
-;(def face-list (atom #{}))
-
-
 (defn face-idxs-to-verts [face-idxs]
   (vec (map #(rd-verts %) face-idxs)))
+
 
 (defn facelist-contains-rotations? [face-verts]
   (or
@@ -379,7 +382,6 @@
       (swap! face-list conj fvw)
       (do
         (remove-from-facelist fvw))))))
-
 
 
 (defn build-face-list []
@@ -480,22 +482,33 @@
   (filter #(< (count (find-candidates % tileset)) 2)
           @empty-positions))
 
+
 ; returns a list of todo locations with any matching tiles
 (defn find-any-positions [tileset]
   (filter #(> (count (find-candidates % tileset)) 0)
           @empty-positions))
+
 
 (defn choose-positions [tileset]
   (let [best (find-best-positions tileset)]
     (if (= (count best) 0)
       (find-any-positions tileset)
       best)))
-  
+ 
+
 ; _______________________________________________________________________
 
-; receive a vector of positions and return the closest to the center
+; Receive a vector of positions and return the closest to the center
 ; ie the vector with the shortest length. If there are more than one
-; equal to the shortest then return a random one. 
+; equal to the shortest then return a random one.
+;
+; !FIXME! These next two shouldnt need to call vec3-length twice. In
+; fact since we dont need the actual length, only compare them to find
+; the shortest, we shouldnt use the length function just sum of squares
+; so avoid calling sqrt!
+;
+; It is worth optimising because it's called at least once per cell.
+
 (defn find-closest-to-center [positions]
   (let [lengths (into {} (map #(vec [%1 (vec3-length %1)]) positions))
         sorted-lengths (sort-by #(vec3-length (key %)) lengths)
@@ -516,19 +529,22 @@
     (if (= 1 (count tie-winners))
       ((first tie-winners) 0)
       ((rand-nth tie-winners) 0))))
+
 ; _______________________________________________________________________
 
-(def autism 1.0)
-(def adhd 2.0) ; lower = more adhd
+(def autism (atom 1.0))
+(def adhd (atom 2.0)) ; lower = more adhd
+
 
 (defn compute-backtrack-amount [num-tiles]
   (let [t num-tiles]
     (loop [n 1]
       (if (or (> n (- t 1))
               (> (rand)
-                 (Math/pow (/ n (+ n autism)) adhd)))
+                 (Math/pow (/ n (+ n @autism)) @adhd)))
         n
         (recur (inc n))))))
+
 
 (defn backtrack []
   (let [num-tiles (count @tiles)
@@ -540,8 +556,8 @@
       (reset! tiles (ordered-map (take ni @tiles)))
       ;(update-assemblage-center)
       (update-empty-positions)
-      (println "| tiles:" num-tiles 
-               "| backtracked:" n)
+      ;(println "| tiles:" num-tiles 
+      ;         "| backtracked:" n)
       ;(init-dead-loci)
       ;(build-face-list)
       )))
@@ -577,48 +593,6 @@
        
 
 ; _______________________________________________________________________
-
-
-
-(defn make-backtracking-tiling-iteration-orig [tileset]
-  (when (and (< (count @tiles) @max-tiles)
-             (> (count @empty-positions) 0)
-             (> (count tileset) 0))
-    (let [positions (choose-positions tileset)]
-      (if (> (count positions) 0)
-        (let [assemblage-center (vec3-scale (reduce vec3-add (keys @tiles))
-                                            (/ 1 (count @tiles)))
-        ;(let [assemblage-center (reduce vec3-add (keys @tiles))
-              new-pos (find-closest-to-point positions assemblage-center)
-        ;      new-pos (find-closest-to-center positions)
-              new-code (choose-tilecode new-pos tileset)]
-          (if (not= new-code nil)
-            (do
-              (make-tile new-pos new-code)
-              (let [untileable (find-untilable-neighbours new-pos
-                                                          tileset)]
-                (if (> (count untileable) 0)
-                ;(if (creates-untilable-region? new-pos)
-                  (do
-                    (doseq [u untileable]
-                      (add-to-dead-loci (get-outer-facecode u)))
-                    (delete-tile new-pos)
-                    (backtrack)
-                    
-                    )
-                  (do
-                    (add-tile-to-facelist new-pos)
-                    (push-connected-neighbours-to-empty-positions new-pos)
-                    (remove-from-empty-positions new-pos)
-                    ;(update-assemblage-center)
-                  ))))
-            (do
-              (add-to-dead-loci (get-outer-facecode new-pos))
-              ;(remove-from-empty-positions new-pos)
-              (backtrack)
-              )))
-        (println "no tileable positions")
-        ))))
 
 
 
