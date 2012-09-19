@@ -8,6 +8,7 @@
     ))
 
 (def gliders (atom []))
+(def num-gliders 50)
 (def max-glider-id (atom 0))
 
 (def OSCPORT 4242)
@@ -27,8 +28,10 @@
           :current-tile tile
           :entry-face-idx (face-ids 0)
           :exit-face-idx (face-ids 1)
-          :speed (+ 0.02 (* (rand) 0.001))
-          :time 0.0
+          :speed 0.02
+          ;:speed (+ 0.02 (* (rand) 0.001))
+          :time (- 1.0 (/ @max-glider-id num-gliders))
+          ;:time 0.0
           :color (rand-nth rd-face-colors)
           }
     )))
