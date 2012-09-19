@@ -2,7 +2,7 @@
   (:use [quil.core]
         [quil.applet]
         [rhombrick.facecode]
-        [rhombrick.staticgeometry]
+        ;[rhombrick.staticgeometry :as geom]
         [rhombrick.tiling]
         [rhombrick.tiling-render]
         [rhombrick.vector]
@@ -11,8 +11,7 @@
         [rhombrick.button]
         [rhombrick.editor]
         ;[overtone.osc]
-        )
-  (:gen-class))
+        ))
 
 (import processing.core.PImage)
 (import java.awt.Robot)
@@ -23,13 +22,14 @@
 (def model-scale (atom 50))
 ;(def frame (atom 0))
 
-(def num-gliders 50)
+;(def num-gliders 50)
 
 (def last-render-time (atom 0))
 
 (def keys-down (atom #{}))
 
-(def mousewarp-pos (atom [946 506]))
+(def mousewarp-pos (atom [716 356])) ; 1440x800
+;(def mousewarp-pos (atom [946 506])) ; 1900x1100
 (def last-mouse-delta (atom [0 0]))
 
 (def my-applet (atom nil))
@@ -246,6 +246,7 @@
 
 ; _______________________________________________________________________
 
+
 (defn mouse-moved []
   (let [x (mouse-x) y (mouse-y)
         delta [(- (mouse-x) (@mousewarp-pos 0))
@@ -263,6 +264,7 @@
 (defn mouse-pressed []
   (println "mouse-pressed")
   (update-ui-state :mouse-down true))
+
 
 (defn mouse-released []
   (println "mouse-released")
@@ -360,14 +362,14 @@
     (draw-tiling)
     
     (when @draw-facelist?
-      ;(draw-face-list))
-      (draw-face-list-textured))
+      (draw-face-list))
+      ;(draw-face-list-textured))
 
     (when (seq @empty-positions)
       (draw-empty))
 
 
-  ;(lights)
+    ;(lights)
     (when @draw-gliders?
       (let [selected-tile ((get-glider 1) :current-tile)
             tile-color (get-group-color selected-tile)]
@@ -412,19 +414,22 @@
 
 
 ; _______________________________________________________________________
- 
-(defsketch rhombrick 
-  :title "rhombrick"
-  :setup setup 
-  :draw draw
-  :size [1900 1100]
-  :renderer :opengl 
-  :key-typed key-typed
-  :key-pressed key-pressed
-  :key-released key-released
-  :mouse-moved mouse-moved
-  :mouse-pressed mouse-pressed
-  :mouse-released mouse-released)
+
+
+(defn -main [& args] 
+  (defsketch rhombrick 
+    :title "rhombrick"
+    :setup setup 
+    :draw draw
+    ;:size [1900 1100]
+    :size [1440 800]
+    :renderer :opengl 
+    :key-typed key-typed
+    :key-pressed key-pressed
+    :key-released key-released
+    :mouse-moved mouse-moved
+    :mouse-pressed mouse-pressed
+    :mouse-released mouse-released))
 
 ;(reset! frame ((current-applet) meta :target-obj deref))
 
