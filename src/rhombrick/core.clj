@@ -276,7 +276,7 @@
 (defn draw []
   ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
-  (do-movement-keys) 
+  (do-movement-keys)
 
   (when (= 0 (mod (frame-count) 1))
     (make-backtracking-tiling-iteration @current-tileset))
@@ -347,13 +347,14 @@
     (push-matrix)
     (scale @model-scale)
 
-    (stroke 0 255 255 128)
-    (stroke-weight 1)
-    (no-fill)
-    (box 10 10 10)
+    ;(stroke 0 255 255 128)
+    ;(stroke-weight 1)
+    ;(no-fill)
+    ;(box 10 10 10)
     
     (when @draw-gliders?
-      (draw-gliders (frame-count)))
+      (draw-gliders (frame-count))
+    )
     
     (lights)
     ;(light-falloff 1.0 0.2 0.0)

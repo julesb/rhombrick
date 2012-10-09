@@ -17,16 +17,20 @@
   (init-dead-loci)
   (println "current tileset colors:" @current-tileset-colors))
 
+
 (defn remove-from-current-tileset [code]
   (swap! current-tileset-colors dissoc code)
   (swap! current-tileset disj code))
+
 
 (defn init-editor []
   (reset! current-tileset #{})
   )
 
+
 (defn set-current-tileset [tileset]
   (reset! current-tileset tileset))
+
 
 (defn draw-tile-groups []
   )
@@ -62,6 +66,7 @@
 ;  (ui-finish))
 
 (def buttons-per-row 32)
+
 
 (defn draw-group-buttons [pos codes frame]
   ;(ui-prepare)
@@ -114,6 +119,7 @@
                  10 36
                  11 38
                  12 40})
+
 
 (defn draw-groups []
   (stroke 128 128 128 128)

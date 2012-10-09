@@ -1,6 +1,6 @@
 (ns rhombrick.tiling
   (:use [rhombrick.vector]
-        [rhombrick.staticgeometry]
+        [rhombrick.staticgeometry :as geom]
         [rhombrick.facecode]
         [ordered.map]))
 
@@ -212,7 +212,8 @@
 
 
 (defn expand-tiles-experiment [tiles]
-  (set (flatten (map #(rotations %) (conj tiles (vec (map reverse tiles)))))))
+  (set (flatten (map #(rotations %)
+                     (conj tiles (vec (map reverse tiles)))))))
 
 
 
@@ -500,7 +501,7 @@
 
 ; Receive a vector of positions and return the closest to the center
 ; ie the vector with the shortest length. If there are more than one
-; equal to the shortest then return a random one.
+; with length equal to the shortest length then return a random one.
 ;
 ; !FIXME! These next two shouldnt need to call vec3-length twice. In
 ; fact since we dont need the actual length, only compare them to find
@@ -520,10 +521,9 @@
 
 
 (defn find-closest-to-point [positions point]
-  (let [lengths (into {} 
-                      (map #(vec [%1 (vec3-length (vec3-sub %1 point))])
-                           positions))
-        sorted-lengths (sort-by #(vec3-length (key %)) lengths)
+  (let [lengths (into {} (map #(vec [%1 (vec3-sum-of-squares (vec3-sub %1 point))])
+                              positions))
+        sorted-lengths (sort-by #(vec3-sum-of-squares (key %)) lengths)
         min-length ((first sorted-lengths) 1)
         tie-winners (filter #(= min-length (val %)) sorted-lengths) ]
     (if (= 1 (count tie-winners))
@@ -619,13 +619,5 @@
       (if (or (= modsum 1) (= modsum 3))
         (if (< (Math/random) 0.1)
           (make-tile [i j k] "000000000000"))))))
-
-
-
-
-
-
-
-; _______________________________________________________________________
 
 

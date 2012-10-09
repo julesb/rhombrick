@@ -18,21 +18,22 @@
 ; _______________________________________________________________________
 
 (defn make-glider [tile face-ids]
-  (let [p1 (co-verts (face-ids 0))
-        p2 (vec3-scale p1 0.5)
-        p4 (co-verts (face-ids 1))
-        p3 (vec3-scale p4 0.5)]
-    (swap! max-glider-id inc)
+  (let [;p1 (co-verts (face-ids 0))
+        ;p2 (vec3-scale p1 0.5)
+        ;p4 (co-verts (face-ids 1))
+        ;p3 (vec3-scale p4 0.5)
+        new-maxid (inc @max-glider-id)
+        t (- 1.0 (/ new-maxid num-gliders))
+        col (rand-nth rd-face-colors)]
+    (reset! max-glider-id new-maxid)
     (swap! gliders conj
          {:id @max-glider-id
           :current-tile tile
           :entry-face-idx (face-ids 0)
           :exit-face-idx (face-ids 1)
           :speed 0.02
-          ;:speed (+ 0.02 (* (rand) 0.001))
-          :time (- 1.0 (/ @max-glider-id num-gliders))
-          ;:time 0.0
-          :color (rand-nth rd-face-colors)
+          :time t
+          :color col
           }
     )))
 
@@ -49,6 +50,7 @@
                                  con-idxs))]
           [face-id1 face-id2])
         []))))
+
 
 (defn choose-left-or-right [connected-idxs entry-idx]
   (let [i (.indexOf connected-idxs entry-idx)
@@ -68,8 +70,8 @@
         [entry-face-idx (choose-left-or-right con-idxs entry-face-idx)]
         []))))
 
-;
 ; _____________________________________________________________
+
 
 (defn get-glider-pos [id]
   (let [glider (first (filter #(= (% :id) id) @gliders))]
@@ -91,6 +93,7 @@
             gz (bezier-point (bz 0) (bz 1) (bz 2) (bz 3) t)
             pos (vec3-add [gx gy gz] tile)]
       pos))))
+
 
 (defn get-glider-nextpos [id]
   (let [glider (first (filter #(= (% :id) id) @gliders))]
@@ -115,15 +118,27 @@
 
 ; _______________________________________________________________________
 
+
+
+;(defn update-glider-values [id k v]
+;  (update-in @gliders
+
+
 (defn update-glider-value [id k v]
   (let [glider (first (filter #(= (% :id) id) @gliders))]
     (if (not (seq glider))
       nil
       (reset! gliders 
-             (conj (filter #(not= (% :id) id) @gliders)
+              (conj (filter #(not= (% :id) id) @gliders)
                     (assoc glider k v))))))
- 
 
+
+;(defn update-glider-value2 [id newvals]
+;  (let [glider (first (filter #(= (% :id) id) @gliders))]
+;    (if (not (seq glider))
+;      nil
+;      (swap! @gliders assoc 
+;      )))
 ; _______________________________________________________________________
 
 
@@ -144,8 +159,8 @@
     ;(println @gliders)
     ))
 
-
 ; _______________________________________________________________________
+
 
 (defn get-gliders-on-tile [pos]
   (filter #(= (% :current-tile) pos) @gliders))
@@ -174,12 +189,10 @@
           new-glider-time (mod (+ (glider :time) (glider :speed)) 1.0) ]
       (update-glider-value (glider :id) :time new-glider-time))))
         
+
 (defn on-camera-tile? [gid]
   (= ((get-glider gid) :currrent-tile)
     ((get-glider 1) :current-tile)))
-
-
-
 
 
 (defn update-gliders []
@@ -199,8 +212,6 @@
                     (= (glider :id) 1)
                     (> (count (get-connected-idxs next-tile-code)) 2))
                 (osc-send client "/test" "boundary" (float (glider :id))))
-
-
               (update-glider-value (glider :id)
                                    :time (- new-glider-time
                                             (int new-glider-time)))
@@ -209,9 +220,7 @@
               (update-glider-value (glider :id) 
                                    :entry-face-idx (next-glider-path 0))
               (update-glider-value (glider :id) 
-                                   :exit-face-idx (next-glider-path 1))
-              )
-
+                                   :exit-face-idx (next-glider-path 1)))
             ; the next tile is not traversable or doesnt exist
             ; so reverse direction
             (do
@@ -223,13 +232,9 @@
                                                   old-exit-idx)
                 (update-glider-value (glider :id) :exit-face-idx
                                                   old-entry-idx)
-                (update-glider-value (glider :id) :time 0.0)
-                ))
-              ))
-        
+                (update-glider-value (glider :id) :time 0.0)))))
         ; still in tile so just increment time/pos
-        (update-glider-value (glider :id) :time new-glider-time)
-          ))))
+        (update-glider-value (glider :id) :time new-glider-time)))))
 
         ; have crossed tile boundary (time >= 1).. 
         ; - determine next tile

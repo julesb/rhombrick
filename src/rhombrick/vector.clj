@@ -27,22 +27,27 @@
         [(/ x l) (/ y l)])))
 
 
-(defn vec3-add [v1 v2]
-  [(+ (v1 0) (v2 0))
-   (+ (v1 1) (v2 1))
-   (+ (v1 2) (v2 2))])
+(defn vec3-add [[v1x v1y v1z] [v2x v2y v2z]]
+  [(+ v1x v2x) (+ v1y v2y) (+ v1z v2z)])
+
+;(defn vec3-add [v1 v2]
+;  [(+ (v1 0) (v2 0))
+;   (+ (v1 1) (v2 1))
+;   (+ (v1 2) (v2 2))])
+
+;(defn vec3-add [v1 v2]
+;  (vec (map #(+ %1 %2) v1 v2)))
 
 (defn vec3-sub [v1 v2]
   [(- (v1 0) (v2 0))
    (- (v1 1) (v2 1))
    (- (v1 2) (v2 2))])
 
-;(defn vec3-add [v1 v2]
-;  (vec (map #(+ %1 %2) v1 v2)))
-
 (defn vec3-scale [v s]
   [(* (v 0) s) (* (v 1) s) (* (v 2) s)])
 
+(defn vec3-sum-of-squares [[x y z]]
+  (+ (* x x) (* y y) (* z z)))
 
 (defn vec3-length [[x y z]]
   (Math/sqrt (+ (* x x) (* y y) (* z z))))

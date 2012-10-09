@@ -50,7 +50,9 @@
   (rd-face-colors (mod (count (get-connected-idxs code))
                        12)))
 
+
 (defn get-unique-color [code])
+
 
 (defn draw-connected-faces [code]
   (let [col (get-tile-color code)]
@@ -235,10 +237,10 @@
             p2 (vec3-scale p1 0.5)
             p4 (co-verts f2-idx)
             p3 (vec3-scale p4 0.5)
-            num-steps 5]
+            num-steps 3
+            step (/ 1.0 num-steps)]
         (doseq [s (range num-steps)]
-          (let [step (/ 1.0 num-steps)
-                t (* s step)
+          (let [t (* s step)
                 px (bezier-point (p1 0) (p2 0) (p3 0) (p4 0) t)
                 py (bezier-point (p1 1) (p2 1) (p3 1) (p4 1) t)
                 pz (bezier-point (p1 2) (p2 2) (p3 2) (p4 2) t)
@@ -248,11 +250,7 @@
                 ts (vec3-add [px py pz] (vec3-scale [tx ty tz] 0.25))]
             (line px py pz (ts 0) (ts 1) (ts 2)) 
             )))))
-
             
-
-; _______________________________________________________________________
-
 
 (defn make-curve-endpoints [connected-idxs]
   (let [num-points (count connected-idxs)]
@@ -300,9 +298,6 @@
     ))
      
 
-; _______________________________________________________________________
-
-
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (count (filter #(= \1 %) code))
@@ -347,11 +342,10 @@
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))
     
-    (stroke-weight 2)
+    ;(stroke-weight 2)
     (stroke 255 120 120 128)
     (doseq [endpoints endpoint-pairs]
       (draw-curve-tangents (endpoints 0) (endpoints 1)))
-
 
     ;(stroke-weight 2)
     ;(stroke (col2 0) (col2 1) (col2 2) 255)
