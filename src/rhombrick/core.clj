@@ -10,6 +10,7 @@
         [rhombrick.camera]
         [rhombrick.button]
         [rhombrick.editor]
+        [clojure.math.combinatorics]
         ;[overtone.osc]
         ))
 
