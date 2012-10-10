@@ -1,8 +1,10 @@
 # rhombrick
 
-A 3d tiling engine that tiles space with rhombic dodecahedrons.
+Implements a tiling algorithm that tiles 3d space with rhombic dodecahedral blocks.
 
-This is a little project for me to experiment with graphics in Clojure using the [Quil](https://github.com/quil/quil) library. The tile assembler algorithm was inspired by the algorithm described in [Paul Harrison's thesis](http://www.logarithmic.net/pfh/thesis).
+This is a little project for me to experiment with graphics in Clojure using the [Quil](https://github.com/quil/quil) library.
+
+The tile assembler algorithm was inspired by the algorithm described in [Paul Harrison's thesis](http://www.logarithmic.net/pfh/thesis). I found this algorithm fascinating and wanted to try and extend it to work in three dimensions. 
 
 Clone the repo then do: lein deps; lein run.
 
