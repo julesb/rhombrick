@@ -219,38 +219,52 @@
 ; _______________________________________________________________________
 
 
+; given two face indices, returns a vec of four 3d bezier control points
+(defn get-bezier-controls [f1-idx f2-idx]
+  (let [p1 (co-verts f1-idx)
+        p2 (vec3-scale p1 0.5)
+        p4 (co-verts f2-idx)
+        p3 (vec3-scale p4 0.5)]
+    [p1 p2 p3 p4]))
+
+
+(defn get-bezier-point-3d [f1-idx f2-idx t]
+  (when (not= f1-idx f2-idx)
+    (let [[p1 p2 p3 p4] (get-bezier-controls f1-idx f2-idx)
+          bx (bezier-point (p1 0) (p2 0) (p3 0) (p4 0) t)
+          by (bezier-point (p1 1) (p2 1) (p3 1) (p4 1) t)
+          bz (bezier-point (p1 2) (p2 2) (p3 2) (p4 2) t)]
+      [bx by bz])))
+
+
+(defn get-bezier-tangent-3d [f1-idx f2-idx t]
+  (when (not= f1-idx f2-idx)
+    (let [[p1 p2 p3 p4] (get-bezier-controls f1-idx f2-idx)
+          tx (bezier-tangent (p1 0) (p2 0) (p3 0) (p4 0) t)
+          ty (bezier-tangent (p1 1) (p2 1) (p3 1) (p4 1) t)
+          tz (bezier-tangent (p1 2) (p2 2) (p3 2) (p4 2) t)]
+      [tx ty tz])))
+
+
+(defn draw-curve-tangents [f1-idx f2-idx steps]
+  (when (not= f1-idx f2-idx)
+    (let [step (/ 1.0 steps)]
+      (doseq [s (range steps)]
+        (let [t (* s step)
+              b (get-bezier-point-3d f1-idx f2-idx t)
+              bt (get-bezier-tangent-3d f1-idx f2-idx t)
+              bts (vec3-add b (vec3-scale bt 0.25))]
+          (line (b 0) (b 1) (b 2) (bts 0) (bts 1) (bts 2)))))))
+ 
+
 (defn draw-curve [f1-idx f2-idx]
   (when (not= f1-idx f2-idx)
-    (let [p1 (co-verts f1-idx)
-          p2 (vec3-scale p1 0.5)
-          p4 (co-verts f2-idx)
-          p3 (vec3-scale p4 0.5)]
+    (let [[p1 p2 p3 p4] (get-bezier-controls f1-idx f2-idx)]
       (bezier (p1 0) (p1 1) (p1 2)
               (p2 0) (p2 1) (p2 2)
               (p3 0) (p3 1) (p3 2)
               (p4 0) (p4 1) (p4 2)))))
 
-
-(defn draw-curve-tangents [f1-idx f2-idx]
-  (when (not= f1-idx f2-idx)
-      (let [p1 (co-verts f1-idx)
-            p2 (vec3-scale p1 0.5)
-            p4 (co-verts f2-idx)
-            p3 (vec3-scale p4 0.5)
-            num-steps 3
-            step (/ 1.0 num-steps)]
-        (doseq [s (range num-steps)]
-          (let [t (* s step)
-                px (bezier-point (p1 0) (p2 0) (p3 0) (p4 0) t)
-                py (bezier-point (p1 1) (p2 1) (p3 1) (p4 1) t)
-                pz (bezier-point (p1 2) (p2 2) (p3 2) (p4 2) t)
-                tx (bezier-tangent (p1 0) (p2 0) (p3 0) (p4 0) t)
-                ty (bezier-tangent (p1 1) (p2 1) (p3 1) (p4 1) t)
-                tz (bezier-tangent (p1 2) (p2 2) (p3 2) (p4 2) t)
-                ts (vec3-add [px py pz] (vec3-scale [tx ty tz] 0.25))]
-            (line px py pz (ts 0) (ts 1) (ts 2)) 
-            )))))
-            
 
 (defn make-curve-endpoints [connected-idxs]
   (let [num-points (count connected-idxs)]
@@ -345,7 +359,7 @@
     ;(stroke-weight 2)
     (stroke 255 120 120 128)
     (doseq [endpoints endpoint-pairs]
-      (draw-curve-tangents (endpoints 0) (endpoints 1)))
+      (draw-curve-tangents (endpoints 0) (endpoints 1) 3))
 
     ;(stroke-weight 2)
     ;(stroke (col2 0) (col2 1) (col2 2) 255)
