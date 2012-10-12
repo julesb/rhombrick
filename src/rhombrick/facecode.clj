@@ -65,6 +65,14 @@
                (range 12) facecode)))
 
 
+
+(defn get-nonconnected-idxs [facecode]
+  (filter #(not= nil %)
+          (map #(if (not (= %2 \1)) %1 nil)
+               (range 12) facecode)))
+
+
+
 (def all-facecodes (generate-face-codes))
 (def normalised-facecodes (atom {}))
 (def normalised-facecodes-set (atom #{}))

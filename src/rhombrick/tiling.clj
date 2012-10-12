@@ -30,7 +30,10 @@
   [\0 \-]
   [\1 \1]
   [\1 \-]
-  [\- \-]})
+  [\- \-]
+  ;[\a \A]
+  ;[\b \B]
+                           })
 
 (def face-list (atom #{}))
 
@@ -41,6 +44,9 @@
 
 
 ; _______________________________________________________________________
+
+(defn get-num-connected [code]
+  (count (filter #(and (not= \0 %) (not= \- %)) code)))
 
 
 (defn get-n-rand-tilecode [n]
@@ -383,6 +389,19 @@
       (swap! face-list conj fvw)
       (do
         (remove-from-facelist fvw))))))
+
+
+(defn add-tile-to-facelist2 [pos]
+  (let [code (@tiles pos)
+        idxs (get-nonconnected-idxs code)
+        faces (map #(rd-faces %1) idxs)]
+    (doseq [f faces]
+      (let [fv (face-idxs-to-verts f)
+            fvw (vec (map #(vec3-add pos (vec3-scale % 0.5)) fv))]
+        ;(swap! face-list conj fvw)))))
+        (if (not (facelist-contains-rotations? fvw))
+          (swap! face-list conj fvw))))))
+        ; (remove-from-facelist fvw))))))
 
 
 (defn build-face-list []
