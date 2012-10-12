@@ -83,6 +83,7 @@
           by (+ y (/ button-height 2))
           gc (get-group-color code)
           col [(gc 0) (gc 1) (gc 2) 64]
+          col2 (compute-tile-color code)
           ]
       (if (button x y "111111111111")
         (do
@@ -123,7 +124,7 @@
 
 (defn draw-groups []
   (stroke 128 128 128 128)
-  (fill 0 0 0 192)
+  (fill 0 0 0 128)
   (rect 40 20 1300 1010)
   (ui-prepare)
   (stroke-weight 1)
