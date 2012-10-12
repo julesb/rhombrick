@@ -4,7 +4,8 @@
         [rhombrick.staticgeometry]
         [rhombrick.facecode]
         [rhombrick.tiling]
-        [rhombrick.glider]))
+        [rhombrick.glider]
+        [clojure.math.combinatorics]))
 
 
 (def rhomb-tex (atom nil))
@@ -110,6 +111,7 @@
 
 (defn draw-face-list []
   (fill 64 64 128 255)
+  ;(no-fill)
   (stroke 128 128 255 192)
   (stroke-weight 2)
   ;(no-stroke)
@@ -266,12 +268,13 @@
               (p4 0) (p4 1) (p4 2)))))
 
 
-(defn make-curve-endpoints [connected-idxs]
+(defn make-curve-endpoints-orig [connected-idxs]
   (let [num-points (count connected-idxs)]
     (map #(vector %1 (nth connected-idxs (mod (+ %2 1) num-points)))
          connected-idxs (range num-points))))
 
-; _______________________________________________________________________
+(defn make-curve-endpoints [connected-idxs]
+  (map vec (vec (combinations connected-idxs 2))))
 
 
 (defn draw-gliders [frame]
@@ -314,7 +317,8 @@
 
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
-        num-connected (count (filter #(= \1 %) code))
+        ; num-connected (count (filter #(= \1 %) code))
+        num-connected (get-num-connected code)
         col (get-tile-color code); (rd-face-colors (mod num-connected 12))
         col2 (get-group-color code)
         fill-col (rd-face-colors 
@@ -372,7 +376,9 @@
 (defn draw-facecode-lite [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (count (filter #(= \1 %) code))
-        col (get-tile-color code); (rd-face-colors (mod num-connected 12))
+        ;col (get-tile-color code) ; (rd-face-colors (mod num-connected 12))
+        col (get-group-color code) ;(rd-face-colors (mod num-connected 12))
+        col (compute-tile-color code)
         ;col2 (get-group-color code)
         ;fill-col (rd-face-colors 
         ;           (connecting-faces (mod num-connected 12)))
