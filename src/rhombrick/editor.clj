@@ -17,6 +17,17 @@
   (init-dead-loci)
   (println "current tileset colors:" @current-tileset-colors))
 
+(defn set-current-tileset [tileset]
+  (reset! current-tileset tileset)
+  (doseq [code tileset]
+    (let [col (compute-tile-color code)]
+      (doseq [rc (rotations code)]
+        (swap! current-tileset-colors assoc rc col))
+      ;(swap! current-tileset conj code)
+      ))
+  (init-dead-loci))
+
+
 
 (defn remove-from-current-tileset [code]
   (swap! current-tileset-colors dissoc code)

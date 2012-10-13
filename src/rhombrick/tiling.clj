@@ -31,8 +31,12 @@
   [\1 \1]
   [\1 \-]
   [\- \-]
-  ;[\a \A]
-  ;[\b \B]
+  [\a \A]
+  [\b \B]
+  [\c \C]
+  [\d \D]
+  [\e \E]
+  [\f \F]
                            })
 
 (def face-list (atom #{}))
@@ -40,7 +44,9 @@
 (def assemblage-center (atom [0 0 0]))
 
 
-
+; interesting tilesets:
+;
+; (set-current-tileset #{"a01b01A01B01" "00000A00000a" "00000B00000b"})
 
 
 ; _______________________________________________________________________
@@ -227,7 +233,9 @@
 ; compatibility table 
 (defn face-digit-compatible? [a b]
   (or (contains? facecode-compatible [a b])
-      (contains? facecode-compatible [b a])))
+      (contains? facecode-compatible [b a])
+      (= a \-)
+      (= b \-)))
 
 
 ; determine if faces are compatible without rotation

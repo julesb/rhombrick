@@ -31,11 +31,20 @@
 ; _______________________________________________________________________
 
 
-(defn compute-tile-color [code]
+
+
+(defn compute-tile-color-orig [code]
   (if (not= nil code)
-    (let [rc (rotations code)
+    (let [rc (set (rotations code))
           bvals (map #(. Integer parseInt % 2) rc)
           n (first (sort bvals))
+          c (int (mod n 12))]
+      (rd-face-colors c))
+    [255 0 0]))
+
+(defn compute-tile-color [code]
+  (if (not= nil code)
+    (let [n (hash (apply str (set (rotations code))))
           c (int (mod n 12))]
       (rd-face-colors c))
     [255 0 0]))
@@ -190,7 +199,7 @@
   ;(fill 32 32 255 128)
   (when (contains? @tiles pos)
   (let [code (@tiles pos)
-        num-connected (count (filter #(= \1 %) code))
+        num-connected (get-num-connected code)
         col (get-tile-color code)] ;(rd-face-colors (mod num-connected 12))]
     
     (no-stroke)
@@ -317,7 +326,6 @@
 
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
-        ; num-connected (count (filter #(= \1 %) code))
         num-connected (get-num-connected code)
         col (get-tile-color code); (rd-face-colors (mod num-connected 12))
         col2 (get-group-color code)
@@ -340,7 +348,7 @@
         (no-fill)))
 
     (stroke-weight 2) 
-    ;(stroke (col 0) (col 1) (col 2) 128) 
+    (stroke (col 0) (col 1) (col 2) 128) 
     ;(stroke 192 192 255 192)
     ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
     ;(stroke 150 150 255 128)
@@ -360,7 +368,8 @@
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))
     
-    ;(stroke-weight 2)
+    ;draw tangent vectors
+    (stroke-weight 1)
     (stroke 255 120 120 128)
     (doseq [endpoints endpoint-pairs]
       (draw-curve-tangents (endpoints 0) (endpoints 1) 3))
