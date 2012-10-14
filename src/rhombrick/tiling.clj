@@ -4,7 +4,6 @@
         [rhombrick.facecode]
         [ordered.map]))
 
-;(use 'ordered.map)
 
 (def max-tiles (atom 200))
 ;(def tiles (atom {}))
@@ -12,25 +11,9 @@
 
 (def tiler-iterations (atom 0))
 
-(def working-tileset (atom #{
-                      ;"100000000000"
-                      ;"100000100000" 
-                      ;"111000000000"
-                      ;"000111000000"
-                      ;"000101010000"
-                      ;"100010001000"
-                      ;"111111111111"
-
-                      ;"000001000011"
-                      "000001001001"
-                      }))
-
 (def facecode-compatible #{
   [\0 \0]
-  [\0 \-]
   [\1 \1]
-  [\1 \-]
-  [\- \-]
   [\a \A]
   [\b \B]
   [\c \C]
@@ -46,7 +29,9 @@
 
 ; interesting tilesets:
 ;
-; (set-current-tileset #{"a01b01A01B01" "00000A00000a" "00000B00000b"})
+; (set-current-tileset ...)
+; #{"a01b01A01B01" "00000A00000a" "00000B00000b"})
+; #{"000000001001" "000000001101" "a01b01A01B01" "00000A00000a" "00000B00000b"}
 
 
 ; _______________________________________________________________________
@@ -66,94 +51,94 @@
          (range n)))
 
 
-(defn random-tileset-blah []
-  (reset! working-tileset #{})
-  (if (< (rand-int 100) 30)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 1)))
-  (if (< (rand-int 100) 50)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 2 2)))
-  (if (< (rand-int 100) 40)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 3)))
-  (if (< (rand-int 100) 20)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 4)))
-  (if (< (rand-int 100) 10)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 5)))
-  (if (< (rand-int 100) 10)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 6)))
-  (if (< (rand-int 100) 10)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 7)))
-  (if (< (rand-int 100) 10)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 8)))
-  (if (< (rand-int 100) 10)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 9)))
-  (if (< (rand-int 100) 10)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 10)))
-  (if (< (rand-int 100) 10)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 11)))
-  (if (< (rand-int 100) 10)
-    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 12)))
-)
+;(defn random-tileset-blah []
+;  (reset! working-tileset #{})
+;  (if (< (rand-int 100) 30)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 1)))
+;  (if (< (rand-int 100) 50)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 2 2)))
+;  (if (< (rand-int 100) 40)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 3)))
+;  (if (< (rand-int 100) 20)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 4)))
+;  (if (< (rand-int 100) 10)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 5)))
+;  (if (< (rand-int 100) 10)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 6)))
+;  (if (< (rand-int 100) 10)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 7)))
+;  (if (< (rand-int 100) 10)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 8)))
+;  (if (< (rand-int 100) 10)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 9)))
+;  (if (< (rand-int 100) 10)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 10)))
+;  (if (< (rand-int 100) 10)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 11)))
+;  (if (< (rand-int 100) 10)
+;    (swap! working-tileset conj (get-n-rand-tilecode-from-group 1 12)))
+;)
 
 
-(defn random-tileset []
-  (reset! working-tileset #{})
-  (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
-      (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 2) ]
-      (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
-      (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 0 4) ]
-      (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 0 5) ]
-      (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 0 8) ]
-      (swap! working-tileset conj code))
-  (doseq [code (get-n-rand-tilecode-from-group 1 12) ]
-      (swap! working-tileset conj code))
-  
-; (swap! working-tileset conj "100000100000") 
-  ;(swap! working-tileset conj (first (get-n-rand-tilecode 1))) 
+;(defn random-tileset []
+;  (reset! working-tileset #{})
+;  (doseq [code (get-n-rand-tilecode-from-group 1 1) ]
+;      (swap! working-tileset conj code))
+;  (doseq [code (get-n-rand-tilecode-from-group 1 2) ]
+;      (swap! working-tileset conj code))
+;  (doseq [code (get-n-rand-tilecode-from-group 1 3) ]
+;      (swap! working-tileset conj code))
+;  (doseq [code (get-n-rand-tilecode-from-group 0 4) ]
+;      (swap! working-tileset conj code))
+;  (doseq [code (get-n-rand-tilecode-from-group 0 5) ]
+;      (swap! working-tileset conj code))
+;  (doseq [code (get-n-rand-tilecode-from-group 0 8) ]
+;      (swap! working-tileset conj code))
+;  (doseq [code (get-n-rand-tilecode-from-group 1 12) ]
+;      (swap! working-tileset conj code))
+;  
+;; (swap! working-tileset conj "100000100000") 
+;  ;(swap! working-tileset conj (first (get-n-rand-tilecode 1))) 
+;
+;  (println "working tileset: " @working-tileset)
+;
+;  )
 
-  (println "working tileset: " @working-tileset)
 
-  )
-
-
-(defn random-tileset-rand []
-  (let [num-tiles (+ 1 (rand-int 5))]
-    (reset! working-tileset #{})
-    ;(swap! working-tileset conj "100000000000")
-    (doseq [code (get-n-rand-tilecode num-tiles) ]
-      (swap! working-tileset conj code))
-    (println "working tileset: " @working-tileset)))
+;(defn random-tileset-rand []
+;  (let [num-tiles (+ 1 (rand-int 5))]
+;    (reset! working-tileset #{})
+;    ;(swap! working-tileset conj "100000000000")
+;    (doseq [code (get-n-rand-tilecode num-tiles) ]
+;      (swap! working-tileset conj code))
+;    (println "working tileset: " @working-tileset)))
  
 
-(defn random-tileset-old []
-  (let [num-tiles 1
-        tiles (repeat num-tiles 
-                      (rand-nth 
-                        (take 50 (seq @normalised-facecodes-sorted))))]
-        ;(init-tiler)
-        (reset! working-tileset #{})
-        (doseq [tile tiles]
-          (swap! working-tileset conj tile))
-        (if (< (rand-int 100) 90)
-          (swap! working-tileset conj "100000000000"))
-        (if (< (rand-int 100) 50)
-          (swap! working-tileset conj "111111111111"))
-        (if (< (rand-int 100) 50)
-          (swap! working-tileset conj "110000000000"))
-        (if (< (rand-int 100) 30)
-          (swap! working-tileset conj "101000000000"))
-        (if (< (rand-int 100) 30)
-          (swap! working-tileset conj "100100000000"))
-        (if (< (rand-int 100) 30)
-          (swap! working-tileset conj "100010000000"))
-        (if (< (rand-int 100) 30)
-          (swap! working-tileset conj "100000000000"))
-
-        ))
+;(defn random-tileset-old []
+;  (let [num-tiles 1
+;        tiles (repeat num-tiles 
+;                      (rand-nth 
+;                        (take 50 (seq @normalised-facecodes-sorted))))]
+;        ;(init-tiler)
+;        (reset! working-tileset #{})
+;        (doseq [tile tiles]
+;          (swap! working-tileset conj tile))
+;        (if (< (rand-int 100) 90)
+;          (swap! working-tileset conj "100000000000"))
+;        (if (< (rand-int 100) 50)
+;          (swap! working-tileset conj "111111111111"))
+;        (if (< (rand-int 100) 50)
+;          (swap! working-tileset conj "110000000000"))
+;        (if (< (rand-int 100) 30)
+;          (swap! working-tileset conj "101000000000"))
+;        (if (< (rand-int 100) 30)
+;          (swap! working-tileset conj "100100000000"))
+;        (if (< (rand-int 100) 30)
+;          (swap! working-tileset conj "100010000000"))
+;        (if (< (rand-int 100) 30)
+;          (swap! working-tileset conj "100000000000"))
+;
+;        ))
 
 ; _______________________________________________________________________
 
@@ -237,6 +222,9 @@
       (= a \-)
       (= b \-)))
 
+
+(defn face-digit-like-compatible? [d]
+  (not (contains? #{\a \b \c \d \e \f \A \B \C \D \E \F} d)))
 
 ; determine if faces are compatible without rotation
 (defn facecodes-directly-compatible? [outercode innercode]

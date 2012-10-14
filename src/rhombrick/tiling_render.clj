@@ -32,15 +32,15 @@
 
 
 
-
-(defn compute-tile-color-orig [code]
-  (if (not= nil code)
-    (let [rc (set (rotations code))
-          bvals (map #(. Integer parseInt % 2) rc)
-          n (first (sort bvals))
-          c (int (mod n 12))]
-      (rd-face-colors c))
-    [255 0 0]))
+; this assumes that the tilecode can be parsed as a binary number - no use
+;(defn compute-tile-color-orig [code]
+;  (if (not= nil code)
+;    (let [rc (set (rotations code))
+;          bvals (map #(. Integer parseInt % 2) rc)
+;          n (first (sort bvals))
+;          c (int (mod n 12))]
+;      (rd-face-colors c))
+;    [255 0 0]))
 
 (defn compute-tile-color [code]
   (if (not= nil code)
@@ -106,7 +106,7 @@
     (let [vert-idx (faces i)
           v0 (verts (vert-idx 0))
           v1 (verts (vert-idx 1))
-          v2 (verts (vert-idx 2))
+         v2 (verts (vert-idx 2))
           v3 (verts (vert-idx 3))]
       (begin-shape :quads)
       (vertex (v0 0) (v0 1) (v0 2))
@@ -196,24 +196,49 @@
 
 
 (defn draw-curve-boundary-points [pos]
-  ;(fill 32 32 255 128)
   (when (contains? @tiles pos)
-  (let [code (@tiles pos)
-        num-connected (get-num-connected code)
-        col (get-tile-color code)] ;(rd-face-colors (mod num-connected 12))]
-    
-    (no-stroke)
-    (fill (col 0) (col 1) (col 2) 240)
-    (with-translation pos
-      (scale 0.5)
-      (doseq [i (range 12)]
-        (if (not= (.charAt code i) \0)
-         (with-translation (co-verts i)
-          (scale 0.02)
-          ;(sphere 0.05)
-          (draw-faces rd-verts rd-faces nil)
-                           )))))))
-                                    
+    (let [code (@tiles pos)
+          num-connected (get-num-connected code)
+          col (get-tile-color code)] ;(rd-face-colors (mod num-connected 12))]
+      (no-stroke)
+      (fill (col 0) (col 1) (col 2) 240)
+      (with-translation pos
+        (scale 0.5)
+        (doseq [i (range 12)]
+          (if (not= (.charAt code i) \0)
+           (with-translation (co-verts i)
+            (scale 0.02)
+            ;(sphere 0.05)
+            (draw-faces rd-verts rd-faces nil)
+                             )))))))
+  
+
+(defn draw-opposite-compatible-boundary-points [pos]
+  (when (contains? @tiles pos)
+    (let [code (@tiles pos)
+          num-connected (get-num-connected code)
+          col (get-tile-color code)]
+      ;(no-stroke)
+      (fill (col 0) (col 1) (col 2) 240)
+      (with-translation pos
+        (scale 0.5)
+        (doseq [i (range 12)]
+          (let [d (.charAt code i)]
+            (when (not (face-digit-like-compatible? d))
+              (if (re-find #"[a-f]+" (str d))
+                (do
+                  (stroke-weight 4)
+                  (stroke 0 0 0)
+                  (fill 255 255 255))
+                (do
+                  (stroke-weight 4)
+                  (stroke 255 255 255)
+                  (fill 0 0 0)))
+              (with-translation (co-verts i)
+                (scale 0.02)
+                (draw-faces rd-verts rd-faces nil)))))))))
+
+
 ; _______________________________________________________________________
 
 
@@ -281,6 +306,7 @@
   (let [num-points (count connected-idxs)]
     (map #(vector %1 (nth connected-idxs (mod (+ %2 1) num-points)))
          connected-idxs (range num-points))))
+
 
 (defn make-curve-endpoints [connected-idxs]
   (map vec (vec (combinations connected-idxs 2))))
@@ -436,13 +462,16 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)]
+      (draw-opposite-compatible-boundary-points pos) 
+
       (with-translation pos 
         (scale 0.5)
         (stroke-weight 8)
         (stroke 0 0 0 64)
         (no-fill) 
         (draw-facecode (@tiles pos))
-        
+
+
         ;(stroke-weight 1)
         ;(stroke 128 128 128 24)
         ;;(no-stroke)
