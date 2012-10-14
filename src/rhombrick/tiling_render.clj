@@ -42,12 +42,18 @@
 ;      (rd-face-colors c))
 ;    [255 0 0]))
 
-(defn compute-tile-color [code]
+(defn compute-tile-color-1 [code]
   (if (not= nil code)
     (let [n (hash (apply str (set (rotations code))))
           c (int (mod n 12))]
       (rd-face-colors c))
     [255 0 0]))
+
+(defn compute-tile-color [code]
+  (when (not= nil code)
+    (let [hs (apply str "0x" code)
+          n (mod (read-string hs) 12)]
+      (rd-face-colors n))))
 
 
 (defn get-tile-color [code]
@@ -215,31 +221,25 @@
 
 (defn draw-opposite-compatible-boundary-points [pos]
   (when (contains? @tiles pos)
-    (let [code (@tiles pos)
-          num-connected (get-num-connected code)
-          col (get-tile-color code)]
-      ;(no-stroke)
-      (fill (col 0) (col 1) (col 2) 240)
+    (let [code (@tiles pos)]
       (with-translation pos
         (scale 0.5)
+        (stroke-weight 4)
         (doseq [i (range 12)]
           (let [d (.charAt code i)]
             (when (not (face-digit-like-compatible? d))
-              (if (re-find #"[a-f]+" (str d))
-                (do
-                  (stroke-weight 4)
-                  (stroke 0 0 0)
-                  (fill 255 255 255))
-                (do
-                  (stroke-weight 4)
-                  (stroke 255 255 255)
-                  (fill 0 0 0)))
-              (with-translation (co-verts i)
-                (scale 0.02)
-                (draw-faces rd-verts rd-faces nil)))))))))
-
-
-; _______________________________________________________________________
+              (let [polarity (re-find #"[a-f]+" (str d))]
+                (if polarity
+                  (do (stroke 0 0 0)
+                      (fill 255 255 255))
+                  (do (stroke 255 255 255)
+                      (fill 0 0 0 255)))
+                (with-translation (co-verts i)
+                  (when polarity
+                    (rotate-x (/ Math/PI 4.0))
+                    (rotate-y (/ Math/PI 4.0))
+                    (rotate-z (/ Math/PI 4.0)))
+                  (box 0.05))))))))))
 
 
 (defn draw-empty []
