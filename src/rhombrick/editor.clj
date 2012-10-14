@@ -39,10 +39,6 @@
   )
 
 
-(defn set-current-tileset [tileset]
-  (reset! current-tileset tileset))
-
-
 (defn draw-tile-groups []
   )
 ; _______________________________________________________________________
