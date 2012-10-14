@@ -153,7 +153,7 @@
          (init-gliders num-gliders))
    \R #(do 
          (init-tiler @current-tileset)
-         (random-tileset)
+         (set-current-tileset (get-random-tileset))
          (make-backtracking-tiling-iteration @current-tileset)
          (init-gliders num-gliders)
          )
@@ -376,7 +376,7 @@
       (let [selected-tile ((get-glider 1) :current-tile)
             tile-color (get-group-color selected-tile)]
         (draw-neighbours selected-tile)
-        (draw-curve-boundary-points selected-tile)
+        ;(draw-curve-boundary-points selected-tile)
         (draw-selected-tile selected-tile)
         ;(point-light (tile-color 0) (tile-color 1) (tile-color 2)
         ;             (selected-tile 0) (selected-tile 1) (selected-tile 2))
