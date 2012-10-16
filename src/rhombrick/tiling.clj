@@ -11,6 +11,8 @@
 
 (def tiler-iterations (atom 0))
 
+(def tiler-state (atom :halted)) 
+
 (def facecode-compatible #{
   [\0 \0]
   [\1 \1]
@@ -252,7 +254,7 @@
 (defn add-to-dead-loci [code]
   (do
     (swap! dead-loci conj code)
-    ;(println "dead-loci:" @dead-loci)
+    (println "dead-loci:" @dead-loci)
     ))
 
 ;(defn creates-untilable-region? [pos]
@@ -364,9 +366,13 @@
   (reset! face-list #{})
   (init-empty-positions)
   (init-dead-loci)
-  (seed-tiler tileset))
+  (seed-tiler tileset)
+  (reset! tiler-state :running)
+  (println "tiler started"))
 
-
+(defn halt-tiler []
+  (reset! tiler-state :halted)
+  (println "tiler halted"))
 ; _______________________________________________________________________
 
 
@@ -503,32 +509,27 @@
     
 
 (defn make-backtracking-tiling-iteration [tileset]
-  (when (and (< (count @tiles) @max-tiles)
+  (when (= @tiler-state :running)
+    (if (and (< (count @tiles) @max-tiles)
              (> (count @empty-positions) 0)
              (> (count tileset) 0))
-    (when-let [positions (choose-positions tileset)]
-      (let [new-pos (find-closest-to-point positions (find-assemblage-center))
-            new-code (choose-tilecode new-pos tileset)]
-        (if (nil? new-code)
-          (do
-            (println "new code is nil")
+      (when-let [positions (choose-positions tileset)]
+        (let [new-pos (find-closest-to-point positions (find-assemblage-center))
+              new-code (choose-tilecode new-pos tileset)]
+          (if (nil? new-code)
             (add-to-dead-loci (get-outer-facecode new-pos))
-            (backtrack))
-          (do
-            (make-tile new-pos new-code)
-            (if-let [untileable (find-untilable-neighbours new-pos tileset)]
-              (do
-                (doseq [u untileable]
-                  (add-to-dead-loci (get-outer-facecode u)))
-                (delete-tile new-pos)
-                (backtrack))
-              (do
-                (add-tile-to-facelist new-pos)
-                (push-connected-neighbours-to-empty-positions new-pos)
-                (remove-from-empty-positions new-pos)
-                ;(update-assemblage-center new-pos)
-                ))))))
-    (swap! tiler-iterations inc)))
+            (make-tile new-pos new-code))
+          (if (or (creates-untilable-region? new-pos)
+                  (nil? new-code))
+            (do
+              (delete-tile new-pos)
+              (backtrack))
+            (do
+              (add-tile-to-facelist new-pos)
+              (push-connected-neighbours-to-empty-positions new-pos)
+              (remove-from-empty-positions new-pos))))
+        (swap! tiler-iterations inc))
+      (halt-tiler))))
        
 
 ; _______________________________________________________________________
