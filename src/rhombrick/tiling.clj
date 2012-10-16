@@ -365,10 +365,12 @@
   (reset! tiler-iterations 0)
   (reset! face-list #{})
   (init-empty-positions)
-  (init-dead-loci)
+  (if (not= @rhombrick.editor/current-tileset tileset)
+    (init-dead-loci))
   (seed-tiler tileset)
   (reset! tiler-state :running)
   (println "tiler started"))
+
 
 (defn halt-tiler []
   (reset! tiler-state :halted)
@@ -503,8 +505,7 @@
       (update-empty-positions)
       ;(println "| tiles:" num-tiles 
       ;         "| backtracked:" n)
-      ;(init-dead-loci)
-      ;(build-face-list)
+      (build-face-list)
       )))
     
 
