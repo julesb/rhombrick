@@ -54,7 +54,7 @@
 
 
 (defn make-random-tilecode []
-  (let [digits [\0 \0 \0 \0 \0 \0 \1 \a \A]]
+  (let [digits [\0 \0 \0 \0 \0 \0 \0 \0 \0 \1 \a \A]]
     (apply str (map (fn [_] (rand-nth digits))
                     (range 12)))))
 

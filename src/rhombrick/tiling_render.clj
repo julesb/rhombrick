@@ -125,9 +125,9 @@
 
 
 (defn draw-face-list []
-  (fill 64 64 128 255)
+  (fill 64 64 128 150)
   ;(no-fill)
-  (stroke 128 128 255 192)
+  (stroke 128 128 255 64)
   (stroke-weight 2)
   ;(no-stroke)
   (doseq [face-verts @face-list]
@@ -230,16 +230,16 @@
             (when (not (face-digit-like-compatible? d))
               (let [polarity (re-find #"[a-f]+" (str d))]
                 (if polarity
-                  (do (stroke 0 0 0)
-                      (fill 255 255 255))
-                  (do (stroke 255 255 255)
+                  (do (stroke 0 0 0 255)
+                      (fill 255 255 255 255))
+                  (do (stroke 255 255 255 255)
                       (fill 0 0 0 255)))
                 (with-translation (co-verts i)
                   (when polarity
                     (rotate-x (/ Math/PI 4.0))
                     (rotate-y (/ Math/PI 4.0))
                     (rotate-z (/ Math/PI 4.0)))
-                  (box 0.05))))))))))
+                  (box 0.1))))))))))
 
 
 (defn draw-empty []

@@ -154,6 +154,7 @@
    \R #(do 
          (init-tiler @current-tileset)
          (set-current-tileset (get-random-tileset))
+         (println "random tileset:" @current-tileset) 
          (make-backtracking-tiling-iteration @current-tileset)
          (init-gliders num-gliders)
          )
