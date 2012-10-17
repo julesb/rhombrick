@@ -107,9 +107,19 @@
 
 ; _______________________________________________________________________
 
-(defn draw-info []
-  (fill 255 255 255 255)
-  (text (str "fps: " (current-frame-rate)) 10 40))
+(defn draw-info [x y]
+  (let [line-space 20
+        lines [(str "tileset: " @current-tileset)
+               (str "  state: " @tiler-state)
+               (str "  iters: " @tiler-iterations)
+               (str "  tiles: " (count @tiles)) 
+               (str "  empty: " (count @empty-positions)) 
+               (str "   dead: " (count @dead-loci))
+               (str "    fps: " (int (current-frame-rate)))
+               ]]
+    (fill 255 255 255 255)
+    (doseq [i (range (count lines))]
+      (text (lines i) x (+ y (* i line-space))))))
 
 ; _______________________________________________________________________
 
@@ -148,7 +158,7 @@
         (println "model-scale: " @model-scale))
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
-         (init-tiler @current-tileset)
+         (soft-init-tiler @current-tileset)
          (make-backtracking-tiling-iteration @current-tileset)
          (init-gliders num-gliders))
    \R #(do 
@@ -264,12 +274,12 @@
 
 
 (defn mouse-pressed []
-  (println "mouse-pressed")
+  ;(println "mouse-pressed")
   (update-ui-state :mouse-down true))
 
 
 (defn mouse-released []
-  (println "mouse-released")
+  ;(println "mouse-released")
   (update-ui-state :mouse-down false))
   
 ; _______________________________________________________________________
@@ -280,9 +290,16 @@
   (let [frame-start-time (System/nanoTime)]
   (do-movement-keys)
 
-  (when (= 0 (mod (frame-count) 1))
-    (make-backtracking-tiling-iteration @current-tileset))
-  
+  ;(when (= 0 (mod (frame-count) 1))
+  ;  (make-backtracking-tiling-iteration @current-tileset))
+ 
+  (when (= @tiler-state :running)
+    (if (and (> (count @empty-positions) 0)
+             (> (count @current-tileset) 0))
+      (make-backtracking-tiling-iteration2 @tiles @current-tileset)
+      (halt-tiler)))
+
+
   (when @draw-gliders?   
     (update-gliders))
     
@@ -392,7 +409,7 @@
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info)
+  (draw-info 10 40)
   (camera)
 
   (when @draw-editor?
@@ -406,8 +423,9 @@
                        frame-start-time)
                     1000000.0)))
 
-  (if (= (mod (frame-count) 150) 0)
-   (println "last-render-time: " @last-render-time
+  (if (and (= @tiler-state :running)
+           (= (mod (frame-count) 150) 0))
+   (println "frame-time: " @last-render-time
             "tiles:" (count @tiles)
             "adhd:" @adhd "auti:" @autism
             ))

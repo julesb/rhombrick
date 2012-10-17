@@ -125,7 +125,7 @@
 
 
 (defn draw-face-list []
-  (fill 64 64 128 150)
+  (fill 64 64 128 220)
   ;(no-fill)
   (stroke 128 128 255 64)
   (stroke-weight 2)
@@ -373,7 +373,7 @@
         (pop-matrix)
         (no-fill)))
 
-    (stroke-weight 2) 
+    (stroke-weight 4) 
     (stroke (col 0) (col 1) (col 2) 128) 
     ;(stroke 192 192 255 192)
     ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
@@ -388,7 +388,7 @@
         (no-fill))
         )
 
-    (stroke-weight 4)
+    (stroke-weight 6)
     (stroke (col 0) (col 1) (col 2) 192)
     ;(stroke 192 192 255 192)
     (doseq [endpoints endpoint-pairs]

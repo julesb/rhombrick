@@ -4,14 +4,31 @@
         [rhombrick.facecode]
         [ordered.map]))
 
+;(def tiler (atom {
+;  :max-tiles 200
+;  :state :halted
+;  :iterations 0
+;  :tiles (ordered-map)
+;  :empty-positions #{}
+;  :dead-loci #{}
+;}))
+
+; increment :iterations
+; (swap! tiler assoc :iterations (inc (@tiler :iterations)))
+;
+; add a tile
+; (swap! tiler assoc :tiles (assoc (@tiler :tiles) [0 0 0] "abc"))
+;
+;
+;
+;
 
 (def max-tiles (atom 200))
-;(def tiles (atom {}))
 (def tiles (atom (ordered-map)))
-
 (def tiler-iterations (atom 0))
-
-(def tiler-state (atom :halted)) 
+(def tiler-state (atom :halted)) ; :halted :running 
+(def face-list (atom #{}))
+(def assemblage-center (atom [0 0 0]))
 
 (def facecode-compatible #{
   [\0 \0]
@@ -24,9 +41,6 @@
   [\f \F]
                            })
 
-(def face-list (atom #{}))
-
-(def assemblage-center (atom [0 0 0]))
 
 
 ; interesting tilesets:
@@ -59,6 +73,7 @@
   (let [digits [\0 \0 \0 \0 \0 \0 \0 \0 \0 \1 \a \A]]
     (apply str (map (fn [_] (rand-nth digits))
                     (range 12)))))
+
 
 (defn get-random-tileset []
   (let [num-tiles (+ 1 (rand-int 5))]
@@ -162,8 +177,10 @@
 
 (defn find-candidates [pos tileset]
   (let [outercode (get-outer-facecode pos)]
-    (filter #(facecodes-directly-compatible? outercode %)
-            (expand-tiles tileset))))
+    (if (contains? @dead-loci outercode)
+      ()
+      (filter #(facecodes-directly-compatible? outercode %)
+              (expand-tiles tileset)))))
   
 (defn choose-tilecode [pos tileset]
   (let [candidates (find-candidates pos tileset)]  
@@ -237,7 +254,7 @@
 (defn add-to-dead-loci [code]
   (do
     (swap! dead-loci conj code)
-    (println "dead-loci:" @dead-loci)
+    ;(println "dead-loci:" @dead-loci)
     ))
 
 
@@ -344,10 +361,27 @@
   (reset! tiler-state :running)
   (println "tiler started"))
 
+; same as init-tiles but doesnt reset dead-loci
+(defn soft-init-tiler [tileset]
+  (reset! tiles {})
+  (reset! tiler-iterations 0)
+  (reset! face-list #{})
+  (init-empty-positions)
+  (seed-tiler tileset)
+  (reset! tiler-state :running)
+  (println "tiler started"))
+
+
 
 (defn halt-tiler []
   (reset! tiler-state :halted)
-  (println "tiler halted"))
+  (println "#  HALTED - "
+           "tiles:" (count @tiles)
+           "iters:" @tiler-iterations
+           "dead:" (count @dead-loci)
+           "i/t" (float (/ @tiler-iterations (count @tiles)))
+           "t/i" (float (/ (count @tiles) @tiler-iterations ))
+           "tileset:" @rhombrick.editor/current-tileset))
 ; _______________________________________________________________________
 
 
@@ -505,6 +539,24 @@
         (swap! tiler-iterations inc))
       (halt-tiler))))
        
+
+(defn make-backtracking-tiling-iteration2 [tiles tileset]
+  (when-let [positions (choose-positions tileset)]
+    (let [new-pos (find-closest-to-point positions (find-assemblage-center))
+          new-code (choose-tilecode new-pos tileset)]
+      (if (nil? new-code)
+        (add-to-dead-loci (get-outer-facecode new-pos))
+        (make-tile new-pos new-code))
+      (if (or (creates-untilable-region? new-pos)
+              (nil? new-code))
+        (do
+          (delete-tile new-pos)
+          (backtrack))
+        (do
+          (add-tile-to-facelist new-pos)
+          (push-connected-neighbours-to-empty-positions new-pos)
+          (remove-from-empty-positions new-pos))))
+    (swap! tiler-iterations inc)))
 
 ; _______________________________________________________________________
 
