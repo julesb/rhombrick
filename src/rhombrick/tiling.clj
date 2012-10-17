@@ -165,15 +165,6 @@
     (filter #(facecodes-directly-compatible? outercode %)
             (expand-tiles tileset))))
   
-
-(defn find-untilable-neighbours [pos tileset]
-  (let [un (filter #(= 0 (count (find-candidates % tileset)))
-                   (get-neighbours pos))]
-    (if (> (count un) 0)
-      un
-      nil)))
-
-
 (defn choose-tilecode [pos tileset]
   (let [candidates (find-candidates pos tileset)]  
     (if (seq candidates)
@@ -181,14 +172,6 @@
       nil)))
 
 
-; choose a tilecode for a position, but make sure that adding the
-; tile doesnt create any untilable regions 
-;(defn choose-nonblocking-tilecode [pos tileset]
-;  (let [candidates (find-candidates pos tileset)
-;        nb-candidates (filter #(not (contains? dead-loci  %)) candidates)]
-;    (if (seq nb-candidates)
-;      (nth nb-candidates (rand-int (count nb-candidates)))
-;      nil)))
 
 ; _______________________________________________________________________
 
@@ -257,16 +240,7 @@
     (println "dead-loci:" @dead-loci)
     ))
 
-;(defn creates-untilable-region? [pos]
-;  (> (count (filter #(= 0 (count (find-candidates % @working-tileset)))
-;                    (get-neighbours pos)))
-;     0))
 
-
-;(defn creates-untilable-region? [pos]
-;  (> (count (filter #(contains? dead-loci (get-outer-facecode %))
-;                     (get-neighbours pos))))
-;     0)
 
 (defn creates-untilable-region? [pos]
   (let [neighbours (get-neighbours pos)
