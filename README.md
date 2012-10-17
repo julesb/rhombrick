@@ -1,6 +1,6 @@
 # rhombrick
 
-Combinatorial contructions using rhombic dodecahedral blocks.
+Combinatorial constructions using rhombic dodecahedral blocks.
 
 This is a little project for me to experiment with graphics in Clojure using the [Quil](https://github.com/quil/quil) library.
 
