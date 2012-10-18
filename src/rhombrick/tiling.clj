@@ -29,6 +29,7 @@
 (def tiler-state (atom :halted)) ; :halted :running 
 (def face-list (atom #{}))
 (def assemblage-center (atom [0 0 0]))
+(def dead-loci (atom #{}))
 
 (def facecode-compatible #{
   [\0 \0]
@@ -70,13 +71,13 @@
 
 
 (defn make-random-tilecode []
-  (let [digits [\0 \0 \0 \0 \0 \0 \0 \0 \0 \1 \a \A]]
-    (apply str (map (fn [_] (rand-nth digits))
-                    (range 12)))))
+  (let [digits [\0 \0 \0 \0 \0 \0 \0 \0 \0 \1 \a \A]
+        code (apply str (map (fn [_] (rand-nth digits)) (range 12)))]
+    (if (= code "000000000000") "000000000001" code)))
 
 
 (defn get-random-tileset []
-  (let [num-tiles (+ 1 (rand-int 5))]
+  (let [num-tiles (+ 1 (rand-int 3))]
     (set (map (fn [_] (make-random-tilecode))
          (range num-tiles)))))
 
@@ -101,6 +102,12 @@
 
 (defn get-neighbours [pos]
   (vec (map #(get-neighbour pos %) (range 12))))
+
+
+(defn get-neighbourhood [pos]
+  "returns a vector containing facecodes for all neighbours"
+  (vec (map #(@tiles (get-neighbour pos %)) (range 12))))
+
 
 
 (defn tileable? [pos]
@@ -129,17 +136,27 @@
   (not (zero? (neighbour-count pos))))
 
 
-(defn get-neighbour-abutting-face [pos face]
-    (let [op-face (connecting-faces face)
-          nb-pos (get-neighbour pos face)
-          nb-face-idx op-face ]
-      (if (tileable? nb-pos)
-        \-
-        (nth (@tiles nb-pos) nb-face-idx))))
+;(defn get-neighbour-abutting-face [pos face]
+;    (let [op-face (connecting-faces face)
+;          nb-pos (get-neighbour pos face)
+;          nb-face-idx op-face ]
+;      (if (tileable? nb-pos)
+;        \-
+;        (nth (@tiles nb-pos) nb-face-idx))))
 
 
-(defn get-outer-facecode [pos]
-  (apply str (map #(get-neighbour-abutting-face pos %) (range 12))))
+(defn get-neighbour-abutting-face2 [neighbourhood face-idx]
+  (let [op-face-idx (connecting-faces face-idx)
+        nb-code (neighbourhood face-idx)]
+    (if (nil? nb-code) \- (nth nb-code op-face-idx))))
+
+
+;(defn get-outer-facecode [pos]
+;  (apply str (map #(get-neighbour-abutting-face pos %) (range 12))))
+
+
+(defn get-outer-facecode2 [neighbourhood]
+  (apply str (map #(get-neighbour-abutting-face2 neighbourhood %) (range 12))))
 
 
 ; generate all unique rotations of tiles 
@@ -167,6 +184,7 @@
 (defn face-digit-like-compatible? [d]
   (not (contains? #{\a \b \c \d \e \f \A \B \C \D \E \F} d)))
 
+
 ; determine if faces are compatible without rotation
 (defn facecodes-directly-compatible? [outercode innercode]
   (= 12 
@@ -175,15 +193,31 @@
                          innercode outercode)))))
 
 
-(defn find-candidates [pos tileset]
-  (let [outercode (get-outer-facecode pos)]
+;(defn find-candidates [pos tileset]
+;  (let [outercode (get-outer-facecode pos)]
+;    (if (contains? @dead-loci outercode)
+;      ()
+;      (filter #(facecodes-directly-compatible? outercode %)
+;              (expand-tiles tileset)))))
+  
+(defn find-candidates2 [neighbourhood tileset]
+  (let [outercode (get-outer-facecode2 neighbourhood)]
     (if (contains? @dead-loci outercode)
       ()
       (filter #(facecodes-directly-compatible? outercode %)
               (expand-tiles tileset)))))
-  
-(defn choose-tilecode [pos tileset]
-  (let [candidates (find-candidates pos tileset)]  
+
+
+;(defn choose-tilecode [pos tileset]
+;  (let [candidates (find-candidates pos tileset)]  
+;    (if (seq candidates)
+;      (nth candidates (rand-int (count candidates)))
+;      nil)))
+
+
+; neighbourhood looks like ["000000001001" "000000001000" etc ]
+(defn choose-tilecode2 [neighbourhood tileset]
+  (let [candidates (find-candidates2 neighbourhood tileset)]  
     (if (seq candidates)
       (nth candidates (rand-int (count candidates)))
       nil)))
@@ -245,7 +279,7 @@
 
 
 
-(def dead-loci (atom #{}))
+
 
 (defn init-dead-loci []
   (reset! dead-loci #{}))
@@ -263,10 +297,24 @@
   (let [neighbours (get-neighbours pos)
         empty-neighbours (filter #(tileable? %) neighbours)
         untileable-neighbours (filter #(contains? @dead-loci 
-                                                  (get-outer-facecode %))
+                                                  (get-outer-facecode2 (get-neighbours %)))
                                       empty-neighbours)]
     (> (count untileable-neighbours) 0)))
 
+;(defn creates-untilable-region2? [pos code]
+;  (let [neighbours (get-neighbours pos)
+;        neighbours-new (assoc neighbours (connecting-faces
+;        empty-neighbours (filter #(tileable? %) neighbours)
+;        en-outer-facecodes (map #(get-outer-facecode2 (get-neighbourhood %)) empty-neighbours)
+;        ;untileables (filter #(contains? @dead-loci (get-outer-facecode2 %))
+;        ;                    empty-neighbours)
+;        ]
+;    (> (count (filter #(= 0 (count %))
+;                      (map #(find-candidates2 (get-neighbourhood %) #{code})
+;                           empty-neighbours)))
+;       0)))
+
+;(defn creates-untilable-region2? [_] false)
 
 (defn face-idxs-to-verts [face-idxs]
   (vec (map #(rd-verts %) face-idxs)))
@@ -344,7 +392,7 @@
 
 (defn seed-tiler [tileset]
   (let [pos [0 0 0]
-        code (choose-tilecode pos tileset)]
+        code (rand-nth (vec tileset))]
     (make-tile pos code) 
     (push-connected-neighbours-to-empty-positions pos)))
 
@@ -381,7 +429,9 @@
            "dead:" (count @dead-loci)
            "i/t" (float (/ @tiler-iterations (count @tiles)))
            "t/i" (float (/ (count @tiles) @tiler-iterations ))
-           "tileset:" @rhombrick.editor/current-tileset))
+           ;"tileset:" @rhombrick.editor/current-tileset))
+           ))
+
 ; _______________________________________________________________________
 
 
@@ -433,21 +483,30 @@
 
 
 ; returns a list of todo locations with 0 or 1 matching tiles
-(defn find-best-positions [tileset]
-  (filter #(< (count (find-candidates % tileset)) 2)
+;(defn find-best-positions [tileset]
+;  (filter #(< (count (find-candidates % tileset)) 2)
+;          @empty-positions))
+
+(defn find-best-positions2 [tileset]
+  (filter #(< (count (find-candidates2 (get-neighbourhood %) tileset)) 2)
           @empty-positions))
 
 
 ; returns a list of todo locations with any matching tiles
-(defn find-any-positions [tileset]
-  (filter #(> (count (find-candidates % tileset)) 0)
+;(defn find-any-positions [tileset]
+;  (filter #(> (count (find-candidates % tileset)) 0)
+;          @empty-positions))
+
+
+(defn find-any-positions2 [tileset]
+  (filter #(> (count (find-candidates2 (get-neighbourhood %) tileset)) 0)
           @empty-positions))
 
 
 (defn choose-positions [tileset]
-  (let [best (find-best-positions tileset)]
+  (let [best (find-best-positions2 tileset)]
     (if (= (count best) 0)
-      (find-any-positions tileset)
+      (find-any-positions2 tileset)
       best)))
  
 
@@ -516,36 +575,37 @@
       )))
     
 
-(defn make-backtracking-tiling-iteration [tileset]
-  (when (= @tiler-state :running)
-    (if (and (< (count @tiles) @max-tiles)
-             (> (count @empty-positions) 0)
-             (> (count tileset) 0))
-      (when-let [positions (choose-positions tileset)]
-        (let [new-pos (find-closest-to-point positions (find-assemblage-center))
-              new-code (choose-tilecode new-pos tileset)]
-          (if (nil? new-code)
-            (add-to-dead-loci (get-outer-facecode new-pos))
-            (make-tile new-pos new-code))
-          (if (or (creates-untilable-region? new-pos)
-                  (nil? new-code))
-            (do
-              (delete-tile new-pos)
-              (backtrack))
-            (do
-              (add-tile-to-facelist new-pos)
-              (push-connected-neighbours-to-empty-positions new-pos)
-              (remove-from-empty-positions new-pos))))
-        (swap! tiler-iterations inc))
-      (halt-tiler))))
+;(defn make-backtracking-tiling-iteration [tileset]
+;  (when (= @tiler-state :running)
+;    (if (and (< (count @tiles) @max-tiles)
+;             (> (count @empty-positions) 0)
+;             (> (count tileset) 0))
+;      (when-let [positions (choose-positions tileset)]
+;        (let [new-pos (find-closest-to-point positions (find-assemblage-center))
+;              new-code (choose-tilecode new-pos tileset)]
+;          (if (nil? new-code)
+;            (add-to-dead-loci (get-outer-facecode new-pos))
+;            (make-tile new-pos new-code))
+;          (if (or (creates-untilable-region? new-pos)
+;                  (nil? new-code))
+;            (do
+;              (delete-tile new-pos)
+;              (backtrack))
+;            (do
+;              (add-tile-to-facelist new-pos)
+;              (push-connected-neighbours-to-empty-positions new-pos)
+;              (remove-from-empty-positions new-pos))))
+;        (swap! tiler-iterations inc))
+;      (halt-tiler))))
        
 
 (defn make-backtracking-tiling-iteration2 [tiles tileset]
   (when-let [positions (choose-positions tileset)]
     (let [new-pos (find-closest-to-point positions (find-assemblage-center))
-          new-code (choose-tilecode new-pos tileset)]
+          new-neighbourhood (get-neighbourhood new-pos)
+          new-code (choose-tilecode2 new-neighbourhood tileset)]
       (if (nil? new-code)
-        (add-to-dead-loci (get-outer-facecode new-pos))
+        (add-to-dead-loci (get-outer-facecode2 new-neighbourhood))
         (make-tile new-pos new-code))
       (if (or (creates-untilable-region? new-pos)
               (nil? new-code))

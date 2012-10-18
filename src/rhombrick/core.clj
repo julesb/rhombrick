@@ -159,13 +159,13 @@
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
          (soft-init-tiler @current-tileset)
-         (make-backtracking-tiling-iteration @current-tileset)
+         (make-backtracking-tiling-iteration2 @tiles @current-tileset)
          (init-gliders num-gliders))
    \R #(do 
          (init-tiler @current-tileset)
          (set-current-tileset (get-random-tileset))
          (println "random tileset:" @current-tileset) 
-         (make-backtracking-tiling-iteration @current-tileset)
+         (make-backtracking-tiling-iteration2 @tiles @current-tileset)
          (init-gliders num-gliders)
          )
    \- #(do 
@@ -297,7 +297,9 @@
     (if (and (> (count @empty-positions) 0)
              (> (count @current-tileset) 0))
       (make-backtracking-tiling-iteration2 @tiles @current-tileset)
-      (halt-tiler)))
+      (do
+        (build-face-list)
+        (halt-tiler))))
 
 
   (when @draw-gliders?   
