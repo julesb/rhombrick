@@ -29,6 +29,7 @@
 (def tiler-state (atom :halted)) ; :halted :running 
 (def face-list (atom #{}))
 (def assemblage-center (atom [0 0 0]))
+(def assemblage-max-radius (atom 10))
 (def dead-loci (atom #{}))
 
 (def facecode-compatible #{
@@ -240,9 +241,9 @@
 
 
 (defn add-to-empty-positions [pos]
-  (if (< (+ (count @empty-positions)
-            (count @tiles))
+  (if (and (< (+ (count @empty-positions) (count @tiles))
          @max-tiles)
+           (< (vec3-length pos) @assemblage-max-radius))
     (swap! empty-positions conj pos)))
 
 
@@ -296,13 +297,27 @@
 
 
 
-(defn creates-untilable-region? [pos]
+(defn creates-untilable-region-orig? [pos]
   (let [neighbours (get-neighbours pos)
         empty-neighbours (filter #(is-empty? %) neighbours)
         untileable-neighbours (filter #(contains? @dead-loci 
                                                   (get-outer-facecode2 (get-neighbourhood %)))
                                       empty-neighbours)]
     (> (count untileable-neighbours) 0)))
+
+
+(defn get-untileable-neighbours [pos]
+  (->> (get-neighbours pos)
+       (filter #(is-empty? %))
+       (filter #(contains? @dead-loci 
+                           (get-outer-facecode2 (get-neighbourhood %))))))
+
+(defn creates-untilable-region? [pos]
+  (> (count (->> (get-neighbours pos)
+                 (filter #(is-empty? %))
+                 (filter #(contains? @dead-loci 
+                                     (get-outer-facecode2 (get-neighbourhood %))))))
+     0))
 
 
 ;(defn creates-untilable-region2? [pos code]
@@ -605,7 +620,7 @@
        
 
 (defn make-backtracking-tiling-iteration2 [tiles tileset]
-  (when-let [positions (choose-positions tileset)]
+  (if-let [positions (choose-positions tileset)]
     (let [new-pos (find-closest-to-point positions (find-assemblage-center))
           new-neighbourhood (get-neighbourhood new-pos)
           new-code (choose-tilecode2 new-neighbourhood tileset)]
@@ -620,8 +635,9 @@
         (do
           (add-tile-to-facelist new-pos)
           (push-connected-neighbours-to-empty-positions new-pos)
-          (remove-from-empty-positions new-pos))))
-    (swap! tiler-iterations inc)))
+          (remove-from-empty-positions new-pos)))
+      (swap! tiler-iterations inc))
+    (halt-tiler)))
 
 ; _______________________________________________________________________
 

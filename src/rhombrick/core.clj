@@ -115,6 +115,9 @@
                (str "  tiles: " (count @tiles)) 
                (str "  empty: " (count @empty-positions)) 
                (str "   dead: " (count @dead-loci))
+               (str "-------------")
+               (str "  scale: " @model-scale)
+               (str " radius: " @assemblage-max-radius)
                (str "    fps: " (int (current-frame-rate)))
                ]]
     (fill 255 255 255 255)
@@ -305,8 +308,8 @@
   (when @draw-gliders?   
     (update-gliders))
     
-  ;(background 32 32 192)
-  (background 0 0 0)
+  (background 32 32 64)
+  ;(background 0 0 0)
 
   (push-matrix)
 
