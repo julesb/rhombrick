@@ -110,12 +110,12 @@
 
 
 
-(defn tileable? [pos]
+(defn is-empty? [pos]
   (not (contains? @tiles pos)))
 
 
 (defn make-tile [pos facecode]
-  (when (tileable? pos)
+  (when (is-empty? pos)
     (swap! tiles assoc pos facecode)))
 
 
@@ -124,7 +124,7 @@
 
 
 (defn neighbour-states [pos]
-  (map #(not (tileable? (vec3-add pos %1)))
+  (map #(not (is-empty? (vec3-add pos %1)))
        rd-neighbour-offsets))
 
 
@@ -140,7 +140,7 @@
 ;    (let [op-face (connecting-faces face)
 ;          nb-pos (get-neighbour pos face)
 ;          nb-face-idx op-face ]
-;      (if (tileable? nb-pos)
+;      (if (is-empty? nb-pos)
 ;        \-
 ;        (nth (@tiles nb-pos) nb-face-idx))))
 
@@ -250,14 +250,14 @@
 (defn push-neighbours-to-empty-positions [pos]
   (dotimes [face 12]
     (let [neighbour (get-neighbour pos face)]
-      (if (tileable? neighbour)
+      (if (is-empty? neighbour)
           (add-to-empty-positions neighbour)))))
 
 
  (defn push-connected-neighbours-to-empty-positions [pos]
   (doseq [idx (get-connected-idxs (@tiles pos))]
     (let [neighbour (get-neighbour pos idx)]
-      (if (tileable? neighbour)
+      (if (is-empty? neighbour)
           (add-to-empty-positions neighbour)))))
  
 
@@ -266,7 +266,7 @@
 ;    (init-empty-positions)
 ;    (doseq [tile (keys @tiles)]
 ;      (doseq [n (get-neighbours tile)]
-;        (if (tileable? n)
+;        (if (is-empty? n)
 ;          (add-to-empty-positions n))))))
 
 
@@ -295,7 +295,7 @@
 
 (defn creates-untilable-region? [pos]
   (let [neighbours (get-neighbours pos)
-        empty-neighbours (filter #(tileable? %) neighbours)
+        empty-neighbours (filter #(is-empty? %) neighbours)
         untileable-neighbours (filter #(contains? @dead-loci 
                                                   (get-outer-facecode2 (get-neighbours %)))
                                       empty-neighbours)]
@@ -304,7 +304,7 @@
 ;(defn creates-untilable-region2? [pos code]
 ;  (let [neighbours (get-neighbours pos)
 ;        neighbours-new (assoc neighbours (connecting-faces
-;        empty-neighbours (filter #(tileable? %) neighbours)
+;        empty-neighbours (filter #(is-empty? %) neighbours)
 ;        en-outer-facecodes (map #(get-outer-facecode2 (get-neighbourhood %)) empty-neighbours)
 ;        ;untileables (filter #(contains? @dead-loci (get-outer-facecode2 %))
 ;        ;                    empty-neighbours)
