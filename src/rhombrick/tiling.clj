@@ -96,17 +96,17 @@
               (/ 1 (count @tiles))))
 
 
-(defn get-neighbour [pos face]
+(defn get-neighbour-pos [pos face]
   (vec3-add pos (rd-neighbour-offsets face)))
 
 
 (defn get-neighbours [pos]
-  (vec (map #(get-neighbour pos %) (range 12))))
+  (vec (map #(get-neighbour-pos pos %) (range 12))))
 
 
 (defn get-neighbourhood [pos]
   "returns a vector containing facecodes for all neighbours"
-  (vec (map #(@tiles (get-neighbour pos %)) (range 12))))
+  (vec (map #(@tiles (get-neighbour-pos pos %)) (range 12))))
 
 
 
@@ -124,6 +124,8 @@
 
 
 (defn neighbour-states [pos]
+  "Returns vector of boolean, one for each neighbour. The value represents "
+  "whether the abutting face is connected or not"
   (map #(not (is-empty? (vec3-add pos %1)))
        rd-neighbour-offsets))
 
@@ -138,7 +140,7 @@
 
 ;(defn get-neighbour-abutting-face [pos face]
 ;    (let [op-face (connecting-faces face)
-;          nb-pos (get-neighbour pos face)
+;          nb-pos (get-neighbour-pos pos face)
 ;          nb-face-idx op-face ]
 ;      (if (is-empty? nb-pos)
 ;        \-
@@ -148,6 +150,7 @@
 (defn get-neighbour-abutting-face2 [neighbourhood face-idx]
   (let [op-face-idx (connecting-faces face-idx)
         nb-code (neighbourhood face-idx)]
+    ;(println "nb-code:"nb-code "op-face-idx:" op-face-idx "neighbourhood:" neighbourhood)
     (if (nil? nb-code) \- (nth nb-code op-face-idx))))
 
 
@@ -249,14 +252,14 @@
 
 (defn push-neighbours-to-empty-positions [pos]
   (dotimes [face 12]
-    (let [neighbour (get-neighbour pos face)]
+    (let [neighbour (get-neighbour-pos pos face)]
       (if (is-empty? neighbour)
           (add-to-empty-positions neighbour)))))
 
 
  (defn push-connected-neighbours-to-empty-positions [pos]
   (doseq [idx (get-connected-idxs (@tiles pos))]
-    (let [neighbour (get-neighbour pos idx)]
+    (let [neighbour (get-neighbour-pos pos idx)]
       (if (is-empty? neighbour)
           (add-to-empty-positions neighbour)))))
  
@@ -297,9 +300,10 @@
   (let [neighbours (get-neighbours pos)
         empty-neighbours (filter #(is-empty? %) neighbours)
         untileable-neighbours (filter #(contains? @dead-loci 
-                                                  (get-outer-facecode2 (get-neighbours %)))
+                                                  (get-outer-facecode2 (get-neighbourhood %)))
                                       empty-neighbours)]
     (> (count untileable-neighbours) 0)))
+
 
 ;(defn creates-untilable-region2? [pos code]
 ;  (let [neighbours (get-neighbours pos)
@@ -313,6 +317,7 @@
 ;                      (map #(find-candidates2 (get-neighbourhood %) #{code})
 ;                           empty-neighbours)))
 ;       0)))
+
 
 ;(defn creates-untilable-region2? [_] false)
 

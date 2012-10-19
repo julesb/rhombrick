@@ -197,7 +197,7 @@
 
 (defn update-gliders []
   (doseq [glider @gliders]
-    (let [next-tile-pos (get-neighbour (glider :current-tile)
+    (let [next-tile-pos (get-neighbour-pos (glider :current-tile)
                                        (glider :exit-face-idx))
           new-glider-time (+ (glider :time) (glider :speed))]
       (if (>= new-glider-time 1.0)
