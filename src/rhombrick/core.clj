@@ -420,6 +420,8 @@
   (when @draw-editor?
     (draw-groups))
 
+  (draw-tile-editor [10 75] "0A001000000a")
+
   (hint :enable-depth-test)
 
 

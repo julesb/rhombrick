@@ -19,6 +19,7 @@
 
 (defn set-current-tileset [tileset]
   (reset! current-tileset tileset)
+  (reset! current-tileset-colors {})
   (doseq [code tileset]
     (let [col (compute-tile-color code)]
       (doseq [rc (rotations code)]
@@ -73,6 +74,37 @@
 ;  (ui-finish))
 
 (def buttons-per-row 32)
+
+
+
+(defn draw-tile-editor [[x y] code]
+  (let [bx (+ x (/ button-width 2))
+        by (+ y (/ button-height 2))
+        gc (get-group-color code)
+        col [(gc 0) (gc 1) (gc 2) 64]
+        ]
+    (push-matrix)
+    (scale 4)
+    (if (button x y code)
+      (do
+        ; pressed
+        (println "button pressed:" code)))
+    
+    (with-translation [bx by]
+        (scale (/ button-width 4))
+        (rotate-y (* (frame-count) 0.051471))
+        ;(apply stroke col)
+        (no-fill)
+        (stroke-weight 6)
+        (draw-faces-lite rd-verts rd-faces col)
+        (draw-facecode code)
+        ;(let [pos tile
+        ;  code (@tiles pos)]
+        ;  (draw-opposite-compatible-boundary-points pos)
+                      )
+    (pop-matrix)
+    
+    ))
 
 
 (defn draw-group-buttons [pos codes frame]
