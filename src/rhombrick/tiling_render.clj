@@ -125,10 +125,12 @@
 
 
 (defn draw-face-list []
-  (fill 64 64 128 220)
+  (fill 32 32 32 255)
   ;(no-fill)
-  (stroke 128 128 255 64)
-  (stroke-weight 2)
+  ;(stroke 0 0 0 192)
+  (stroke 64 64 64 128)
+
+  (stroke-weight 4)
   ;(no-stroke)
   (doseq [face-verts @face-list]
     (let [v0 (face-verts 0)
@@ -219,6 +221,24 @@
                              )))))))
   
 
+(defn draw-face-boundaries [pos]
+  (when (contains? @tiles pos)
+    (stroke-weight 4)
+    (stroke 0 0 0 255)
+    (fill 255 255 255 255)
+    (with-translation pos
+      (scale 0.5)
+      (doseq [i (range 12)]
+        (let [[dx dy dz] (co-verts i)
+              [dxn dyn dzn] (vec3-normalize [dx dy dz])
+              az (* (Math/atan2 dyn dxn) raddeg)
+              el (- (* (Math/asin dzn) raddeg))]
+          (with-translation (co-verts i)
+            (rotate az 0 0 1)
+            (rotate el 0 1 0)
+            (box 0.2)))))))
+
+
 (defn draw-opposite-compatible-boundary-points [pos]
   (when (contains? @tiles pos)
     (let [code (@tiles pos)]
@@ -228,7 +248,11 @@
         (doseq [i (range 12)]
           (let [d (.charAt code i)]
             (when (not (face-digit-like-compatible? d))
-              (let [polarity (re-find #"[a-f]+" (str d))]
+              (let [[dx dy dz] (co-verts i)
+                    [dxn dyn dzn] (vec3-normalize [dx dy dz])
+                    az (Math/atan2 dyn dxn)
+                    el (- (Math/asin dzn))
+                    polarity (re-find #"[a-f]+" (str d))]
                 (if polarity
                   (do (stroke 0 0 0 255)
                       (fill 255 255 255 255))
@@ -236,10 +260,11 @@
                       (fill 0 0 0 255)))
                 (with-translation (co-verts i)
                   (when polarity
-                    (rotate-x (/ Math/PI 4.0))
-                    (rotate-y (/ Math/PI 4.0))
-                    (rotate-z (/ Math/PI 4.0)))
-                  (box 0.1))))))))))
+                    (scale 0.99)
+                    (rotate (/ Math/PI 4.0) dxn dyn dzn))
+                  (rotate az 0 0 1)
+                  (rotate el 0 1 0)
+                  (box 0.2))))))))))
 
 
 (defn draw-empty []
@@ -255,8 +280,8 @@
 ; _______________________________________________________________________
 
 
-; given two face indices, returns a vec of four 3d bezier control points
 (defn get-bezier-controls [f1-idx f2-idx]
+  "Given two face indices, returns a vec of four 3d bezier control points"
   (let [p1 (co-verts f1-idx)
         p2 (vec3-scale p1 0.5)
         p4 (co-verts f2-idx)
@@ -395,10 +420,10 @@
       (draw-curve (endpoints 0) (endpoints 1)))
     
     ;draw tangent vectors
-    (stroke-weight 1)
-    (stroke 255 120 120 128)
-    (doseq [endpoints endpoint-pairs]
-      (draw-curve-tangents (endpoints 0) (endpoints 1) 3))
+    ;(stroke-weight 1)
+    ;(stroke 255 120 120 128)
+    ;(doseq [endpoints endpoint-pairs]
+    ;  (draw-curve-tangents (endpoints 0) (endpoints 1) 3))
 
     ;(stroke-weight 2)
     ;(stroke (col2 0) (col2 1) (col2 2) 255)
@@ -463,6 +488,7 @@
     (let [pos tile
           code (@tiles pos)]
       (draw-opposite-compatible-boundary-points pos) 
+      ;(draw-face-boundaries pos)
 
       (with-translation pos 
         (scale 0.5)
