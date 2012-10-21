@@ -181,8 +181,8 @@
         col (get-tile-color code)]
     (no-fill)
     ;(fill (col 0) (col 1) (col 2) 64)
-    (stroke (col 0) (col 1) (col 2) 192)
-    (stroke-weight 1)
+    (stroke (col 0) (col 1) (col 2) 16)
+    (stroke-weight 8)
     (with-translation pos
       (scale 0.5)
       (draw-faces rd-verts rd-faces nil))))
@@ -221,7 +221,7 @@
                              )))))))
   
 
-(defn draw-face-boundaries [pos]
+(defn draw-face-boundaries-basic [pos]
   (when (contains? @tiles pos)
     (stroke-weight 4)
     (stroke 0 0 0 255)
@@ -239,29 +239,30 @@
             (box 0.2)))))))
 
 
-(defn draw-opposite-compatible-boundary-points [pos]
+(defn draw-face-boundaries [pos code]
   (when (contains? @tiles pos)
-    (let [code (@tiles pos)
-          [r g b] (get-tile-color code)]
+    (let [[r g b] (get-tile-color code)]
       (with-translation pos
         (scale 0.5)
         (stroke-weight 1)
         (stroke r g b 255)
         (doseq [i (range 12)]
-          (let [d (.charAt code i)]
-            (when (not (face-digit-like-compatible? d))
-              (let [dir (co-verts i)
-                    [dx dy dz] (vec3-normalize dir)
-                    az (Math/atan2 dy dx)
-                    el (- (Math/asin dz))
-                    polarity (re-find #"[a-f]+" (str d))]
-                (if polarity
+          (when (not= (.charAt code i) \0)
+          (let [d (.charAt code i)
+                dir (co-verts i)
+                [dx dy dz] (vec3-normalize dir)
+                az (Math/atan2 dy dx)
+                el (- (Math/asin dz))]
+            (if (face-digit-like-compatible? d)
+              (do (fill 160 160 220 128))
+              (do
+                (if (re-find #"[a-f]+" (str d))
                   (fill 255 255 255 255)
-                  (fill 0 0 0 255))
-                (with-translation (vec3-scale (co-verts i) 0.965)
-                  (rotate az 0 0 1)
-                  (rotate el 0 1 0)
-                  (box 0.1))))))))))
+                  (fill 0 0 0 255))))
+            (with-translation (vec3-scale (co-verts i) 0.965)
+              (rotate az 0 0 1)
+              (rotate el 0 1 0)
+              (box 0.1)))))))))
 
 
 (defn draw-empty []
@@ -484,8 +485,7 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)]
-      (draw-opposite-compatible-boundary-points pos) 
-      ;(draw-face-boundaries pos)
+      (draw-face-boundaries pos code)
 
       (with-translation pos 
         (scale 0.5)
