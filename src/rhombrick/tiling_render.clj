@@ -125,7 +125,7 @@
 
 
 (defn draw-face-list []
-  (fill 32 32 32 255)
+  (fill 32 32 32 230)
   ;(no-fill)
   ;(stroke 0 0 0 192)
   (stroke 64 64 64 128)
@@ -231,8 +231,8 @@
       (doseq [i (range 12)]
         (let [[dx dy dz] (co-verts i)
               [dxn dyn dzn] (vec3-normalize [dx dy dz])
-              az (* (Math/atan2 dyn dxn) raddeg)
-              el (- (* (Math/asin dzn) raddeg))]
+              az (Math/atan2 dyn dxn)
+              el (- (Math/asin dzn))]
           (with-translation (co-verts i)
             (rotate az 0 0 1)
             (rotate el 0 1 0)
@@ -248,10 +248,10 @@
         (doseq [i (range 12)]
           (let [d (.charAt code i)]
             (when (not (face-digit-like-compatible? d))
-              (let [[dx dy dz] (co-verts i)
-                    [dxn dyn dzn] (vec3-normalize [dx dy dz])
-                    az (Math/atan2 dyn dxn)
-                    el (- (Math/asin dzn))
+              (let [dir (co-verts i)
+                    [dx dy dz] (vec3-normalize dir)
+                    az (Math/atan2 dy dx)
+                    el (- (Math/asin dz))
                     polarity (re-find #"[a-f]+" (str d))]
                 (if polarity
                   (do (stroke 0 0 0 255)
@@ -261,7 +261,7 @@
                 (with-translation (co-verts i)
                   (when polarity
                     (scale 0.99)
-                    (rotate (/ Math/PI 4.0) dxn dyn dzn))
+                    (rotate (/ Math/PI 4.0) dx dy dz))
                   (rotate az 0 0 1)
                   (rotate el 0 1 0)
                   (box 0.2))))))))))
