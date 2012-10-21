@@ -125,10 +125,10 @@
 
 
 (defn draw-face-list []
-  (fill 32 32 32 230)
+  (fill 32 32 32 192)
   ;(no-fill)
   ;(stroke 0 0 0 192)
-  (stroke 64 64 64 128)
+  (stroke 40 40 40 190)
 
   (stroke-weight 4)
   ;(no-stroke)
@@ -241,10 +241,12 @@
 
 (defn draw-opposite-compatible-boundary-points [pos]
   (when (contains? @tiles pos)
-    (let [code (@tiles pos)]
+    (let [code (@tiles pos)
+          [r g b] (get-tile-color code)]
       (with-translation pos
         (scale 0.5)
-        (stroke-weight 4)
+        (stroke-weight 1)
+        (stroke r g b 255)
         (doseq [i (range 12)]
           (let [d (.charAt code i)]
             (when (not (face-digit-like-compatible? d))
@@ -254,17 +256,12 @@
                     el (- (Math/asin dz))
                     polarity (re-find #"[a-f]+" (str d))]
                 (if polarity
-                  (do (stroke 0 0 0 255)
-                      (fill 255 255 255 255))
-                  (do (stroke 255 255 255 255)
-                      (fill 0 0 0 255)))
-                (with-translation (co-verts i)
-                  (when polarity
-                    (scale 0.99)
-                    (rotate (/ Math/PI 4.0) dx dy dz))
+                  (fill 255 255 255 255)
+                  (fill 0 0 0 255))
+                (with-translation (vec3-scale (co-verts i) 0.965)
                   (rotate az 0 0 1)
                   (rotate el 0 1 0)
-                  (box 0.2))))))))))
+                  (box 0.1))))))))))
 
 
 (defn draw-empty []
@@ -399,7 +396,7 @@
         (no-fill)))
 
     (stroke-weight 4) 
-    (stroke (col 0) (col 1) (col 2) 128) 
+    (stroke (col 0) (col 1) (col 2) 192) 
     ;(stroke 192 192 255 192)
     ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
     ;(stroke 150 150 255 128)
