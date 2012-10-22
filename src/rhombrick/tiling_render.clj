@@ -50,16 +50,19 @@
     [255 0 0]))
 
 (defn compute-tile-color [code]
-  (when (not= nil code)
+  (if (not= nil code)
     (let [hs (apply str "0x" code)
           n (mod (read-string hs) 12)]
-      (rd-face-colors n))))
+      (rd-face-colors n))
+    [128 128 128 128]))
 
 
 (defn get-tile-color [code]
   (if (contains? @current-tileset-colors code)
     (@current-tileset-colors code)
-    [255 255 255 192]))
+    (do 
+      (swap! current-tileset-colors assoc code (compute-tile-color code))
+      (@current-tileset-colors code))))
 
 
 (defn get-group-color [code]
