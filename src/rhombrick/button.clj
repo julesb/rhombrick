@@ -7,8 +7,8 @@
 (def button-height 32)
 (def button-space 8)
 
-(def button-fill [0 0 0 128])
-(def button-stroke [0 0 0 255])
+(def button-fill [0 0 0 152])
+(def button-stroke [64 64 64 255])
 
 (def button-fill-hot [128 128 255 192])
 (def button-stroke-hot [0 0 192 192])
@@ -56,15 +56,14 @@
 ; _______________________________________________________________________
 
 
-(defn button [x y code]
-  (if (region-hit x y button-width button-height)
+(defn button [x y w h code]
+  (if (region-hit x y w h)
     (do
       (update-ui-state :hot-item [x y])
       (if (and 
             (= (@ui-state :active-item) 0)
             (@ui-state :mouse-down))
-        (update-ui-state :active-item [x y]))
-      ))
+        (update-ui-state :active-item [x y]))))
 
     (if (= (@ui-state :hot-item) [x y])
       (if (= (@ui-state :active-item) [x y])
@@ -81,7 +80,7 @@
         (apply stroke button-stroke)
         (apply fill button-fill)))
 
-    (rect x y button-width button-height)
+    (rect x y w h)
 
     (if
       (and

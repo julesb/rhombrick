@@ -425,7 +425,7 @@
   ;  (draw-groups))
 
   (when @draw-editor?
-    (draw-tile-editor [10 75] "0A001000000a"))
+    (draw-tile-editor [20 250] "0A001000000a"))
 
   (hint :enable-depth-test)
 

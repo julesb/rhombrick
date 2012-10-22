@@ -77,34 +77,50 @@
 
 
 
+(defn draw-facecode-buttons [[x y] sc code]
+  (let [num-buttons 12
+        bspace 1
+        bsize (/ (- sc (* bspace (- num-buttons 1)))
+                 num-buttons)
+        txt-off-x (- (/ bsize 2) 4)
+        txt-off-y (+ 5 (/ bsize 2))]
+    (doseq [i (range num-buttons)]
+      (let [bx (+ x (+ (* i bsize) (* i bspace)))
+            by y
+            tx (+ bx txt-off-x)
+            ty (+ by txt-off-y)]
+        (if (button bx by bsize bsize (str (.charAt code i)))
+          (println "button pressed:" code))
+        (fill 255 255 255 255)
+        (text (str (.charAt code i)) tx ty)))))
+
+
 (defn draw-tile-editor [[x y] code]
-  (let [bx (+ x (/ button-width 2))
-        by (+ y (/ button-height 2))
+  (let [bscale 500 
+        bx (+ x (/ bscale 2))
+        by (+ y (/ bscale 2))
         gc (get-group-color code)
-        col [(gc 0) (gc 1) (gc 2) 64]
-        ]
+        col [(gc 0) (gc 1) (gc 2) 64]]
     (push-matrix)
     (ui-prepare)
-    ;(scale 4)
-    (if (button x y code)
+    (stroke-weight 1)
+    (if (button x y bscale bscale code)
       (do
-        ; pressed
         (println "button pressed:" code)))
+    (draw-facecode-buttons [x (+ y bscale)] bscale code)
     (ui-finish)
     (with-translation [bx by]
-        (scale (/ button-width 6))
-        (rotate-y (* (frame-count) 0.051471))
+        (fill 255 255 255 255)
+        (scale (/ bscale 6))
+        (rotate-y (* (frame-count) 0.0051471))
         ;(apply stroke col)
         (no-fill)
-        (stroke-weight 6)
+        (stroke-weight 2)
         (draw-faces-lite rd-verts rd-faces col)
         (draw-facecode code)
-        ;(let [pos tile
-        ;  code (@tiles pos)]
-        ;  (draw-opposite-compatible-boundary-points pos)
-                      )
-    (pop-matrix)
-    ))
+        (scale 2)
+        (draw-face-boundaries [0 0 0] code))
+    (pop-matrix)))
 
 
 (defn draw-group-buttons [pos codes frame]
