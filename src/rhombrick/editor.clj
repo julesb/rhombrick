@@ -17,6 +17,7 @@
   (init-dead-loci)
   (println "current tileset colors:" @current-tileset-colors))
 
+
 (defn set-current-tileset [tileset]
   (reset! current-tileset tileset)
   (reset! current-tileset-colors {})
@@ -27,7 +28,6 @@
       ;(swap! current-tileset conj code)
       ))
   (init-dead-loci))
-
 
 
 (defn remove-from-current-tileset [code]
@@ -84,14 +84,15 @@
         col [(gc 0) (gc 1) (gc 2) 64]
         ]
     (push-matrix)
-    (scale 4)
+    (ui-prepare)
+    ;(scale 4)
     (if (button x y code)
       (do
         ; pressed
         (println "button pressed:" code)))
-    
+    (ui-finish)
     (with-translation [bx by]
-        (scale (/ button-width 4))
+        (scale (/ button-width 6))
         (rotate-y (* (frame-count) 0.051471))
         ;(apply stroke col)
         (no-fill)
@@ -103,7 +104,6 @@
         ;  (draw-opposite-compatible-boundary-points pos)
                       )
     (pop-matrix)
-    
     ))
 
 

@@ -112,7 +112,7 @@
         lines [(str "tileset: " @current-tileset)
                (str "  state: " @tiler-state)
                (str "  iters: " @tiler-iterations)
-               (str "  tiles: " (count @tiles)) 
+               (str "  tiles: " (count @tiles) "/" @max-tiles) 
                (str "  empty: " (count @empty-positions)) 
                (str "   dead: " (count @dead-loci))
                (str "-------------")
@@ -384,11 +384,15 @@
     ;(light-falloff 1.0 0.2 0.0)
     ;(ambient-light 64 64 64)
 
+
+    ;(hint :disable-depth-test) 
     (draw-tiling)
-    
+    ; (hint :enable-depth-test)
+
     (when @draw-facelist?
       (draw-face-list))
       ;(draw-face-list-textured))
+
 
     (when (seq @empty-positions)
       (draw-empty))
@@ -417,10 +421,11 @@
   (draw-info 10 40)
   (camera)
 
-  (when @draw-editor?
-    (draw-groups))
+  ;(when @draw-editor?
+  ;  (draw-groups))
 
-  (draw-tile-editor [10 75] "0A001000000a")
+  (when @draw-editor?
+    (draw-tile-editor [10 75] "0A001000000a"))
 
   (hint :enable-depth-test)
 
