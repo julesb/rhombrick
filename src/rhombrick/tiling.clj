@@ -29,7 +29,7 @@
 (def tiler-state (atom :halted)) ; :halted :running 
 (def face-list (atom #{}))
 (def assemblage-center (atom [0 0 0]))
-(def assemblage-max-radius (atom 10))
+(def assemblage-max-radius (atom 6))
 (def dead-loci (atom #{}))
 
 (def facecode-compatible #{
@@ -52,7 +52,9 @@
 ; #{"000000001001" "000000001101" "a01b01A01B01" "00000A00000a" "00000B00000b"}
 ; #{"000000001001" "A00100a00100" "111111111111" "A00a00A00a00" "000001000001"
 ;   "00000a00000a" "A00000A00000"}
-
+; #{"111111111111" "100000a00000" "A00000b00000" "B00000100000" }
+; #{"000000010001" "A000a0001000"}
+;
 
 ; _______________________________________________________________________
 
@@ -78,7 +80,7 @@
 
 
 (defn get-random-tileset []
-  (let [num-tiles (+ 1 (rand-int 3))]
+  (let [num-tiles (+ 1 (rand-int 5))]
     (set (map (fn [_] (make-random-tilecode))
          (range num-tiles)))))
 
@@ -312,7 +314,7 @@
        (filter #(contains? @dead-loci 
                            (get-outer-facecode2 (get-neighbourhood %))))))
 
-(defn creates-untilable-region? [pos]
+(defn creates-untileable-region? [pos]
   (> (count (->> (get-neighbours pos)
                  (filter #(is-empty? %))
                  (filter #(contains? @dead-loci 
@@ -627,7 +629,7 @@
       (if (nil? new-code)
         (add-to-dead-loci (get-outer-facecode2 new-neighbourhood))
         (make-tile new-pos new-code))
-      (if (or (creates-untilable-region? new-pos)
+      (if (or (creates-untileable-region? new-pos)
               (nil? new-code))
         (do
           (delete-tile new-pos)
