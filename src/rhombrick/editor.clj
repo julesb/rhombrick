@@ -40,43 +40,6 @@
   )
 
 
-(defn draw-tile-groups []
-  )
-; _______________________________________________________________________
-
-;(defn draw-buttons [pos frame]
-;  (stroke-weight 1)
-;  (ui-prepare)
-;  (doseq [xi (range 10)
-;          yi (range 10)]
-;    (let [x (+ (pos 0)
-;               (* xi button-width)
-;               (* xi button-space))
-;          y (+ (pos 1)
-;               (* yi button-height)
-;               (* yi button-space))]
-;
-;      (if (button x y "111111111111")
-;        (println @ui-state))
-;      
-;      (let [bx (+ x (/ button-width 2))
-;            by (+ y (/ button-width 2))
-;            code (nth @normalised-facecodes-grouped (+ xi (* yi 10)))]
-;        (with-translation [bx by]
-;          (scale (/ button-width 4))
-;          (rotate-y (* frame 0.051471))
-;          (stroke 128 128 128 128)
-;          (no-fill)
-;          (draw-faces rd-verts rd-faces nil)
-;          (draw-facecode code)))
-;
-;      ))
-;  (ui-finish))
-
-(def buttons-per-row 32)
-
-
-
 (defn draw-facecode-buttons [[x y] sc code]
   (let [num-buttons 12
         bspace 1
@@ -95,100 +58,35 @@
         (text (str (.charAt code i)) tx ty)))))
 
 
-(defn draw-tile-editor [[x y] code]
-  (let [bscale 500 
-        bx (+ x (/ bscale 2))
+(defn draw-tile-editor [[x y] code bscale]
+  (let [bx (+ x (/ bscale 2))
         by (+ y (/ bscale 2))
-        gc (get-group-color code)
-        col [(gc 0) (gc 1) (gc 2) 64]]
-    (push-matrix)
-    (ui-prepare)
+        col [64 64 64 190]]
     (stroke-weight 1)
-    (if (button x y bscale bscale code)
+    (when (button x y bscale bscale code)
       (do
         (println "button pressed:" code)))
     (draw-facecode-buttons [x (+ y bscale)] bscale code)
-    (ui-finish)
     (with-translation [bx by]
-        (fill 255 255 255 255)
         (scale (/ bscale 6))
         (rotate-y (* (frame-count) 0.0051471))
-        ;(apply stroke col)
         (no-fill)
-        (stroke-weight 2)
+        (stroke-weight 1)
         (draw-faces-lite rd-verts rd-faces col)
         (draw-facecode code)
         (scale 2)
-        (draw-face-boundaries [0 0 0] code))
-    (pop-matrix)))
+        (draw-face-boundaries [0 0 0] code))))
 
 
-(defn draw-group-buttons [pos codes frame]
-  ;(ui-prepare)
-  (doseq [i (range (count codes))]
-    (let [code (codes i)
-          in-current-tileset? (contains? @current-tileset code)
-          x (+ (pos 0)
-               (* (int (mod i buttons-per-row))
-                  (+ button-width button-space)))
-          y (+ (pos 1)
-               (* (int (/ i buttons-per-row))
-                  (+ button-height button-space)))
-          bx (+ x (/ button-width 2))
-          by (+ y (/ button-height 2))
-          gc (get-group-color code)
-          col [(gc 0) (gc 1) (gc 2) 64]
-          col2 (compute-tile-color code)
-          ]
-      (if (button x y "111111111111")
-        (do
-          ; pressed
-          (if in-current-tileset?
-            (remove-from-current-tileset code)
-            (add-to-current-tileset code))
-          (init-tiler @current-tileset)
-          (println "tileset:" @current-tileset)))
-
-      (with-translation [bx by]
-        (scale (/ button-width 4))
-        (rotate-y (* frame 0.051471))
-        ;(apply stroke col)
-        (no-fill)
-        (if in-current-tileset?
-          (stroke-weight 8)
-          (stroke-weight 1))
-        (draw-faces-lite rd-verts rd-faces col)
-        (draw-facecode-lite (codes i)))))
-  ;(ui-finish)
-)
- 
-(def group-rows {0 0
-                 1 2
-                 2 4
-                 3 6
-                 4 8
-                 5 12
-                 6 18 
-                 7 24
-                 8 30 
-                 9 34
-                 10 36
-                 11 38
-                 12 40})
-
-
-(defn draw-groups []
-  (stroke 128 128 128 128)
-  (fill 0 0 0 128)
-  (rect 40 20 1300 1010)
+(defn draw-tileset-editor [[x y] tileset bscale]
   (ui-prepare)
-  (stroke-weight 1)
-  (doseq [g @normalised-facecodes-grouped]
-    (let [i (key g)
-          y-offset (+ 32 
-                     (* (group-rows i)
-                        (+ (/ button-height 2) button-space)))]
-        (draw-group-buttons [50 y-offset] (val g) (frame-count))))
+  (let [indexed-tileset (into [] (map-indexed #(vec [%1 %2]) tileset))]
+    (doseq [idx-code indexed-tileset]
+      (let [i (idx-code 0)
+            code (idx-code 1)
+            tx x
+            ty (+ y (* i (+ bscale (/ bscale 8))))]
+        (draw-tile-editor [tx ty] code bscale))))
   (ui-finish))
       
 

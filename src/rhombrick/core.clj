@@ -394,8 +394,8 @@
       ;(draw-face-list-textured))
 
 
-    (when (seq @empty-positions)
-      (draw-empty))
+    ;(when (seq @empty-positions)
+    ;  (draw-empty))
 
 
     ;(lights)
@@ -421,11 +421,10 @@
   (draw-info 10 40)
   (camera)
 
-  ;(when @draw-editor?
-  ;  (draw-groups))
 
   (when @draw-editor?
-    (draw-tile-editor [20 250] "0A001000000a"))
+    (draw-tileset-editor [1285 20] @current-tileset 140))
+
 
   (hint :enable-depth-test)
 
