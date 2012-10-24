@@ -67,6 +67,7 @@
       (do
         (println "button pressed:" code)))
     (draw-facecode-buttons [x (+ y bscale)] bscale code)
+
     (with-translation [bx by]
         (scale (/ bscale 6))
         (rotate-y (* (frame-count) 0.0051471))
@@ -81,10 +82,8 @@
 (defn draw-tileset-editor [[x y] tileset bscale]
   (ui-prepare)
   (let [indexed-tileset (into [] (map-indexed #(vec [%1 %2]) tileset))]
-    (doseq [idx-code indexed-tileset]
-      (let [i (idx-code 0)
-            code (idx-code 1)
-            tx x
+    (doseq [[i code] indexed-tileset]
+      (let [tx x
             ty (+ y (* i (+ bscale (/ bscale 8))))]
         (draw-tile-editor [tx ty] code bscale))))
   (ui-finish))
