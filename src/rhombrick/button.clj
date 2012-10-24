@@ -2,6 +2,7 @@
   (:use [quil.core]
         [rhombrick.tiling-render]))
 
+; simple immediate mode ui button, inspiration from http://sol.gfxile.net/imgui/
 
 (def button-width 32)
 (def button-height 32)
@@ -15,8 +16,6 @@
 
 (def button-fill-active [255 255 0 192])
 (def button-stroke-active [255 255 255 192])
-
-
 
 (def ui-state (atom {:mouse-x 0
                      :mouse-y 0
@@ -32,11 +31,14 @@
                     :hot-item 0
                     :active-item 0}))
 
+
 (defn update-ui-state [k v]
   (swap! ui-state assoc k v))
 
+
 (defn ui-prepare []
   (update-ui-state :hot-item 0))
+
 
 (defn ui-finish []
   (if (not (@ui-state :mouse-down))
@@ -53,9 +55,6 @@
     (> (@ui-state :mouse-y) (+ h y)))))
 
 
-; _______________________________________________________________________
-
-
 (defn button [x y w h code]
   (if (region-hit x y w h)
     (do
@@ -64,7 +63,6 @@
             (= (@ui-state :active-item) 0)
             (@ui-state :mouse-down))
         (update-ui-state :active-item [x y]))))
-
     (if (= (@ui-state :hot-item) [x y])
       (if (= (@ui-state :active-item) [x y])
         (do
@@ -82,13 +80,8 @@
 
     (rect x y w h)
 
-    (if
-      (and
-        (not (@ui-state :mouse-down))
-        (= (@ui-state :hot-item) [x y])
-        (= (@ui-state :active-item) [x y]))
-      true
-      false))
-
+    (and (not (@ui-state :mouse-down))
+         (= (@ui-state :hot-item) [x y])
+         (= (@ui-state :active-item) [x y])))
 
 
