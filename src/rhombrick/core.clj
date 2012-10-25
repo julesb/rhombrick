@@ -12,7 +12,8 @@
         [rhombrick.editor :as editor]
         [clojure.math.combinatorics]
         ;[overtone.osc]
-        ))
+        )
+  (:import java.awt.event.KeyEvent))
 
 (import processing.core.PImage)
 (import java.awt.Robot)
@@ -223,8 +224,16 @@
           (editor/move-left))
     \l #(do
           (editor/move-right))
+    })
 
+(def key-editor-map
+  {
+    KeyEvent/VK_UP    #(do (editor/level-up))
+    KeyEvent/VK_DOWN  #(do (editor/level-down))
+    KeyEvent/VK_LEFT  #(do (editor/move-left))
+    KeyEvent/VK_RIGHT #(do (editor/move-right))
    })
+
 
 
 (def key-movement-map
@@ -258,15 +267,17 @@
 
 
 (defn key-pressed []
-  (swap! keys-down conj (raw-key))
-  ;(do-movement-keys)
-  )
+  (let [the-raw-key (raw-key)
+        the-key-code (key-code)
+        coded? (= processing.core.PConstants/CODED (int the-raw-key))
+        the-key-pressed (if coded? the-key-code raw-key) ]
+    (if (and coded? (contains? key-editor-map the-key-pressed))
+      ((key-editor-map the-key-pressed))
+      (swap! keys-down conj the-raw-key))))
 
 
 (defn key-released []
-  (swap! keys-down disj (raw-key))
-  ;(do-movement-keys)
-  )
+  (swap! keys-down disj (raw-key)))
 
 ; _______________________________________________________________________
 
