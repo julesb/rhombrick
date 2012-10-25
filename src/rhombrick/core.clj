@@ -110,15 +110,15 @@
 
 (defn draw-info [x y]
   (let [line-space 20
-        lines [(str "tileset: " @current-tileset)
+        lines [;(str "tileset: " @current-tileset)
                (str "  state: " @tiler-state)
                (str "  iters: " @tiler-iterations)
                (str "  tiles: " (count @tiles) "/" @max-tiles) 
                (str "  empty: " (count @empty-positions)) 
                (str "   dead: " (count @dead-loci))
+               (str " radius: " @assemblage-max-radius)
                (str "-------------")
                (str "  scale: " @model-scale)
-               (str " radius: " @assemblage-max-radius)
                (str "    fps: " (int (current-frame-rate)))
                ]]
     (fill 255 255 255 255)
@@ -189,11 +189,11 @@
          (when @draw-facelist?
            (build-face-list))
          (println "draw facelist? " @draw-facelist?))
-    \` #(do
-         (swap! draw-editor? not)
-         (if @draw-editor?
-           (cursor))
-         (println "draw editor? " @draw-editor?))
+    ;\` #(do
+    ;     (swap! draw-editor? not)
+    ;     (if @draw-editor?
+    ;       (cursor))
+    ;     (println "draw editor? " @draw-editor?))
     \g #(do
           (swap! draw-gliders? not)
           (if draw-gliders?
@@ -216,22 +216,18 @@
     \} #(do
           (swap! autism + 0.1)
           (println "adhd:" @adhd "auti:" @autism))
-    \j #(do
-          (editor/level-down))
-    \k #(do
-          (editor/level-up))
-    \h #(do
-          (editor/move-left))
-    \l #(do
-          (editor/move-right))
-    })
+       })
 
 (def key-editor-map
   {
-    KeyEvent/VK_UP    #(do (editor/level-up))
-    KeyEvent/VK_DOWN  #(do (editor/level-down))
+    KeyEvent/VK_UP    #(do (editor/level-down))
+    KeyEvent/VK_DOWN  #(do (editor/level-up))
     KeyEvent/VK_LEFT  #(do (editor/move-left))
     KeyEvent/VK_RIGHT #(do (editor/move-right))
+    \j #(do (editor/level-up))
+    \k #(do (editor/level-down))
+    \h #(do (editor/move-left))
+    \l #(do (editor/move-right))
    })
 
 
@@ -286,11 +282,13 @@
   (let [x (mouse-x) y (mouse-y)
         delta [(- (mouse-x) (@mousewarp-pos 0))
                (- (mouse-y) (@mousewarp-pos 1)) 0]]
-    (when (not @draw-editor?)
+    ;(when (not @draw-editor?)
+    (when (not (> (editor/get-level) 0))
       (reset! last-mouse-delta (vec3-scale delta 0.01))
       (reset! (state :mouse-position) [x y]))
     
-    (when @draw-editor?
+    ;(when @draw-editor?
+    (when (> (editor/get-level) 0)
       (update-ui-state :mouse-x (mouse-x))
       (update-ui-state :mouse-y (mouse-y)))
     ))
@@ -376,7 +374,8 @@
             (do-camera-transform @camera-pos
                                  (* 1.0 (md 1))
                                  (* -1.0 (md 0)))
-            (if (not @draw-editor?)
+            ;(if (not @draw-editor?)
+            (when (not (> (editor/get-level) 0))
               (do
                 (reset! last-mouse-delta (mouse-delta 0.0001))
                 (.mouseMove robot (/ (width) 2) (/ (height) 2))))))
@@ -438,13 +437,16 @@
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info 10 40)
+  (draw-info 10 (- (height) 180))
   (camera)
 
 
   ;(when @draw-editor?
   (when (> (editor/get-level) 0)
-    (draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))
+    (draw-tileset-editor [20 20] @current-tileset 140))
+    
+    ; bottom of screen
+    ;(draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))
     ;(draw-tileset-editor [1285 20] @current-tileset 140))
 
 
