@@ -9,7 +9,7 @@
         [rhombrick.glider]
         [rhombrick.camera]
         [rhombrick.button]
-        [rhombrick.editor]
+        [rhombrick.editor :as editor]
         [clojure.math.combinatorics]
         ;[overtone.osc]
         ))
@@ -215,6 +215,15 @@
     \} #(do
           (swap! autism + 0.1)
           (println "adhd:" @adhd "auti:" @autism))
+    \j #(do
+          (editor/level-down))
+    \k #(do
+          (editor/level-up))
+    \h #(do
+          (editor/move-left))
+    \l #(do
+          (editor/move-right))
+
    })
 
 
@@ -402,7 +411,7 @@
     (when @draw-gliders?
       (let [selected-tile ((get-glider 1) :current-tile)
             tile-color (get-group-color selected-tile)]
-        (draw-neighbours selected-tile)
+        ;(draw-neighbours selected-tile)
         ;(draw-curve-boundary-points selected-tile)
         (draw-selected-tile selected-tile)
         ;(point-light (tile-color 0) (tile-color 1) (tile-color 2)
@@ -422,8 +431,10 @@
   (camera)
 
 
-  (when @draw-editor?
-    (draw-tileset-editor [1285 20] @current-tileset 140))
+  ;(when @draw-editor?
+  (when (> (editor/get-level) 0)
+    (draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))
+    ;(draw-tileset-editor [1285 20] @current-tileset 140))
 
 
   (hint :enable-depth-test)
