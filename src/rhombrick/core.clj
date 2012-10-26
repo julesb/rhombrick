@@ -443,7 +443,7 @@
 
   ;(when @draw-editor?
   (when (> (editor/get-level) 0)
-    (draw-tileset-editor [20 20] @current-tileset 140))
+    (draw-tileset-editor [20 20] @current-tileset 64))
     
     ; bottom of screen
     ;(draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))

@@ -10,7 +10,7 @@
 ;(def current-tileset-colors {})
 
 (def button-color {
-                   :fill [0 0 0 240]
+                   :fill [0 0 0 192]
                    :stroke [0 0 0 0]
                    :fill-hot [128 128 255 192]
                    :stroke-hot [0 0 192 192]
@@ -94,6 +94,15 @@
   (swap! current-tileset disj code))
 
 
+(defn replace-facecode-digit [code idx d]
+  (apply str (map-indexed #(if (= %1 idx) d %2) code)))
+
+(defn set-current-tileset-digit [code idx d]
+  (when (contains? @current-tileset code)
+    (let [new-code (replace-facecode-digit code idx d)
+          new-tileset (conj (disj @current-tileset code) new-code)]
+      (set-current-tileset new-tileset))))
+
 (defn init-editor []
   (reset! current-tileset #{})
   )
@@ -129,6 +138,27 @@
         (text (str (.charAt code i)) tx ty)))))
 
 
+
+(defn draw-tile-button [[x y] code bscale parent-idx]
+  (let [bx (+ x (/ bscale 2))
+        by (+ y (/ bscale 2))
+        col [64 64 64 190]]
+    (stroke-weight 1)
+    (when (button x y bscale bscale button-color code)
+      (do
+        (println "button pressed:" code)))
+
+    (with-translation [bx by]
+        (scale (/ bscale 6))
+        (rotate-y (* (frame-count) 0.0051471))
+        (no-fill)
+        (stroke-weight 1)
+        (draw-faces-lite rd-verts rd-faces col)
+        (draw-facecode code)
+        (scale 2)
+        (draw-face-boundaries [0 0 0] code))))
+
+
 (defn draw-tile-editor [[x y] code bscale parent-idx]
   (let [bx (+ x (/ bscale 2))
         by (+ y (/ bscale 2))
@@ -155,14 +185,38 @@
   (ui-prepare)
   (let [indexed-tileset (into [] (map-indexed #(vec [%1 %2]) tileset))
         level (get-level)
-        selected (get-selected 1)]
+        selected (get-selected 1)
+        preview-pos [x (+ y bscale 10)]
+        preview-scale 320]
     (doseq [[i code] indexed-tileset]
       (let [tx (+ x (* i (+ bscale (/ bscale 8))))
             ty y]
-        (draw-tile-editor [tx ty] code bscale i)
-        (if (and (> level 0) (= i selected))
+        (draw-tile-button [tx ty] code bscale i)
+        (when (and (> level 0) (= i selected))
           (draw-selected [tx ty] bscale [255 255 255 255]))
-        )))
+        (when (and (= level 2) (= i selected))
+          (draw-tile-editor preview-pos code preview-scale i)
+          (draw-selected preview-pos preview-scale [255 255 255 255])))))
   (ui-finish))
+
+(defn draw-tile-editor [[x y] code bscale parent-idx]
+  (let [bx (+ x (/ bscale 2))
+        by (+ y (/ bscale 2))
+        col [64 64 64 190]]
+    (stroke-weight 1)
+    (when (button x y bscale bscale button-color code)
+      (do
+        (println "button pressed:" code)))
+    (draw-facecode-buttons [x (+ y bscale 5)] bscale code parent-idx)
+
+    (with-translation [bx by]
+        (scale (/ bscale 6))
+        (rotate-y (* (frame-count) 0.0051471))
+        (no-fill)
+        (stroke-weight 1)
+        (draw-faces-lite rd-verts rd-faces col)
+        (draw-facecode code)
+        (scale 2)
+        (draw-face-boundaries [0 0 0] code))))
       
 
