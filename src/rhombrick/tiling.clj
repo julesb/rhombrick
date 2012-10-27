@@ -81,8 +81,13 @@
 
 (defn get-random-tileset []
   (let [num-tiles (+ 1 (rand-int 5))]
-    (set (map (fn [_] (make-random-tilecode))
+    (vec (map (fn [_] (make-random-tilecode))
          (range num-tiles)))))
+
+;(defn get-random-tileset []
+;  (let [num-tiles (+ 1 (rand-int 5))]
+;    (set (map (fn [_] (make-random-tilecode))
+;         (range num-tiles)))))
 
 
 ; _______________________________________________________________________
@@ -413,10 +418,11 @@
 
 
 (defn seed-tiler [tileset]
+  (when (> (count tileset) 0)
   (let [pos [0 0 0]
         code (rand-nth (vec tileset))]
     (make-tile pos code) 
-    (push-connected-neighbours-to-empty-positions pos)))
+    (push-connected-neighbours-to-empty-positions pos))))
 
 ; _______________________________________________________________________
 

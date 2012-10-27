@@ -7,10 +7,11 @@
         [rhombrick.staticgeometry]))
 
 (def current-tileset (atom #{"001001001001" "000001000001"}))
+;(def current-tileset-indexed (atom []))
 ;(def current-tileset-colors {})
 
 (def button-color {
-                   :fill [0 0 0 192]
+                   :fill [0 0 0 235]
                    :stroke [0 0 0 0]
                    :fill-hot [128 128 255 192]
                    :stroke-hot [0 0 192 192]
@@ -18,75 +19,141 @@
                    :stroke-active [255 255 255 192]
                    })
 
-(def editor-state (atom {:level 0
-                         :selected [0 0 0]
-                         :selected-tilecode-digit []
-                         }))
+(def default-editor-state {:level 0
+                           :selected [0 0 0]
+                           :selected-tilecode-digit []
+                           :tileset (atom [])
+                         })
+
+(def editor-state (atom default-editor-state))
+
+(def next-digit {\0 \1
+                 \1 \a
+                 \a \A
+                 \A \0})
+
+
+(defn get-tileset []
+  @(@editor-state :tileset))
+ 
+
+(defn get-tileset-as-set []
+  (set (get-tileset)))
+
+
+(defn add-to-tileset [tile]
+  (let [idx (count (get-tileset))]
+    (swap! (@editor-state :tileset) assoc idx tile)))
+
+
+(defn set-tileset [tileset]
+  (reset! (@editor-state :tileset) [])
+  (reset! current-tileset-colors {})
+  (doseq [code tileset]
+    (add-to-tileset code)
+    (let [col (compute-tile-color code)]
+      (doseq [rc (rotations code)]
+        (swap! current-tileset-colors assoc rc col)))
+  (init-dead-loci)))
+
 
 (defn valid-level? [l]
   (and (>= l 0) (< l 3)))
 
+
 (defn get-level []
   (@editor-state :level))
+
 
 (defn set-level [l]
   (if (valid-level? l)
     (swap! editor-state assoc :level l)))
 
+
 (defn get-max-selected-idx []
   (let [level (get-level)]
     (cond 
       (= level 1) 
-        (count @current-tileset)
+        (count (get-tileset))
       (= level 2)
         12)))
+
 
 (defn get-selected [level]
   ((@editor-state :selected) level))
 
-(defn set-selected [i]
-  (let [level (get-level)
+
+(defn set-selected [i level]
+  (let [;level (get-level)
         selected (get-selected level) ]
   (swap! editor-state assoc :selected (assoc (@editor-state :selected) level i))))
 
 
+(defn index-exclude [r ex] 
+   "Take all indices execpted ex" 
+    (filter #(not (ex %)) (range r))) 
+
+(defn dissoc-idx [v & ds]
+   (map v (index-exclude (count v) (into #{} ds))))
+
+
+(defn replace-facecode-digit [code idx d]
+  (apply str (map-indexed #(if (= %1 idx) d %2) code)))
+
+
+(defn set-current-tileset-digit [tile-idx idx d]
+  (when-let [tileset (get-tileset)]
+    (when (< tile-idx (count tileset))
+      (let [code (tileset tile-idx)
+            new-code (replace-facecode-digit code idx d)
+            new-tileset (assoc tileset tile-idx new-code)]
+
+            ;new-tileset (vec (conj (disj (get-tileset-as-set) code) new-code))]
+        (set-tileset new-tileset)))))
+
+
+(defn key-edit-tilecode []
+  (when-let[tileset (get-tileset)] ; (> (count (get-tileset)) 0)
+    (let [;tileset (get-tileset)
+          selected-tile-idx (get-selected 1)
+          selected-code (tileset selected-tile-idx)
+          selected-digit-idx (get-selected 2)
+          selected-digit (nth selected-code selected-digit-idx)
+          new-digit (next-digit selected-digit)]
+      (println "tileset:" tileset
+               "selected-tile-idx:" selected-tile-idx
+               "selected-code:" selected-code
+               "selected-digit-idx" selected-digit-idx
+               "selected-digit" selected-digit)
+      (set-current-tileset-digit selected-tile-idx
+                                 selected-digit-idx
+                                 new-digit)
+      (soft-init-tiler (get-tileset-as-set)))))
+
+
+
 (defn level-up []
-  (set-level (inc (@editor-state :level))))
+  (if (and ( < (get-level) 2)
+           (> (count (get-tileset)) 0))
+    (set-level (inc (@editor-state :level)))
+    (key-edit-tilecode)))
 
 (defn level-down []
   (set-level (dec (@editor-state :level))))
 
 (defn move-left []
-  (if (> (get-level) 0)
-    (set-selected (mod (dec (get-selected (get-level)))
-                       (get-max-selected-idx)))))
-
+  (let [level (get-level)]
+    (if (> level 0)
+      (set-selected (mod (dec (get-selected level))
+                         (get-max-selected-idx))
+                    level))))
 (defn move-right []
-  (if (> (get-level) 0)
-    (set-selected (mod (inc (get-selected (get-level)))
-                       (get-max-selected-idx)))))
+  (let [level (get-level)]
+    (if (> level 0)
+      (set-selected (mod (inc (get-selected level))
+                         (get-max-selected-idx))
+                    level))))
 
-
-
-(defn add-to-current-tileset [code]
-  (let [col (compute-tile-color code)]
-    (doseq [rc (rotations code)]
-      (swap! current-tileset-colors assoc rc col)))
-  (swap! current-tileset conj code)
-  (init-dead-loci)
-  (println "current tileset colors:" @current-tileset-colors))
-
-
-(defn set-current-tileset [tileset]
-  (reset! current-tileset tileset)
-  (reset! current-tileset-colors {})
-  (doseq [code tileset]
-    (let [col (compute-tile-color code)]
-      (doseq [rc (rotations code)]
-        (swap! current-tileset-colors assoc rc col))
-      ;(swap! current-tileset conj code)
-      ))
-  (init-dead-loci))
 
 
 (defn remove-from-current-tileset [code]
@@ -94,18 +161,10 @@
   (swap! current-tileset disj code))
 
 
-(defn replace-facecode-digit [code idx d]
-  (apply str (map-indexed #(if (= %1 idx) d %2) code)))
 
-(defn set-current-tileset-digit [code idx d]
-  (when (contains? @current-tileset code)
-    (let [new-code (replace-facecode-digit code idx d)
-          new-tileset (conj (disj @current-tileset code) new-code)]
-      (set-current-tileset new-tileset))))
 
 (defn init-editor []
-  (reset! current-tileset #{})
-  )
+  (reset! editor-state default-editor-state) )
 
 
 (defn draw-selected [[x y] bscale col]
@@ -138,7 +197,6 @@
         (text (str (.charAt code i)) tx ty)))))
 
 
-
 (defn draw-tile-button [[x y] code bscale parent-idx]
   (let [bx (+ x (/ bscale 2))
         by (+ y (/ bscale 2))
@@ -147,7 +205,6 @@
     (when (button x y bscale bscale button-color code)
       (do
         (println "button pressed:" code)))
-
     (with-translation [bx by]
         (scale (/ bscale 6))
         (rotate-y (* (frame-count) 0.0051471))
@@ -168,7 +225,6 @@
       (do
         (println "button pressed:" code)))
     (draw-facecode-buttons [x (+ y bscale 5)] bscale code parent-idx)
-
     (with-translation [bx by]
         (scale (/ bscale 6))
         (rotate-y (* (frame-count) 0.0051471))
@@ -183,13 +239,13 @@
 
 (defn draw-tileset-editor [[x y] tileset bscale]
   (ui-prepare)
-  (let [indexed-tileset (into [] (map-indexed #(vec [%1 %2]) tileset))
-        level (get-level)
+  (let [level (get-level)
         selected (get-selected 1)
         preview-pos [x (+ y bscale 10)]
         preview-scale 320]
-    (doseq [[i code] indexed-tileset]
-      (let [tx (+ x (* i (+ bscale (/ bscale 8))))
+    (doseq [i (range (count tileset))]
+      (let [code (tileset i)
+            tx (+ x (* i (+ bscale (/ bscale 8))))
             ty y]
         (draw-tile-button [tx ty] code bscale i)
         (when (and (> level 0) (= i selected))
@@ -198,6 +254,7 @@
           (draw-tile-editor preview-pos code preview-scale i)
           (draw-selected preview-pos preview-scale [255 255 255 255])))))
   (ui-finish))
+
 
 (defn draw-tile-editor [[x y] code bscale parent-idx]
   (let [bx (+ x (/ bscale 2))

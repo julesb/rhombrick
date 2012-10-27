@@ -87,7 +87,8 @@
     (println "building normalised faced set")
     (build-normalised-facecode-set)
     (println "initialising tiler")
-    (init-tiler @current-tileset)
+    ;(editor/make-indexed @current-tileset)
+    (init-tiler (editor/get-tileset-as-set))
     ;(make-tiling-iteration) ; needed so init-gliders works
     ;(make-backtracking-tiling-iteration @current-tileset)
     (init-gliders num-gliders)
@@ -110,8 +111,7 @@
 
 (defn draw-info [x y]
   (let [line-space 20
-        lines [;(str "tileset: " @current-tileset)
-               (str "  state: " @tiler-state)
+        lines [(str "  state: " @tiler-state)
                (str "  iters: " @tiler-iterations)
                (str "  tiles: " (count @tiles) "/" @max-tiles) 
                (str "  empty: " (count @empty-positions)) 
@@ -162,14 +162,14 @@
         (println "model-scale: " @model-scale))
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
-         (soft-init-tiler @current-tileset)
-         (make-backtracking-tiling-iteration2 @tiles @current-tileset)
+         (soft-init-tiler (editor/get-tileset-as-set))
+         (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
          (init-gliders num-gliders))
    \R #(do 
-         (init-tiler @current-tileset)
-         (set-current-tileset (get-random-tileset))
-         (println "random tileset:" @current-tileset) 
-         (make-backtracking-tiling-iteration2 @tiles @current-tileset)
+         (editor/set-tileset (get-random-tileset))
+         (init-tiler (editor/get-tileset-as-set))
+         (println "random tileset:" (editor/get-tileset-as-set)) 
+         (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
          (init-gliders num-gliders)
          )
    \- #(do 
@@ -189,11 +189,6 @@
          (when @draw-facelist?
            (build-face-list))
          (println "draw facelist? " @draw-facelist?))
-    ;\` #(do
-    ;     (swap! draw-editor? not)
-    ;     (if @draw-editor?
-    ;       (cursor))
-    ;     (println "draw editor? " @draw-editor?))
     \g #(do
           (swap! draw-gliders? not)
           (if draw-gliders?
@@ -309,15 +304,16 @@
 (defn draw []
   ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
-  (do-movement-keys)
 
-  ;(when (= 0 (mod (frame-count) 1))
-  ;  (make-backtracking-tiling-iteration @current-tileset))
- 
+  ;(when (< (editor/get-level) 2)
+    (do-movement-keys)
+  ;  )
+
   (when (= @tiler-state :running)
     (if (and (> (count @empty-positions) 0)
-             (> (count @current-tileset) 0))
-      (make-backtracking-tiling-iteration2 @tiles @current-tileset)
+             (> (count (editor/get-tileset)) 0))
+      ;(make-backtracking-tiling-iteration2 @tiles @current-tileset)
+      (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
       (do
         (build-face-list)
         (halt-tiler))))
@@ -405,13 +401,14 @@
 
 
     ;(hint :disable-depth-test) 
-    (draw-tiling)
+    ;(draw-tiling)
     ; (hint :enable-depth-test)
 
     (when @draw-facelist?
       (draw-face-list))
       ;(draw-face-list-textured))
 
+    (draw-tiling)
 
     ;(when (seq @empty-positions)
     ;  (draw-empty))
@@ -443,7 +440,8 @@
 
   ;(when @draw-editor?
   (when (> (editor/get-level) 0)
-    (draw-tileset-editor [20 20] @current-tileset 64))
+    ;(draw-tileset-editor [20 20] @current-tileset 64))
+    (draw-tileset-editor [20 20] (editor/get-tileset) 64))
     
     ; bottom of screen
     ;(draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))
@@ -458,12 +456,12 @@
                        frame-start-time)
                     1000000.0)))
 
-  (if (and (= @tiler-state :running)
-           (= (mod (frame-count) 150) 0))
-   (println "frame-time: " @last-render-time
-            "tiles:" (count @tiles)
-            "adhd:" @adhd "auti:" @autism
-            ))
+;  (if (and (= @tiler-state :running)
+;           (= (mod (frame-count) 150) 0))
+;   (println "frame-time: " @last-render-time
+;            "tiles:" (count @tiles)
+;            "adhd:" @adhd "auti:" @autism
+;            ))
   ))
 
 
