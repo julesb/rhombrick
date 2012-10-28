@@ -62,7 +62,7 @@
   (reset! (@editor-state :tileset) [])
   (reset! current-tileset-colors {})
   (doseq [code tileset]
- ;   (when-not (set-contains-rotations? (set tileset) code)
+    ;(when-not (set-contains-rotations? (set tileset) code)
     (add-to-tileset code)
     (let [col (compute-tile-color code)]
       (doseq [rc (rotations code)]
@@ -113,15 +113,12 @@
       (let [code (tileset tile-idx)
             new-code (replace-facecode-digit code idx d)
             new-tileset (assoc tileset tile-idx new-code)]
-
-            ;new-tileset (vec (conj (disj (get-tileset-as-set) code) new-code))]
         (set-tileset new-tileset)))))
 
 
 (defn key-edit-tilecode []
   (when-let[tileset (get-tileset)] ; (> (count (get-tileset)) 0)
-    (let [;tileset (get-tileset)
-          selected-tile-idx (get-selected 1)
+    (let [selected-tile-idx (get-selected 1)
           selected-code (tileset selected-tile-idx)
           selected-digit-idx (get-selected 2)
           selected-digit (nth selected-code selected-digit-idx)
@@ -222,6 +219,18 @@
         (draw-face-boundaries [0 0 0] code))))
 
 
+
+(defn draw-rotations [[x y] code bscale]
+  (let [filtered-rotations (vec (filter #(not= code %) (rotations code)))
+        num-buttons (dec (count filtered-rotations))
+        bspace 1]
+    (doseq [i (range (count filtered-rotations))]
+      (let [bx (+ x (+ (* i bscale) (* i bspace)))
+            by y
+            rot-code (nth filtered-rotations i)]
+        (draw-tile-button [bx by] rot-code bscale i)))))
+
+
 (defn draw-tile-editor [[x y] code bscale parent-idx]
   (let [bx (+ x (/ bscale 2))
         by (+ y (/ bscale 2))
@@ -248,7 +257,9 @@
   (let [level (get-level)
         selected (get-selected 1)
         preview-pos [x (+ y bscale 10)]
-        preview-scale 320]
+        preview-scale 320
+        rotations-pos [(+ (preview-pos 0) preview-scale) (preview-pos 1)]
+        rotations-scale 96]
     (doseq [i (range (count tileset))]
       (let [code (tileset i)
             tx (+ x (* i (+ bscale (/ bscale 8))))
@@ -258,28 +269,8 @@
           (draw-selected [tx ty] bscale [255 255 255 255]))
         (when (and (= level 2) (= i selected))
           (draw-tile-editor preview-pos code preview-scale i)
-          (draw-selected preview-pos preview-scale [255 255 255 255])))))
+          (draw-selected preview-pos preview-scale [255 255 255 255])
+          (draw-rotations rotations-pos code rotations-scale)))))
   (ui-finish))
 
-
-(defn draw-tile-editor [[x y] code bscale parent-idx]
-  (let [bx (+ x (/ bscale 2))
-        by (+ y (/ bscale 2))
-        col [64 64 64 190]]
-    (stroke-weight 1)
-    (when (button x y bscale bscale button-color code)
-      (do
-        (println "button pressed:" code)))
-    (draw-facecode-buttons [x (+ y bscale 5)] bscale code parent-idx)
-
-    (with-translation [bx by]
-        (scale (/ bscale 6))
-        (rotate-y (* (frame-count) 0.0051471))
-        (no-fill)
-        (stroke-weight 1)
-        (draw-faces-lite rd-verts rd-faces col)
-        (draw-facecode code)
-        (scale 2)
-        (draw-face-boundaries [0 0 0] code))))
-      
 
