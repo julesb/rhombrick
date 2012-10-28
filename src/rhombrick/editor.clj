@@ -32,6 +32,15 @@
                  \a \A
                  \A \0})
 
+(defn get-selected [level]
+  ((@editor-state :selected) level))
+
+
+(defn set-selected [i level]
+  (let [selected (get-selected level) ]
+    (swap! editor-state assoc :selected
+                              (assoc (@editor-state :selected) level i))))
+
 
 (defn get-tileset []
   @(@editor-state :tileset))
@@ -47,14 +56,20 @@
 
 
 (defn set-tileset [tileset]
+  (println "set-tileset: " tileset)
+;  (let [;tileset-set (distinct tileset)
+;        num-uniq (count tileset)]
   (reset! (@editor-state :tileset) [])
   (reset! current-tileset-colors {})
   (doseq [code tileset]
+ ;   (when-not (set-contains-rotations? (set tileset) code)
     (add-to-tileset code)
     (let [col (compute-tile-color code)]
       (doseq [rc (rotations code)]
-        (swap! current-tileset-colors assoc rc col)))
-  (init-dead-loci)))
+        (swap! current-tileset-colors assoc rc col))))
+  (if (> ((@editor-state :selected) 1) (dec (count (get-tileset))))
+    (set-selected (dec (count (get-tileset))) 1))
+  (init-dead-loci))
 
 
 (defn valid-level? [l]
@@ -79,18 +94,9 @@
         12)))
 
 
-(defn get-selected [level]
-  ((@editor-state :selected) level))
-
-
-(defn set-selected [i level]
-  (let [;level (get-level)
-        selected (get-selected level) ]
-  (swap! editor-state assoc :selected (assoc (@editor-state :selected) level i))))
-
 
 (defn index-exclude [r ex] 
-   "Take all indices execpted ex" 
+   "Take all indices except ex" 
     (filter #(not (ex %)) (range r))) 
 
 (defn dissoc-idx [v & ds]

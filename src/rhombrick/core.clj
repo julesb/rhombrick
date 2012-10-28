@@ -277,16 +277,12 @@
   (let [x (mouse-x) y (mouse-y)
         delta [(- (mouse-x) (@mousewarp-pos 0))
                (- (mouse-y) (@mousewarp-pos 1)) 0]]
-    ;(when (not @draw-editor?)
     (when (not (> (editor/get-level) 0))
       (reset! last-mouse-delta (vec3-scale delta 0.01))
       (reset! (state :mouse-position) [x y]))
-    
-    ;(when @draw-editor?
     (when (> (editor/get-level) 0)
       (update-ui-state :mouse-x (mouse-x))
-      (update-ui-state :mouse-y (mouse-y)))
-    ))
+      (update-ui-state :mouse-y (mouse-y)))))
 
 
 (defn mouse-pressed []
@@ -438,9 +434,7 @@
   (camera)
 
 
-  ;(when @draw-editor?
   (when (> (editor/get-level) 0)
-    ;(draw-tileset-editor [20 20] @current-tileset 64))
     (draw-tileset-editor [20 20] (editor/get-tileset) 64))
     
     ; bottom of screen

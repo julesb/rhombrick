@@ -102,6 +102,13 @@
      0))
 
 
+(defn set-contains-rotations? [s code]
+  (> (count (filter true? 
+                    (map #(contains? s %1)
+                         (rotations code))))
+     0))
+
+
 ; Group by number of connected edges. The distribution of rotation invariant
 ; tiles for number of connections happens to have an interesting symmetry:
 ; (doseq [g (keys tilegroups)] 
