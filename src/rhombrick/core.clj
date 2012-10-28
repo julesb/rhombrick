@@ -297,6 +297,18 @@
 ; _______________________________________________________________________
 
 
+(defn draw-horizon []
+  (stroke 0 255 0 128)
+  (stroke-weight 1)
+  (ellipse 0 0 200 200))
+
+(defn draw-assemblage-radius []
+  (let [rad (* @assemblage-max-radius 2)]
+    (stroke 255 0 0 128)
+    (stroke-weight 1)
+    (ellipse 0 0 rad rad)))
+
+
 (defn draw []
   ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
@@ -399,12 +411,16 @@
     ;(hint :disable-depth-test) 
     ;(draw-tiling)
     ; (hint :enable-depth-test)
+    (no-fill)
+    (draw-horizon)
+    (draw-assemblage-radius)
 
     (when @draw-facelist?
       (draw-face-list))
       ;(draw-face-list-textured))
 
     (draw-tiling)
+
 
     ;(when (seq @empty-positions)
     ;  (draw-empty))
