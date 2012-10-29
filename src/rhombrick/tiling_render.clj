@@ -32,6 +32,23 @@
 
 
 
+(defn get-tilecode-angles [code]
+  (let [indexed-code (vec (map-indexed #(vec [%1 %2]) code))
+        filtered-code (vec (filter #(not= (%1 1) \0) indexed-code)) ]
+    (println "filtered-code:" filtered-code)
+    (doseq [i (range (count filtered-code))]
+      (let [i2 (int (mod (inc i) (count filtered-code)))
+            face-idx1 ((filtered-code i) 0)
+            face-idx2 ((filtered-code i2) 0)
+            v1 (vec3-normalize (co-verts face-idx1))
+            v2 (vec3-normalize (co-verts face-idx2))
+            ang (vec3-angle-between v1 v2)]
+        (print "faces = [" face-idx1 face-idx2 "], ang =" (format "%.1f" ang))
+        (println)
+        ))))
+
+
+
 ; this assumes that the tilecode can be parsed as a binary number - no use
 ;(defn compute-tile-color-orig [code]
 ;  (if (not= nil code)
@@ -115,7 +132,7 @@
     (let [vert-idx (faces i)
           v0 (verts (vert-idx 0))
           v1 (verts (vert-idx 1))
-         v2 (verts (vert-idx 2))
+          v2 (verts (vert-idx 2))
           v3 (verts (vert-idx 3))]
       (begin-shape :quads)
       (vertex (v0 0) (v0 1) (v0 2))
@@ -124,11 +141,41 @@
       (vertex (v3 0) (v3 1) (v3 2))
       (end-shape))))
 
+(def face-id-text (atom []))
+
+
+(defn draw-faces-with-info [verts faces col]
+  (reset! face-id-text [])
+  (apply stroke col)
+  (doseq [i (range (count faces))]
+    (let [vert-idx (faces i)
+          v0 (verts (vert-idx 0))
+          v1 (verts (vert-idx 1))
+          v2 (verts (vert-idx 2))
+          v3 (verts (vert-idx 3))
+          sx (screen-x (v0 0) (v0 1) (v0 2))
+          sy (screen-y (v0 0) (v0 1) (v0 2))
+          sz (screen-z (v0 0) (v0 1) (v0 2))
+          v0-sc (vec3-scale v0 50)]
+      ;(println "screen-z:" sz)
+      (no-fill)
+      (begin-shape :quads)
+      (vertex (v0 0) (v0 1) (v0 2))
+      (vertex (v1 0) (v1 1) (v1 2))
+      (vertex (v2 0) (v2 1) (v2 2))
+      (vertex (v3 0) (v3 1) (v3 2))
+      (end-shape)
+      (swap! face-id-text conj [i v0-sc])
+      ;(hint :disable-depth-test)
+      ;(fill 255 255 255 255)
+      ;(text (str i) sx sy)
+      ;(hint :enable-depth-test)
+      )))
 ; _______________________________________________________________________
 
 
 (defn draw-face-list []
-  (fill 32 32 32 192)
+  (fill 32 32 32 245)
   ;(no-fill)
   ;(stroke 0 0 0 192)
   (stroke 40 40 40 190)
@@ -140,7 +187,7 @@
           v1 (face-verts 1)
           v2 (face-verts 2)
           v3 (face-verts 3)]
-       
+      (stroke 40 40 40 190) 
       (begin-shape :quads)
       ;(texture @rhomb-tex)
       (vertex (v0 0) (v0 1) (v0 2))
@@ -148,7 +195,8 @@
       (vertex (v2 0) (v2 1) (v2 2))
       (vertex (v3 0) (v3 1) (v3 2))
       (end-shape)
-      ;(line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
+      (stroke 40 40 40 128)
+      (line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
       )))
 
 
@@ -262,10 +310,10 @@
                 (if (re-find #"[a-f]+" (str d))
                   (fill 255 255 255 255)
                   (fill 0 0 0 255))))
-            (with-translation (vec3-scale (co-verts i) 0.965)
+            (with-translation (vec3-scale (co-verts i) 0.93)
               (rotate az 0 0 1)
               (rotate el 0 1 0)
-              (box 0.1)))))))))
+              (box 0.2)))))))))
 
 
 (defn draw-empty []
@@ -415,6 +463,9 @@
         )
 
     (stroke-weight 6)
+    ;(fill (col2 0) (col2 1) (col2 2) 32)
+    ;(stroke (col2 0) (col2 1) (col2 2) 32)
+
     (stroke (col 0) (col 1) (col 2) 192)
     ;(stroke 192 192 255 192)
     (doseq [endpoints endpoint-pairs]
@@ -489,21 +540,10 @@
     (let [pos tile
           code (@tiles pos)]
       (draw-face-boundaries pos code)
-
       (with-translation pos 
         (scale 0.5)
         (stroke-weight 8)
         (stroke 0 0 0 64)
         (no-fill) 
-        (draw-facecode (@tiles pos))
-
-
-        ;(stroke-weight 1)
-        ;(stroke 128 128 128 24)
-        ;;(no-stroke)
-        ;(draw-faces rd-verts rd-faces nil)
-        
-        ;(stroke 0 255 0 32)
-        ;(draw-todo)
-      ))))
+        (draw-facecode (@tiles pos))))))
 

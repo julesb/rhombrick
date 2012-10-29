@@ -6,8 +6,6 @@
         [rhombrick.button]
         [rhombrick.staticgeometry]))
 
-(def current-tileset (atom #{"001001001001" "000001000001"}))
-;(def current-tileset-indexed (atom []))
 ;(def current-tileset-colors {})
 
 (def button-color {
@@ -22,7 +20,7 @@
 (def default-editor-state {:level 0
                            :selected [0 0 0]
                            :selected-tilecode-digit []
-                           :tileset (atom [])
+                           :tileset (atom ["001001001001"])
                          })
 
 (def editor-state (atom default-editor-state))
@@ -160,8 +158,12 @@
 
 
 (defn remove-from-current-tileset [code]
-  (swap! current-tileset-colors dissoc code)
-  (swap! current-tileset disj code))
+  (let [new-tileset (vec (filter #(not= code %) (get-tileset)))]
+    (set-tileset new-tileset)))
+
+;(defn remove-from-current-tileset [code]
+;  (swap! current-tileset-colors dissoc code)
+;  (swap! current-tileset disj code))
 
 
 
@@ -221,7 +223,7 @@
 
 
 (defn draw-rotations [[x y] code bscale]
-  (let [filtered-rotations (vec (filter #(not= code %) (rotations code)))
+  (let [filtered-rotations (vec (filter #(not= code %) (expand-tiles-experiment [code])))
         num-buttons (dec (count filtered-rotations))
         bspace 1]
     (doseq [i (range (count filtered-rotations))]
@@ -245,7 +247,8 @@
         (rotate-y (* (frame-count) 0.0051471))
         (no-fill)
         (stroke-weight 1)
-        (draw-faces-lite rd-verts rd-faces col)
+        (draw-faces-with-info rd-verts rd-faces col)
+        (no-fill)
         (draw-facecode code)
         (scale 2)
         (draw-face-boundaries [0 0 0] code))))

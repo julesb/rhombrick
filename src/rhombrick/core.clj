@@ -451,7 +451,15 @@
 
 
   (when (> (editor/get-level) 0)
-    (draw-tileset-editor [20 20] (editor/get-tileset) 64))
+    (draw-tileset-editor [20 20] (editor/get-tileset) 64)
+    ;(doseq [i (range (count @face-id-text))]
+    ;  (let [f (@face-id-text i)
+    ;        t (str (f 0))
+    ;        x 20 ;(* 100 (+ 20 ((f 1) 0)))
+    ;        y 20 ] ;(* 100 (+ 20 ((f 1) 1)))]
+    ;  (fill 255 255 255 255)
+    ;  (text t x y)))
+    )
     
     ; bottom of screen
     ;(draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))

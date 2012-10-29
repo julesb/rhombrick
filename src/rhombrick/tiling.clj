@@ -170,6 +170,10 @@
   (apply str (map #(get-neighbour-abutting-face2 neighbourhood %) (range 12))))
 
 
+
+(defn reverse-tiles [tiles]
+  (map #(apply str (reverse %)) tiles))
+
 ; generate all unique rotations of tiles 
 ; intended to be be used on the working tileset
 ; when choosing a tile
@@ -178,8 +182,8 @@
 
 
 (defn expand-tiles-experiment [tiles]
-  (set (flatten (map #(rotations %)
-                     (conj tiles (vec (map reverse tiles)))))))
+  (set (flatten (conj (map #(rotations %) tiles)
+                      (map #(rotations %) (reverse-tiles tiles))))))
 
 
 
@@ -216,7 +220,7 @@
     (if (contains? @dead-loci outercode)
       ()
       (filter #(facecodes-directly-compatible? outercode %)
-              (expand-tiles tileset)))))
+              (expand-tiles-experiment tileset)))))
 
 
 ;(defn choose-tilecode [pos tileset]
