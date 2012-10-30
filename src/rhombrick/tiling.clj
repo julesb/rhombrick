@@ -33,7 +33,7 @@
 (def dead-loci (atom #{}))
 
 (def facecode-compatible #{
-  [\0 \0]
+  [\- \-]
   [\1 \1]
   [\a \A]
   [\b \B]
@@ -59,7 +59,7 @@
 ; _______________________________________________________________________
 
 (defn get-num-connected [code]
-  (count (filter #(and (not= \0 %) (not= \- %)) code)))
+  (count (filter #(not= \- %) code)))
 
 
 (defn get-n-rand-tilecode [n]
@@ -74,9 +74,9 @@
 
 
 (defn make-random-tilecode []
-  (let [digits [\0 \0 \0 \0 \0 \0 \0 \0 \0 \1 \a \A]
+  (let [digits [\- \- \- \- \- \- \- \- \- \1 \a \A]
         code (apply str (map (fn [_] (rand-nth digits)) (range 12)))]
-    (if (= code "000000000000") "000000000001" code)))
+    (if (= code "------------") "-----------1" code)))
 
 
 (defn get-random-tileset []
@@ -170,9 +170,9 @@
   (apply str (map #(get-neighbour-abutting-face2 neighbourhood %) (range 12))))
 
 
-
 (defn reverse-tiles [tiles]
   (map #(apply str (reverse %)) tiles))
+
 
 ; generate all unique rotations of tiles 
 ; intended to be be used on the working tileset
@@ -186,14 +186,12 @@
                       (map #(rotations %) (reverse-tiles tiles))))))
 
 
-
 ; compares single digits of two facecodes, using the
 ; compatibility table 
-(defn face-digit-compatible? [a b]
-  (or (contains? facecode-compatible [a b])
-      (contains? facecode-compatible [b a])
-      (= a \-)
-      (= b \-)))
+(defn face-digit-compatible? [inner outer]
+  (or (contains? facecode-compatible [inner outer])
+      (contains? facecode-compatible [outer inner])
+      (= outer \-)))
 
 
 (defn face-digit-like-compatible? [d]
@@ -220,7 +218,7 @@
     (if (contains? @dead-loci outercode)
       ()
       (filter #(facecodes-directly-compatible? outercode %)
-              (expand-tiles-experiment tileset)))))
+              (expand-tiles tileset)))))
 
 
 ;(defn choose-tilecode [pos tileset]

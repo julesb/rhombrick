@@ -20,15 +20,15 @@
 (def default-editor-state {:level 0
                            :selected [0 0 0]
                            :selected-tilecode-digit []
-                           :tileset (atom ["001001001001"])
+                           :tileset (atom ["--1--1--1--1"])
                          })
 
 (def editor-state (atom default-editor-state))
 
-(def next-digit {\0 \1
+(def next-digit {\- \1
                  \1 \a
                  \a \A
-                 \A \0})
+                 \A \-})
 
 (defn get-selected [level]
   ((@editor-state :selected) level))

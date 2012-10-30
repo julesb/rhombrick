@@ -31,10 +31,9 @@
 ; _______________________________________________________________________
 
 
-
 (defn get-tilecode-angles [code]
   (let [indexed-code (vec (map-indexed #(vec [%1 %2]) code))
-        filtered-code (vec (filter #(not= (%1 1) \0) indexed-code)) ]
+        filtered-code (vec (filter #(not= (%1 1) \-) indexed-code)) ]
     (println "filtered-code:" filtered-code)
     (doseq [i (range (count filtered-code))]
       (let [i2 (int (mod (inc i) (count filtered-code)))
@@ -48,17 +47,6 @@
         ))))
 
 
-
-; this assumes that the tilecode can be parsed as a binary number - no use
-;(defn compute-tile-color-orig [code]
-;  (if (not= nil code)
-;    (let [rc (set (rotations code))
-;          bvals (map #(. Integer parseInt % 2) rc)
-;          n (first (sort bvals))
-;          c (int (mod n 12))]
-;      (rd-face-colors c))
-;    [255 0 0]))
-
 (defn compute-tile-color-1 [code]
   (if (not= nil code)
     (let [n (hash (apply str (set (rotations code))))
@@ -66,9 +54,15 @@
       (rd-face-colors c))
     [255 0 0]))
 
+
+
+(defn facecode-to-hex [code]
+  (apply str "0x" (map #(if (= \- %) \0 %) code)))
+
+
 (defn compute-tile-color [code]
   (if (not= nil code)
-    (let [hs (apply str "0x" code)
+    (let [hs (facecode-to-hex code)
           n (mod (read-string hs) 12)]
       (rd-face-colors n))
     [128 128 128 128]))
@@ -264,7 +258,7 @@
       (with-translation pos
         (scale 0.5)
         (doseq [i (range 12)]
-          (if (not= (.charAt code i) \0)
+          (if (not= (.charAt code i) \-)
            (with-translation (co-verts i)
             (scale 0.02)
             ;(sphere 0.05)
@@ -298,7 +292,7 @@
         (stroke-weight 1)
         (stroke r g b 255)
         (doseq [i (range 12)]
-          (when (not= (.charAt code i) \0)
+          (when (not= (.charAt code i) \-)
           (let [d (.charAt code i)
                 dir (co-verts i)
                 [dx dy dz] (vec3-normalize dir)

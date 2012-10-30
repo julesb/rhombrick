@@ -170,8 +170,7 @@
   (not 
     (or 
       (= 0 (count (get-connected-idxs tilecode)))
-      (= tilecode "xxxxxxxxxxxx")
-      (= tilecode "000000000000")
+      (= tilecode "------------")
       (= tilecode nil)
       (not= (count tilecode) 12)
       )))
