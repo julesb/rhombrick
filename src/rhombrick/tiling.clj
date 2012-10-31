@@ -54,7 +54,7 @@
 ;   "00000a00000a" "A00000A00000"}
 ; #{"111111111111" "100000a00000" "A00000b00000" "B00000100000" }
 ; #{"000000010001" "A000a0001000"}
-;
+; ["A-AAA-A-AAA-" "-----A-----1" "-----a-----1" "-----1-----1"] 
 
 ; _______________________________________________________________________
 
@@ -159,7 +159,7 @@
   (let [op-face-idx (connecting-faces face-idx)
         nb-code (neighbourhood face-idx)]
     ;(println "nb-code:"nb-code "op-face-idx:" op-face-idx "neighbourhood:" neighbourhood)
-    (if (nil? nb-code) \- (nth nb-code op-face-idx))))
+    (if (nil? nb-code) \. (nth nb-code op-face-idx))))
 
 
 ;(defn get-outer-facecode [pos]
@@ -191,7 +191,7 @@
 (defn face-digit-compatible? [inner outer]
   (or (contains? facecode-compatible [inner outer])
       (contains? facecode-compatible [outer inner])
-      (= outer \-)))
+      (= outer \.)))
 
 
 (defn face-digit-like-compatible? [d]
