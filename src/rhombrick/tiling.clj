@@ -55,7 +55,8 @@
 ; #{"111111111111" "100000a00000" "A00000b00000" "B00000100000" }
 ; #{"000000010001" "A000a0001000"}
 ; ["A-AAA-A-AAA-" "-----A-----1" "-----a-----1" "-----1-----1"] 
-
+; ["-----------1" "-A1--11aA---" "--------a---" "-1---------1" "-A------1-1-"]
+;
 ; _______________________________________________________________________
 
 (defn get-num-connected [code]
@@ -146,15 +147,6 @@
   (not (zero? (neighbour-count pos))))
 
 
-;(defn get-neighbour-abutting-face [pos face]
-;    (let [op-face (connecting-faces face)
-;          nb-pos (get-neighbour-pos pos face)
-;          nb-face-idx op-face ]
-;      (if (is-empty? nb-pos)
-;        \-
-;        (nth (@tiles nb-pos) nb-face-idx))))
-
-
 (defn get-neighbour-abutting-face2 [neighbourhood face-idx]
   (let [op-face-idx (connecting-faces face-idx)
         nb-code (neighbourhood face-idx)]
@@ -206,26 +198,12 @@
                          innercode outercode)))))
 
 
-;(defn find-candidates [pos tileset]
-;  (let [outercode (get-outer-facecode pos)]
-;    (if (contains? @dead-loci outercode)
-;      ()
-;      (filter #(facecodes-directly-compatible? outercode %)
-;              (expand-tiles tileset)))))
-  
 (defn find-candidates2 [neighbourhood tileset]
   (let [outercode (get-outer-facecode2 neighbourhood)]
     (if (contains? @dead-loci outercode)
       ()
       (filter #(facecodes-directly-compatible? outercode %)
               (expand-tiles tileset)))))
-
-
-;(defn choose-tilecode [pos tileset]
-;  (let [candidates (find-candidates pos tileset)]  
-;    (if (seq candidates)
-;      (nth candidates (rand-int (count candidates)))
-;      nil)))
 
 
 ; neighbourhood looks like ["000000001001" "000000001000" etc ]
@@ -422,7 +400,7 @@
 (defn seed-tiler [tileset]
   (when (> (count tileset) 0)
   (let [pos [0 0 0]
-        code (rand-nth (vec tileset))]
+        code (rand-nth (vec (expand-tiles tileset)))]
     (make-tile pos code) 
     (push-connected-neighbours-to-empty-positions pos))))
 
