@@ -3,8 +3,6 @@
         [clojure.string :only (split)]))
 
 
-
-
 (defn parse-vertex-line [line]
   (->> (str "[" ((re-find #"^v (.+)$" line) 1) "]")
        (read-string)))
@@ -87,10 +85,10 @@
 
 (defn parse-file [lines acc]
   (if-let [line (first lines)]
-    (let [line-type (get-line-type line)
-          new-acc (->> (into [] (conj (acc line-type) (parse-line line)))
-                       (assoc acc line-type))]
-      (recur (rest lines) new-acc))
+    (let [line-type (get-line-type line)]
+      (->> (into [] (conj (acc line-type) (parse-line line)))
+           (assoc acc line-type)
+           (recur (rest lines))))
     acc))
 
 
