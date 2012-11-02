@@ -26,7 +26,7 @@
 (def max-tiles (atom 200))
 (def tiles (atom (ordered-map)))
 (def tiler-iterations (atom 0))
-(def tiler-state (atom :halted)) ; :halted :running 
+(def tiler-state (atom :halted)) ; :halted :running :paused
 (def face-list (atom #{}))
 (def assemblage-center (atom [0 0 0]))
 (def assemblage-max-radius (atom 6))

@@ -211,6 +211,10 @@
     \} #(do
           (swap! autism + 0.1)
           (println "adhd:" @adhd "auti:" @autism))
+    \p #(do
+          (cond 
+            (= @tiler-state :running) (reset! tiler-state :paused)
+            (= @tiler-state :paused)  (reset! tiler-state :running)))
        })
 
 (def key-editor-map
