@@ -31,7 +31,7 @@
 (def assemblage-center (atom [0 0 0]))
 (def assemblage-max-radius (atom 6))
 (def dead-loci (atom #{}))
-
+(def tileset-expanded (atom #{}))
 (def facecode-compatible #{
   [\- \-]
   [\1 \1]
@@ -177,9 +177,12 @@
   (set (flatten (conj (map #(rotations %) tiles)
                       (map #(rotations %) (reverse-tiles tiles))))))
 
-
 (defn expand-tiles-preserving-symmetry [tiles]
-  (set (flatten (map #(rotations-preserving-symmetry %) tiles))))
+  (set (flatten (conj (map #(rotations-preserving-symmetry %) tiles)
+                      (map #(rotations-preserving-symmetry %) (reverse-tiles tiles))))))
+
+;(defn expand-tiles-preserving-symmetry [tiles]
+;  (set (flatten (map #(rotations-preserving-symmetry %) tiles))))
 
 
 ; compares single digits of two facecodes, using the
@@ -202,12 +205,19 @@
                          innercode outercode)))))
 
 
+;(defn find-candidates2 [neighbourhood tileset]
+;  (let [outercode (get-outer-facecode2 neighbourhood)]
+;    (if (contains? @dead-loci outercode)
+;      ()
+;      (filter #(facecodes-directly-compatible? outercode %)
+;              (expand-tiles-preserving-symmetry tileset)))))
+
 (defn find-candidates2 [neighbourhood tileset]
   (let [outercode (get-outer-facecode2 neighbourhood)]
     (if (contains? @dead-loci outercode)
       ()
       (filter #(facecodes-directly-compatible? outercode %)
-              (expand-tiles-preserving-symmetry tileset)))))
+              @tileset-expanded))))
 
 
 ; neighbourhood looks like ["000000001001" "000000001000" etc ]
@@ -400,6 +410,11 @@
 
 ; _______________________________________________________________________
 
+(defn update-tileset-expanded [tileset]
+  (when (> (count tileset) 0)
+    (reset! tileset-expanded
+            (expand-tiles-preserving-symmetry tileset))))
+
 
 (defn seed-tiler [tileset]
   (when (> (count tileset) 0)
@@ -415,6 +430,7 @@
   (reset! tiles {})
   (reset! tiler-iterations 0)
   (reset! face-list #{})
+  (update-tileset-expanded tileset)
   (init-empty-positions)
   (init-dead-loci)
   (seed-tiler tileset)
@@ -426,6 +442,7 @@
   (reset! tiles {})
   (reset! tiler-iterations 0)
   (reset! face-list #{})
+  (update-tileset-expanded tileset)
   (init-empty-positions)
   (seed-tiler tileset)
   (reset! tiler-state :running)
