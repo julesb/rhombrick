@@ -21,7 +21,7 @@
 
 (def mouse-position (atom [0 0]))
 (def view-scale (atom 1.0))
-(def model-scale (atom 50))
+;(def model-scale (atom 50))
 ;(def frame (atom 0))
 
 ;(def num-gliders 50)
