@@ -3,30 +3,21 @@
         [clojure.string :only (split)]))
 
 
-(defn get-line-type [line]
-  (cond
-    (re-find #"^v " line)   :vertex
-    (re-find #"^vn " line)  :vertex-normal
-    (re-find #"^vt " line)  :texture-coordinate
-    (re-find #"^f " line)   :face
-    (re-find #"^#" line)    :comment
-    (re-find #"^o " line)   :object
-    :else :unsupported))
 
 
 (defn parse-vertex-line [line]
-  (let [data (str "[" ((re-find #"^v (.+)$" line) 1) "]")]
-    (read-string data)))
+  (->> (str "[" ((re-find #"^v (.+)$" line) 1) "]")
+       (read-string)))
 
 
 (defn parse-vertex-normal-line [line]
-  (let [data (str "[" ((re-find #"^vn (.+)$" line) 1) "]")]
-    (read-string data)))
+  (->> (str "[" ((re-find #"^vn (.+)$" line) 1) "]")
+       (read-string)))
 
 
 (defn parse-texture-coordinate-line [line]
-  (let [data (str "[" ((re-find #"^vt (.+)$" line) 1) "]")]
-    (read-string data)))
+  (->> (str "[" ((re-find #"^vt (.+)$" line) 1) "]")
+       (read-string)))
 
 
 ; face data can be in various formats:
@@ -57,13 +48,12 @@
 
 
 (defn parse-comment-line [line]
-  (let [data ((re-find #"^#(.*$)" line) 1)]
-    data))
+  ((re-find #"^#(.*$)" line) 1))
 
 
 (defn parse-object-line [line]
-  (let [data (str ((re-find #"^o (.+)$" line) 1))]
-    (read-string data)))
+  (->> (str ((re-find #"^o (.+)$" line) 1))
+       (read-string)))
 
 
 (defn parse-unsupported-line [line])
@@ -80,6 +70,17 @@
 })
 
 
+(defn get-line-type [line]
+  (cond
+    (re-find #"^v " line)   :vertex
+    (re-find #"^vn " line)  :vertex-normal
+    (re-find #"^vt " line)  :texture-coordinate
+    (re-find #"^f " line)   :face
+    (re-find #"^#" line)    :comment
+    (re-find #"^o " line)   :object
+    :else :unsupported))
+
+
 (defn parse-line [line]
   ((type-func-map (get-line-type line)) line))
 
@@ -87,8 +88,8 @@
 (defn parse-file [lines acc]
   (if-let [line (first lines)]
     (let [line-type (get-line-type line)
-          new-data (into [] (conj (acc line-type) (parse-line line)))
-          new-acc (assoc acc line-type new-data)]
+          new-acc (->> (into [] (conj (acc line-type) (parse-line line)))
+                       (assoc acc line-type))]
       (recur (rest lines) new-acc))
     acc))
 
