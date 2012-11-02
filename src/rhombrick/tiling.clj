@@ -178,6 +178,10 @@
                       (map #(rotations %) (reverse-tiles tiles))))))
 
 
+(defn expand-tiles-preserving-symmetry [tiles]
+  (set (flatten (map #(rotations-preserving-symmetry %) tiles))))
+
+
 ; compares single digits of two facecodes, using the
 ; compatibility table 
 (defn face-digit-compatible? [inner outer]
@@ -203,7 +207,7 @@
     (if (contains? @dead-loci outercode)
       ()
       (filter #(facecodes-directly-compatible? outercode %)
-              (expand-tiles tileset)))))
+              (expand-tiles-preserving-symmetry tileset)))))
 
 
 ; neighbourhood looks like ["000000001001" "000000001000" etc ]
@@ -400,7 +404,7 @@
 (defn seed-tiler [tileset]
   (when (> (count tileset) 0)
   (let [pos [0 0 0]
-        code (rand-nth (vec (expand-tiles tileset)))]
+        code (rand-nth (vec (expand-tiles-preserving-symmetry tileset)))]
     (make-tile pos code) 
     (push-connected-neighbours-to-empty-positions pos))))
 

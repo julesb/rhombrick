@@ -1,4 +1,7 @@
-(ns rhombrick.facecode)
+(ns rhombrick.facecode
+  (:use [rhombrick.vector]
+        [rhombrick.staticgeometry]
+        [clojure.math.combinatorics]))
 
 ; _______________________________________________________________________
 ;
@@ -158,5 +161,33 @@
  
 
 
+(defn get-angle-for-face-idxs [[idx1 idx2]]
+  (vec3-angle-between (vec3-normalize (co-verts idx1))
+                      (vec3-normalize (co-verts idx2))))
 
 
+(defn get-tilecode-angles [code]
+  (->> (map-indexed #(vec [%1 %2]) code)
+       (filter #(not= (%1 1) \-))
+       (map first)
+       ((fn [v] (vec (combinations v 2))))
+       (map get-angle-for-face-idxs)
+       (map int)))
+
+
+(defn get-tilecode-angle-ids [code]
+  (vec (sort (get-tilecode-angles code))))
+
+
+(defn rotations-preserving-symmetry [code]
+  (let [rots (map-indexed #(vec [%1 %2])
+                          (distinct (rotations code)))
+        symmetries (vec (map-indexed #(vec [%1 (get-tilecode-angle-ids (%2 1))])
+                                     rots))
+        canonical-form ((first symmetries) 1)
+        indexed (filter #(= ((symmetries (% 0)) 1) canonical-form) rots)
+        flat (vec (map last indexed))]
+    flat
+    ))
+
+  

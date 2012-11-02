@@ -223,7 +223,7 @@
 
 
 (defn draw-rotations [[x y] code bscale]
-  (let [filtered-rotations (vec (filter #(not= code %) (expand-tiles-experiment [code])))
+  (let [filtered-rotations (vec (filter #(not= code %) (expand-tiles-preserving-symmetry [code])))
         num-buttons (dec (count filtered-rotations))
         bspace 1]
     (doseq [i (range (count filtered-rotations))]

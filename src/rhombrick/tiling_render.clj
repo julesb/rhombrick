@@ -31,20 +31,6 @@
 ; _______________________________________________________________________
 
 
-(defn get-tilecode-angles [code]
-  (let [indexed-code (vec (map-indexed #(vec [%1 %2]) code))
-        filtered-code (vec (filter #(not= (%1 1) \-) indexed-code)) ]
-    (println "filtered-code:" filtered-code)
-    (doseq [i (range (count filtered-code))]
-      (let [i2 (int (mod (inc i) (count filtered-code)))
-            face-idx1 ((filtered-code i) 0)
-            face-idx2 ((filtered-code i2) 0)
-            v1 (vec3-normalize (co-verts face-idx1))
-            v2 (vec3-normalize (co-verts face-idx2))
-            ang (vec3-angle-between v1 v2)]
-        (print "faces = [" face-idx1 face-idx2 "], ang =" (format "%.1f" ang))
-        (println)
-        ))))
 
 
 (defn compute-tile-color-1 [code]
