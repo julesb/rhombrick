@@ -63,11 +63,14 @@
     ;(when-not (set-contains-rotations? (set tileset) code)
     (add-to-tileset code)
     (let [col (compute-tile-color code)]
-      (doseq [rc (rotations code)]
+      (doseq [rc (rotations-preserving-symmetry code)]
         (swap! current-tileset-colors assoc rc col))))
   (if (> ((@editor-state :selected) 1) (dec (count (get-tileset))))
     (set-selected (dec (count (get-tileset))) 1))
-  (init-dead-loci))
+  ;(init-dead-loci)
+  ;(update-tileset-expanded tileset)
+  ; (soft-init-tiler)
+  )
 
 
 (defn valid-level? [l]

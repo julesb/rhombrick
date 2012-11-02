@@ -4,13 +4,14 @@
         [rhombrick.staticgeometry]
         [rhombrick.facecode]
         [rhombrick.tiling]
+        [rhombrick.camera]
         [rhombrick.glider]
         [clojure.math.combinatorics]))
 
 
 (def rhomb-tex (atom nil))
 (def current-tileset-colors (atom {}))
-
+(def model-scale (atom 50))
 ; _______________________________________________________________________
 
 
@@ -465,6 +466,67 @@
       ))
 
 
+(defn draw-facecode-color [code col]
+  (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
+        num-connected (get-num-connected code)
+        ; col (get-tile-color code); (rd-face-colors (mod num-connected 12))
+        ;col2 (get-group-color code)
+        fill-col (rd-face-colors 
+                   (connecting-faces (mod num-connected 12)))
+        ;col-idx (mod (Integer/parseInt code 2) 12)
+        ]
+    (push-style)
+
+    (if (= code nil)
+      (do 
+        (fill 255 32 32 128)
+        ;(no-fill)
+        (stroke 255 0 0 192)
+        (push-matrix)
+        (scale 0.05)
+        (box 1 1 1)
+        ;(draw-faces rd-verts rd-faces nil)
+        (pop-matrix)
+        (no-fill)))
+
+    (stroke-weight 4) 
+    (stroke (col 0) (col 1) (col 2) (col 3)) 
+    ;(stroke 192 192 255 192)
+    ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
+    ;(stroke 150 150 255 128)
+    
+    (if (= num-connected 1)
+      (let [p (co-verts (first (get-connected-idxs code)))]
+        (line 0 0 0 (p 0) (p 1) (p 2))
+        
+        (fill 255 128 128 128)
+        (box 0.05125 0.05125 0.05125)
+        (no-fill))
+        )
+
+    (stroke-weight 6)
+    ;(fill (col2 0) (col2 1) (col2 2) 32)
+    ;(stroke (col2 0) (col2 1) (col2 2) 32)
+
+    (stroke (col 0) (col 1) (col 2) (col 3))
+    ;(stroke 192 192 255 192)
+    (doseq [endpoints endpoint-pairs]
+      (draw-curve (endpoints 0) (endpoints 1)))
+    
+    ;draw tangent vectors
+    ;(stroke-weight 1)
+    ;(stroke 255 120 120 128)
+    ;(doseq [endpoints endpoint-pairs]
+    ;  (draw-curve-tangents (endpoints 0) (endpoints 1) 3))
+
+    ;(stroke-weight 2)
+    ;(stroke (col2 0) (col2 1) (col2 2) 255)
+    ;(doseq [endpoints endpoint-pairs]
+    ;  (draw-curve (endpoints 0) (endpoints 1)))
+    (pop-style)
+      ))
+
+
 (defn draw-facecode-lite [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (count (filter #(= \1 %) code))
@@ -518,12 +580,18 @@
 (defn draw-tiling []
   (doseq [tile (keys @tiles)]
     (let [pos tile
-          code (@tiles pos)]
+          code (@tiles pos)
+          cam-dist (get-camera-distance pos)
+          att (abs (int (* (/ (* @model-scale @assemblage-max-radius) (* cam-dist 1.0)) 255)))
+          col1 (get-tile-color code)
+          col (assoc col1 3 att)
+          ]
+      (println col)
       (draw-face-boundaries pos code)
       (with-translation pos 
         (scale 0.5)
         (stroke-weight 8)
-        (stroke 0 0 0 64)
+        ;(stroke 0 0 0 64)
         (no-fill) 
-        (draw-facecode (@tiles pos))))))
+        (draw-facecode-color (@tiles pos) col)))))
 
