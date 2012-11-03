@@ -2,7 +2,7 @@
   (:use [clojure.java.io]))
 
 
-(def default-library-file "data/tilesets.clj")
+(def default-library-file "data/tilesets.txt")
 
 
 (defn save-tileset-to-library 
