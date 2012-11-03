@@ -5,9 +5,12 @@
 (def default-library-file "data/tilesets.clj")
 
 
-(defn save-tileset-to-library [tileset filename]
-  (with-open [wrtr (writer filename :append true)]
-    (.write wrtr (str (.toString tileset) "\n"))))
+(defn save-tileset-to-library 
+  ([tileset]
+    (save-tileset-to-library tileset default-library-file))
+  ([tileset filename]
+    (with-open [wrtr (writer filename :append true)]
+      (.write wrtr (str (.toString tileset) "\n")))))
 
 
 (defn parse-lines [lines acc]

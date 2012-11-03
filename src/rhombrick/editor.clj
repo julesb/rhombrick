@@ -4,7 +4,8 @@
         [rhombrick.tiling]
         [rhombrick.tiling-render]
         [rhombrick.button]
-        [rhombrick.staticgeometry]))
+        [rhombrick.staticgeometry]
+        [rhombrick.tileset-library]))
 
 ;(def current-tileset-colors {})
 
@@ -24,6 +25,8 @@
                          })
 
 (def editor-state (atom default-editor-state))
+(def library-tilesets (atom []))
+(def library-tileset-index (atom 0))
 
 (def next-digit {\- \1
                  \1 \a
@@ -160,6 +163,31 @@
 
 
 
+(defn load-library-tileset [idx]
+  (when (< idx (count @library-tilesets))
+    (set-tileset (@library-tilesets idx))
+    (soft-init-tiler (get-tileset-as-set))))
+
+
+(defn load-next-library-tileset []
+  (let [new-idx (mod (inc @library-tileset-index)
+                     (count @library-tilesets))]
+    (reset! library-tileset-index new-idx)
+    (load-library-tileset new-idx)))
+
+
+(defn load-prev-library-tileset []
+  (let [new-idx (mod (dec @library-tileset-index)
+                     (count @library-tilesets))]
+    (reset! library-tileset-index new-idx)
+    (load-library-tileset new-idx)))
+
+(defn save-current-tileset-to-library []
+  (let [ts (get-tileset)]
+    (save-tileset-to-library ts)
+    (swap! library-tilesets conj ts)))
+
+
 (defn remove-from-current-tileset [code]
   (let [new-tileset (vec (filter #(not= code %) (get-tileset)))]
     (set-tileset new-tileset)))
@@ -172,7 +200,8 @@
 
 
 (defn init-editor []
-  (reset! editor-state default-editor-state) )
+  (reset! editor-state default-editor-state)
+  (reset! library-tilesets (load-tileset-library)))
 
 
 (defn draw-selected [[x y] bscale col]

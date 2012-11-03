@@ -88,6 +88,7 @@
     (build-normalised-facecode-set)
     (println "initialising tiler")
     ;(editor/make-indexed @current-tileset)
+    (editor/init-editor)
     (init-tiler (editor/get-tileset-as-set))
     ;(make-tiling-iteration) ; needed so init-gliders works
     ;(make-backtracking-tiling-iteration @current-tileset)
@@ -215,6 +216,12 @@
           (cond 
             (= @tiler-state :running) (reset! tiler-state :paused)
             (= @tiler-state :paused)  (reset! tiler-state :running)))
+    \< #(do
+          (editor/load-prev-library-tileset))
+    \> #(do
+          (editor/load-next-library-tileset))
+    \S #(do
+          (editor/save-current-tileset-to-library))
        })
 
 (def key-editor-map
@@ -330,7 +337,6 @@
         (build-face-list)
         (halt-tiler))))
 
-
   (when @draw-gliders?   
     (update-gliders))
     
@@ -411,7 +417,6 @@
     ;(light-falloff 1.0 0.2 0.0)
     ;(ambient-light 64 64 64)
 
-
     ;(hint :disable-depth-test) 
     ;(draw-tiling)
     ; (hint :enable-depth-test)
@@ -425,10 +430,8 @@
 
     (draw-tiling)
 
-
     ;(when (seq @empty-positions)
     ;  (draw-empty))
-
 
     ;(lights)
     (when @draw-gliders?
@@ -453,7 +456,6 @@
   (draw-info 10 (- (height) 180))
   (camera)
 
-
   (when (> (editor/get-level) 0)
     (draw-tileset-editor [20 20] (editor/get-tileset) 64)
     ;(doseq [i (range (count @face-id-text))]
@@ -469,9 +471,7 @@
     ;(draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))
     ;(draw-tileset-editor [1285 20] @current-tileset 140))
 
-
   (hint :enable-depth-test)
-
 
   (reset! last-render-time
           (float (/ (- (System/nanoTime)

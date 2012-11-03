@@ -586,7 +586,7 @@
           col1 (get-tile-color code)
           col (assoc col1 3 att)
           ]
-      (println col)
+      ;(println col)
       (draw-face-boundaries pos code)
       (with-translation pos 
         (scale 0.5)
