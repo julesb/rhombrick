@@ -473,6 +473,7 @@
         ;col2 (get-group-color code)
         fill-col (rd-face-colors 
                    (connecting-faces (mod num-connected 12)))
+        weight (- 9 (* (/ num-connected 12) 8))
         ;col-idx (mod (Integer/parseInt code 2) 12)
         ]
     (push-style)
@@ -489,7 +490,7 @@
         (pop-matrix)
         (no-fill)))
 
-    (stroke-weight 4) 
+    (stroke-weight weight) 
     (stroke (col 0) (col 1) (col 2) (col 3)) 
     ;(stroke 192 192 255 192)
     ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
@@ -504,7 +505,7 @@
         (no-fill))
         )
 
-    (stroke-weight 6)
+    (stroke-weight weight)
     ;(fill (col2 0) (col2 1) (col2 2) 32)
     ;(stroke (col2 0) (col2 1) (col2 2) 32)
 
