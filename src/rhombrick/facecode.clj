@@ -61,6 +61,9 @@
 ;(defn rotations [s]
 ;  (map #(rotate-str-n s %1) (range (count s))))
 
+(defn reverse-tiles [tiles]
+  (map #(apply str (reverse %)) tiles))
+
 
 (defn is-facecode-rotation-of? [a b]
   (boolean (some #{a} (rotations b))))

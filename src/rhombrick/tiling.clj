@@ -162,8 +162,6 @@
   (apply str (map #(get-neighbour-abutting-face2 neighbourhood %) (range 12))))
 
 
-(defn reverse-tiles [tiles]
-  (map #(apply str (reverse %)) tiles))
 
 
 ; generate all unique rotations of tiles 
