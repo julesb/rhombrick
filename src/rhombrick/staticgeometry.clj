@@ -180,3 +180,59 @@
 ; 2 2 0 ,  0 0 0
 ; 2 2 1 ,  0 0 1 *
 ; 2 2 2 ,  0 0 0
+
+;
+;
+; ---------------------------------------------------------------------------
+; The rhombick dodecahedron has octahedral symmetry. A regular octahedron
+; has 24 rotational (or orientation-preserving) symmetries, and a symmetry
+; order of 48 including transformations that combine a reflection and a
+; rotation.
+
+; We will be using chiral octahedral symmetry (24 symmetries, no reflections):
+;
+; • identity
+; • 6 × rotation by 90°
+; • 8 × rotation by 120°
+; • 3 × rotation by 180° about a 4-fold axis
+; • 6 × rotation by 180° about a 2-fold axis
+;
+; The axes for six 180° rotations around the 6 2-fold axes can be found by
+; looking at the vectors formed by opposing pairs of cuboctahedron vertices.
+; We know that there are no opposing vertices in the first 6 of co-verts,
+; so :
+; => (map vec3-normalize (take 6 co-verts)))
+;
+;
+;
+(def symmetries
+  {
+  ;:identity      -
+
+   90             [[ 0  0  1]
+                   [-1  0  0]
+                   [ 1  0  0]
+                   [ 0 -1  0]
+                   [ 0  0 -1]
+                   [ 0  1  0]]
+
+   120            [[ 0.5773502691896258 -0.5773502691896258 -0.5773502691896258]
+                   [ 0.5773502691896258 -0.5773502691896258  0.5773502691896258]
+                   [-0.5773502691896258 -0.5773502691896258  0.5773502691896258]
+                   [-0.5773502691896258 -0.5773502691896258 -0.5773502691896258]
+                   [ 0.5773502691896258  0.5773502691896258 -0.5773502691896258]
+                   [ 0.5773502691896258  0.5773502691896258  0.5773502691896258]
+                   [-0.5773502691896258  0.5773502691896258  0.5773502691896258]
+                   [-0.5773502691896258  0.5773502691896258 -0.5773502691896258]]
+
+   180            [[0 0 1]
+                   [0 1 0]
+                   [1 0 0]
+                   [0.7071067811865475  -0.7071067811865475   0.0]
+                   [0.7071067811865475   0.0                  0.7071067811865475]
+                   [0.7071067811865475   0.7071067811865475   0.0]
+                   [0.0                  0.7071067811865475   0.7071067811865475]
+                   [0.0                  0.7071067811865475  -0.7071067811865475]
+                   [0.7071067811865475   0.0                 -0.7071067811865475]]
+   }
+)
