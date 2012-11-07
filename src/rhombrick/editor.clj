@@ -259,8 +259,9 @@
         num-buttons (dec (count filtered-rotations))
         bspace 1]
     (doseq [i (range (count filtered-rotations))]
-      (let [bx (+ x (+ (* i bscale) (* i bspace)))
-            by y
+      (let [i2 (mod i 12)
+            bx (+ x (+ (* i2 bscale) (* i2 bspace)))
+            by (+ y (* (int (/ i 12)) (+ bscale bspace)))
             rot-code (nth filtered-rotations i)]
         (draw-tile-button [bx by] rot-code bscale i)))))
 
@@ -293,7 +294,7 @@
         selected (get-selected 1)
         preview-pos [x (+ y bscale 10)]
         preview-scale 320
-        rotations-pos [(+ (preview-pos 0) preview-scale) (preview-pos 1)]
+        rotations-pos [x (+ preview-scale bscale (preview-pos 1))]
         rotations-scale 96]
     (doseq [i (range (count tileset))]
       (let [code (tileset i)
@@ -307,5 +308,4 @@
           (draw-selected preview-pos preview-scale [255 255 255 255])
           (draw-rotations rotations-pos code rotations-scale)))))
   (ui-finish))
-
 
