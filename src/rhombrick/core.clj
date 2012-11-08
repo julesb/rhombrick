@@ -216,6 +216,11 @@
           (cond 
             (= @tiler-state :running) (reset! tiler-state :paused)
             (= @tiler-state :paused)  (reset! tiler-state :running)))
+    \( #(do
+          (swap! assemblage-max-radius dec))
+    \) #(do
+          (swap! assemblage-max-radius inc))
+
     \< #(do
           (editor/load-prev-library-tileset))
     \> #(do
