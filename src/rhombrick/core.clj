@@ -82,7 +82,9 @@
     (frame-rate 60)
     (update-camera)
     (println "setting font")
-    (text-font (load-font "FreeMono-16.vlw"))
+    ;(text-font (load-font "FreeMono-16.vlw"))
+    ;(text-font (load-font "ScalaSans-Caps-32.vlw"))
+    (text-font (load-font "AmericanTypewriter-24.vlw"))
     (set-state! :mouse-position (atom [0 0]))
     (println "building normalised faced set")
     (build-normalised-facecode-set)
@@ -111,16 +113,16 @@
 ; _______________________________________________________________________
 
 (defn draw-info [x y]
-  (let [line-space 20
-        lines [(str "  state: " @tiler-state)
-               (str "  iters: " @tiler-iterations)
-               (str "  tiles: " (count @tiles) "/" @max-tiles) 
-               (str "  empty: " (count @empty-positions)) 
-               (str "   dead: " (count @dead-loci))
-               (str " radius: " @assemblage-max-radius)
-               (str "-------------")
-               (str "  scale: " @model-scale)
-               (str "    fps: " (int (current-frame-rate)))
+  (let [line-space 22
+        lines [(str "state: " @tiler-state)
+               (str "iters: " @tiler-iterations)
+               (str "tiles: " (count @tiles) "/" @max-tiles) 
+               (str "empty: " (count @empty-positions)) 
+               (str "dead: " (count @dead-loci))
+               (str "radius: " @assemblage-max-radius)
+               ;(str "-------------")
+               (str "scale: " @model-scale)
+               (str "fps: " (int (current-frame-rate)))
                ]]
     (fill 255 255 255 255)
     (doseq [i (range (count lines))]
@@ -227,6 +229,11 @@
           (editor/load-next-library-tileset))
     \S #(do
           (editor/save-current-tileset-to-library))
+    \n #(do
+          (swap! symmetry-display-index dec))
+    \m #(do
+          (swap! symmetry-display-index inc))
+
        })
 
 (def key-editor-map

@@ -33,6 +33,8 @@
                  \a \A
                  \A \-})
 
+(def symmetry-display-index (atom 0))
+
 (defn get-selected [level]
   ((@editor-state :selected) level))
 
@@ -98,10 +100,10 @@
         12)))
 
 
-
 (defn index-exclude [r ex] 
    "Take all indices except ex" 
     (filter #(not (ex %)) (range r))) 
+
 
 (defn dissoc-idx [v & ds]
    (map v (index-exclude (count v) (into #{} ds))))
@@ -138,7 +140,6 @@
       (soft-init-tiler (get-tileset-as-set)))))
 
 
-
 (defn level-up []
   (if (and ( < (get-level) 2)
            (> (count (get-tileset)) 0))
@@ -162,7 +163,6 @@
                     level))))
 
 
-
 (defn load-library-tileset [idx]
   (when (< idx (count @library-tilesets))
     (set-tileset (@library-tilesets idx))
@@ -182,6 +182,7 @@
     (reset! library-tileset-index new-idx)
     (load-library-tileset new-idx)))
 
+
 (defn save-current-tileset-to-library []
   (let [ts (get-tileset)]
     (save-tileset-to-library ts)
@@ -195,8 +196,6 @@
 ;(defn remove-from-current-tileset [code]
 ;  (swap! current-tileset-colors dissoc code)
 ;  (swap! current-tileset disj code))
-
-
 
 
 (defn init-editor []
@@ -244,13 +243,39 @@
         (println "button pressed:" code)))
     (with-translation [bx by]
         (scale (/ bscale 6))
-        (rotate-y (* (frame-count) 0.0051471))
+        ;(rotate-y (* (frame-count) 0.0051471))
         (no-fill)
         (stroke-weight 1)
         (draw-faces-lite rd-verts rd-faces col)
         (draw-facecode code)
         (scale 2)
-        (draw-face-boundaries [0 0 0] code))))
+        (draw-face-boundaries [0 0 0] code)
+        (draw-color-markers [0 0 0])
+                      )))
+
+
+(defn draw-rotation-diagnostic-tile-button [[x y] [rotation [dx dy dz]] code bscale parent-idx]
+  (let [bx (+ x (/ bscale 2))
+        by (+ y (/ bscale 2))
+        col [64 64 64 190]]
+    (stroke-weight 1)
+    (when (button x y bscale bscale button-color code)
+      (do
+        (println "button pressed:" code)))
+    (with-translation [bx by]
+        (scale (/ bscale 6))
+        (rotate rotation dx dy dz)
+
+        ;(rotate-y (* (frame-count) 0.0051471))
+        (no-fill)
+        (stroke-weight 1)
+        (draw-faces-lite rd-verts rd-faces col)
+        (draw-facecode code)
+        (scale 2)
+        (draw-face-boundaries [0 0 0] code)
+        (draw-color-markers [0 0 0])
+                      )))
+
 
 
 
@@ -259,23 +284,47 @@
         num-buttons (dec (count filtered-rotations))
         bspace 1]
     (doseq [i (range (count filtered-rotations))]
-      (let [i2 (mod i 12)
+      (let [i2 (mod i 6)
             bx (+ x (+ (* i2 bscale) (* i2 bspace)))
-            by (+ y (* (int (/ i 12)) (+ bscale bspace)))
+            by (+ y (* (int (/ i 6)) (+ bscale bspace)))
             rot-code (nth filtered-rotations i)]
-        (draw-tile-button [bx by] rot-code bscale i)))))
+        (draw-tile-button [bx by] rot-code bscale i)
+        ;(draw-color-markers [x y])
+        ))))
+
+
+(defn draw-rotational-symmetries [[x y] code bscale]
+  (doseq [i (range (count symmetries-flattened))]
+    (let [i2 (mod i 6)
+          bspace 1
+          bx (+ x (+ (* i2 bscale) (* i2 bspace)))
+          by (+ y (* (int (/ i 6)) (+ bscale bspace)))
+          rot-code "1-----1-----" ; (nth filtered-rotations i)
+          ang ((symmetries-flattened i) 0)
+          rads (* (/ ang 180) Math/PI)
+          axis ((symmetries-flattened i) 1)
+          ]
+      ;(draw-tile-button [bx by] rot-code bscale i)
+      (draw-rotation-diagnostic-tile-button [bx by] [rads axis] rot-code bscale i)
+      (draw-color-markers [x y])
+      )))
 
 
 (defn draw-tile-editor [[x y] code bscale parent-idx]
   (let [bx (+ x (/ bscale 2))
         by (+ y (/ bscale 2))
-        col [64 64 64 190]]
+        col [64 64 64 190]
+        ang ((symmetries-flattened @symmetry-display-index) 0)
+        rads (* (/ ang 180) Math/PI)
+        [dx dy dz] ((symmetries-flattened @symmetry-display-index) 1)
+        ]
     (stroke-weight 1)
     (when (button x y bscale bscale button-color code)
       (do
         (println "button pressed:" code)))
     (draw-facecode-buttons [x (+ y bscale 5)] bscale code parent-idx)
     (with-translation [bx by]
+        (text (str "symmetry idx:"  @symmetry-display-index), bx ,bx)
         (scale (/ bscale 6))
         (rotate-y (* (frame-count) 0.0051471))
         (no-fill)
@@ -284,8 +333,11 @@
         (no-fill)
         (draw-facecode code)
         (scale 2)
-        (draw-face-boundaries [0 0 0] code))))
-
+        (draw-face-boundaries [0 0 0] code)
+        (draw-face-idx-numbers [0 0 0] false)
+        (rotate rads dx dy dz)
+        (draw-face-idx-numbers [0 0 0] true)
+                      )))
 
 
 (defn draw-tileset-editor [[x y] tileset bscale]
@@ -293,9 +345,9 @@
   (let [level (get-level)
         selected (get-selected 1)
         preview-pos [x (+ y bscale 10)]
-        preview-scale 320
-        rotations-pos [x (+ preview-scale bscale (preview-pos 1))]
-        rotations-scale 96]
+        preview-scale 640 
+        rotations-pos [(+ preview-scale (preview-pos 0)) (preview-pos 1)  ]
+        rotations-scale 180]
     (doseq [i (range (count tileset))]
       (let [code (tileset i)
             tx (+ x (* i (+ bscale (/ bscale 8))))
@@ -306,6 +358,8 @@
         (when (and (= level 2) (= i selected))
           (draw-tile-editor preview-pos code preview-scale i)
           (draw-selected preview-pos preview-scale [255 255 255 255])
-          (draw-rotations rotations-pos code rotations-scale)))))
+          ;(draw-rotational-symmetries rotations-pos code rotations-scale)))))
+          ;(draw-rotations rotations-pos code rotations-scale)))))
+          ))))
   (ui-finish))
 

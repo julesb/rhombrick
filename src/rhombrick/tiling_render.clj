@@ -280,22 +280,79 @@
         (stroke r g b 255)
         (doseq [i (range 12)]
           (when (not= (.charAt code i) \-)
-          (let [d (.charAt code i)
-                dir (co-verts i)
-                [dx dy dz] (vec3-normalize dir)
-                az (Math/atan2 dy dx)
-                el (- (Math/asin dz))]
-            (if (face-digit-like-compatible? d)
-              (do (fill 160 160 220 128))
-              (do
-                (if (re-find #"[a-f]+" (str d))
-                  (fill 255 255 255 255)
-                  (fill 0 0 0 255))))
-            (with-translation (vec3-scale (co-verts i) 0.93)
-              (rotate az 0 0 1)
-              (rotate el 0 1 0)
-              (box 0.2)))))))))
+            (let [d (.charAt code i)
+                  dir (co-verts i)
+                  [dx dy dz] (vec3-normalize dir)
+                  az (Math/atan2 dy dx)
+                  el (- (Math/asin dz))]
+              (if (face-digit-like-compatible? d)
+                (do (fill 160 160 220 128))
+                (do
+                  (if (re-find #"[a-f]+" (str d))
+                    (fill 255 255 255 255)
+                    (fill 0 0 0 255))))
+              (with-translation (vec3-scale (co-verts i) 0.93)
+                (rotate az 0 0 1)
+                (rotate el 0 1 0)
+                (box 0.2)))))))))
 
+
+(defn draw-color-markers [pos]
+  (no-lights)
+  (doseq [i (range 12)]
+    (let [[r g b] (rd-face-colors i)]
+      (with-translation pos
+        (scale 0.5)
+        (stroke-weight 1)
+        (stroke 255 255 255 128)
+        ;(stroke (- 255 r) (- 255 g) (- 255 b) 255)
+        (fill r g b 255)
+        (let [dir (co-verts i)
+             [dx dy dz] (vec3-normalize dir)
+             az (Math/atan2 dy dx)
+             el (- (Math/asin dz))]
+          (with-translation (vec3-scale (co-verts i) 0.975)
+            (rotate az 0 0 1)
+            (rotate el 0 1 0)
+            (box 0.05 0.5 0.5)
+            ;(scale 0.025)
+            ;(rotate-y (* Math/PI 0.5))
+            ;(no-lights)
+            ;(fill r g b 255)
+            ;(stroke 255 255 255 255)
+            ;(text (str i) 0 0 0)                
+                            ))))))
+
+(defn draw-face-idx-numbers [pos use-face-color?]
+  (no-lights)
+  (doseq [i (range 12)]
+    (let [[r g b] (rd-face-colors i)]
+      (with-translation pos
+        (scale 0.5)
+        (stroke-weight 1)
+        (stroke 255 255 255 128)
+        ;(stroke (- 255 r) (- 255 g) (- 255 b) 255)
+        ;(fill r g b 255)
+        (fill 255 255 255 255)                
+        (let [dir (co-verts i)
+             [dx dy dz] (vec3-normalize dir)
+             az (Math/atan2 dy dx)
+             el (- (Math/asin dz))]
+          (if use-face-color?
+            (fill r g b 192)
+            (fill 255 255 255 192))
+          (with-translation (vec3-scale (co-verts i) 0.975)
+            (rotate az 0 0 1)
+            (rotate el 0 1 0)
+            ;(box 0.05 0.5 0.5)
+            (scale 0.025)
+            (rotate-y (* Math/PI 0.5))
+            (if use-face-color?
+              (translate -10 0 0)
+              (translate 10 0 0))
+            ;(stroke 255 255 255 255)
+            (text (str i) 0 0 0)                
+                            ))))))
 
 (defn draw-empty []
   (fill 0 255 0 192)
@@ -576,6 +633,9 @@
       ))
 
 ; _______________________________________________________________________
+
+
+
 
 
 (defn draw-tiling []
