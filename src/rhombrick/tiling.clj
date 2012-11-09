@@ -176,11 +176,14 @@
                       (map #(rotations %) (reverse-tiles tiles))))))
 
 (defn expand-tiles-preserving-symmetry [tiles]
-  (set (flatten (conj (map #(rotations-preserving-symmetry %) tiles)
-                      (map #(rotations-preserving-symmetry %) (reverse-tiles tiles))))))
+  (set (flatten (map #(get-code-symmetries %) tiles))))
 
 ;(defn expand-tiles-preserving-symmetry [tiles]
-;  (set (flatten (map #(rotations-preserving-symmetry %) tiles))))
+;  (set (flatten (conj (map #(rotations-preserving-symmetry %) tiles)
+;                      (map #(rotations-preserving-symmetry %) (reverse-tiles tiles))))))
+
+
+
 
 
 ; compares single digits of two facecodes, using the

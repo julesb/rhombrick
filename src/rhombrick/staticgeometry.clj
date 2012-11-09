@@ -291,3 +291,16 @@
   [ 4  7  9  8  0  5 10  1  3  2  6 11 ] ; 23
   ])
 
+
+(defn get-code-symmetry [code sym-idx]
+  (apply str (map #(.charAt code ((symmetry-face-idx-map sym-idx) %))
+                  (range (count code)))))
+
+
+(defn get-code-symmetries [code]
+  (vec (distinct (map #(get-code-symmetry code %)
+                      (range (count symmetry-face-idx-map))))))
+
+
+
+
