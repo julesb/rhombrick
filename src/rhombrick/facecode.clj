@@ -182,15 +182,15 @@
   (vec (sort (get-tilecode-angles code))))
 
 
-(defn rotations-preserving-symmetry [code]
-  (let [rots (map-indexed #(vec [%1 %2])
-                          (distinct (rotations code)))
-        symmetries (vec (map-indexed #(vec [%1 (get-tilecode-angle-ids (%2 1))])
-                                     rots))
-        canonical-form ((first symmetries) 1)
-        indexed (filter #(= ((symmetries (% 0)) 1) canonical-form) rots)
-        flat (vec (map last indexed))]
-    flat
-    ))
+;(defn rotations-preserving-symmetry [code]
+;  (let [rots (map-indexed #(vec [%1 %2])
+;                          (distinct (rotations code)))
+;        symmetries (vec (map-indexed #(vec [%1 (get-tilecode-angle-ids (%2 1))])
+;                                     rots))
+;        canonical-form ((first symmetries) 1)
+;        indexed (filter #(= ((symmetries (% 0)) 1) canonical-form) rots)
+;        flat (vec (map last indexed))]
+;    flat
+;    ))
 
   

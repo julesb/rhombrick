@@ -64,12 +64,17 @@
 ;        num-uniq (count tileset)]
   (reset! (@editor-state :tileset) [])
   (reset! current-tileset-colors {})
-  (doseq [code tileset]
-    ;(when-not (set-contains-rotations? (set tileset) code)
-    (add-to-tileset code)
-    (let [col (compute-tile-color code)]
-      (doseq [rc (rotations-preserving-symmetry code)]
-        (swap! current-tileset-colors assoc rc col))))
+  (let [col-offset (rand-int 12)]
+    (doseq [i (range (count tileset))]
+      (let [code (tileset i)
+            col-idx (mod (+ i col-offset) 12)
+            col (rd-face-colors col-idx) ]
+        ;(when-not (set-contains-rotations? (set tileset) code)
+        (add-to-tileset code)
+        (doseq [rc (get-code-symmetries code)]
+          (swap! current-tileset-colors assoc rc col))))
+    (update-tileset-expanded (get-tileset))
+    )
   (if (> ((@editor-state :selected) 1) (dec (count (get-tileset))))
     (set-selected (dec (count (get-tileset))) 1))
   ;(init-dead-loci)
@@ -241,16 +246,16 @@
     (when (button x y bscale bscale button-color code)
       (do
         (println "button pressed:" code)))
-    (with-translation [bx by]
-        (scale (/ bscale 6))
-        ;(rotate-y (* (frame-count) 0.0051471))
-        (no-fill)
-        (stroke-weight 1)
-        (draw-faces-lite rd-verts rd-faces col)
-        (draw-facecode code)
-        (scale 2)
-        (draw-face-boundaries [0 0 0] code)
-        (draw-color-markers [0 0 0])
+        (with-translation [bx by]
+          (scale (/ bscale 6))
+          ;(rotate-y (* (frame-count) 0.0051471))
+          (no-fill)
+          (stroke-weight 1)
+          (draw-faces-lite rd-verts rd-faces col)
+          (draw-facecode code)
+          (scale 2)
+          (draw-face-boundaries [0 0 0] code)
+          ;(draw-color-markers [0 0 0])
                       )))
 
 
@@ -345,7 +350,7 @@
   (let [level (get-level)
         selected (get-selected 1)
         preview-pos [x (+ y bscale 10)]
-        preview-scale 640 
+        preview-scale 320 
         rotations-pos [(+ preview-scale (preview-pos 0)) (preview-pos 1)  ]
         rotations-scale 180]
     (doseq [i (range (count tileset))]
@@ -358,7 +363,7 @@
         (when (and (= level 2) (= i selected))
           (draw-tile-editor preview-pos code preview-scale i)
           (draw-selected preview-pos preview-scale [255 255 255 255])
-          ;(draw-rotational-symmetries rotations-pos code rotations-scale)))))
+          ;(draw-rotational-symmetries rotations-pos code rotations-scale)
           ;(draw-rotations rotations-pos code rotations-scale)))))
           ))))
   (ui-finish))
