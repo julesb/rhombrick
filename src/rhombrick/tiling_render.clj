@@ -315,12 +315,6 @@
             (rotate az 0 0 1)
             (rotate el 0 1 0)
             (box 0.05 0.5 0.5)
-            ;(scale 0.025)
-            ;(rotate-y (* Math/PI 0.5))
-            ;(no-lights)
-            ;(fill r g b 255)
-            ;(stroke 255 255 255 255)
-            ;(text (str i) 0 0 0)                
                             ))))))
 
 (defn draw-face-idx-numbers [pos use-face-color?]
@@ -344,13 +338,11 @@
           (with-translation (vec3-scale (co-verts i) 0.975)
             (rotate az 0 0 1)
             (rotate el 0 1 0)
-            ;(box 0.05 0.5 0.5)
             (scale 0.025)
             (rotate-y (* Math/PI 0.5))
             (if use-face-color?
               (translate -10 0 0)
               (translate 10 0 0))
-            ;(stroke 255 255 255 255)
             (text (str i) 0 0 0)                
                             ))))))
 
@@ -364,6 +356,20 @@
         ;(draw-faces rd-verts rd-faces nil)
         ;(draw-faces rd-verts rd-faces rd-face-colors)
         ))))
+
+
+(defn draw-assemblage-center []
+  (let [[cx cy cz] @assemblage-center]
+    (stroke 255 255 0 32)
+    (stroke-weight 1)
+    ;(fill 255 255 0 32)
+    (no-fill)
+    (with-translation @assemblage-center
+      (scale 0.5)
+      (box 1 1 1)
+      ;(draw-faces rd-verts rd-faces nil)
+      )))
+
 ; _______________________________________________________________________
 
 

@@ -63,17 +63,6 @@
   (count (filter #(not= \- %) code)))
 
 
-(defn get-n-rand-tilecode [n]
-  (vec 
-    (map (fn [a] (rand-nth (take 352 (seq @normalised-facecodes-sorted))))
-         (range n))))
-
-
-(defn get-n-rand-tilecode-from-group [n g]
-  (map (fn [a] (rand-nth (@normalised-facecodes-grouped g)))
-         (range n)))
-
-
 (defn make-random-tilecode []
   (let [digits [\- \- \- \- \- \- \- \- \- \1 \a \A]
         code (apply str (map (fn [_] (rand-nth digits)) (range 12)))]
@@ -85,18 +74,13 @@
     (vec (map (fn [_] (make-random-tilecode))
          (range num-tiles)))))
 
-;(defn get-random-tileset []
-;  (let [num-tiles (+ 1 (rand-int 5))]
-;    (set (map (fn [_] (make-random-tilecode))
-;         (range num-tiles)))))
-
 
 ; _______________________________________________________________________
 
 
 (defn update-assemblage-center [new-pos]
   (let [new-center (vec3-scale (vec3-add new-pos @assemblage-center)
-                               (/ 1 (count @tiles)))]
+                               (/ 1.0 (count @tiles)))]
     (reset! assemblage-center new-center)))
 
 
@@ -167,13 +151,13 @@
 ; generate all unique rotations of tiles 
 ; intended to be be used on the working tileset
 ; when choosing a tile
-(defn expand-tiles [tiles]
-  (set (flatten (map #(rotations %) tiles))))
+;(defn expand-tiles [tiles]
+;  (set (flatten (map #(rotations %) tiles))))
 
 
-(defn expand-tiles-experiment [tiles]
-  (set (flatten (conj (map #(rotations %) tiles)
-                      (map #(rotations %) (reverse-tiles tiles))))))
+;(defn expand-tiles-experiment [tiles]
+;  (set (flatten (conj (map #(rotations %) tiles)
+;                      (map #(rotations %) (reverse-tiles tiles))))))
 
 (defn expand-tiles-preserving-symmetry [tiles]
   (set (flatten (map #(get-code-symmetries %) tiles))))
@@ -253,11 +237,11 @@
   (swap! empty-positions disj pos))
 
 
-(defn push-neighbours-to-empty-positions [pos]
-  (dotimes [face 12]
-    (let [neighbour (get-neighbour-pos pos face)]
-      (if (is-empty? neighbour)
-          (add-to-empty-positions neighbour)))))
+;(defn push-neighbours-to-empty-positions [pos]
+;  (dotimes [face 12]
+;    (let [neighbour (get-neighbour-pos pos face)]
+;      (if (is-empty? neighbour)
+;          (add-to-empty-positions neighbour)))))
 
 
  (defn push-connected-neighbours-to-empty-positions [pos]
@@ -597,37 +581,13 @@
                (< n num-tiles))
       ; remove n most recent @tiles
       (reset! tiles (ordered-map (take ni @tiles)))
-      ;(update-assemblage-center)
+      (reset! assemblage-center (find-assemblage-center))
       (update-empty-positions)
       ;(println "| tiles:" num-tiles 
       ;         "| backtracked:" n)
       (build-face-list)
       )))
     
-
-;(defn make-backtracking-tiling-iteration [tileset]
-;  (when (= @tiler-state :running)
-;    (if (and (< (count @tiles) @max-tiles)
-;             (> (count @empty-positions) 0)
-;             (> (count tileset) 0))
-;      (when-let [positions (choose-positions tileset)]
-;        (let [new-pos (find-closest-to-point positions (find-assemblage-center))
-;              new-code (choose-tilecode new-pos tileset)]
-;          (if (nil? new-code)
-;            (add-to-dead-loci (get-outer-facecode new-pos))
-;            (make-tile new-pos new-code))
-;          (if (or (creates-untilable-region? new-pos)
-;                  (nil? new-code))
-;            (do
-;              (delete-tile new-pos)
-;              (backtrack))
-;            (do
-;              (add-tile-to-facelist new-pos)
-;              (push-connected-neighbours-to-empty-positions new-pos)
-;              (remove-from-empty-positions new-pos))))
-;        (swap! tiler-iterations inc))
-;      (halt-tiler))))
-       
 
 (defn make-backtracking-tiling-iteration2 [tiles tileset]
   (if-let [positions (choose-positions tileset)]
@@ -636,7 +596,9 @@
           new-code (choose-tilecode2 new-neighbourhood tileset)]
       (if (nil? new-code)
         (add-to-dead-loci (get-outer-facecode2 new-neighbourhood))
-        (make-tile new-pos new-code))
+        (do
+          (make-tile new-pos new-code)
+          (reset! assemblage-center (find-assemblage-center))))
       (if (or (creates-untileable-region? new-pos)
               (nil? new-code))
         (do
