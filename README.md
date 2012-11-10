@@ -8,4 +8,4 @@ The tile assembler was inspired by the algorithm described in Chapter 7 of [Paul
 
 Clone the repo then do: lein deps; lein run.
 
-<img src="http://xanthus.zapto.org/rhombrick01.jpg" title="rhombrick screenshot" />
+<img src="http://xanthus.zapto.org/rhombrick-screen.png" title="rhombrick screenshot" />

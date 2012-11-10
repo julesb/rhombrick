@@ -24,6 +24,9 @@
 (def cam (atom (new PMatrix3D)))
 
 
+(defn get-camera-distance [p]
+  (abs (vec3-length (vec3-sub @camera-pos p))))
+
 (defn get-camera-dir []
   (let [x (.mult @cam (new PVector 1 0 0) (new PVector 0 0 0))
             y (.mult @cam (new PVector 0 1 0) (new PVector 0 0 0))

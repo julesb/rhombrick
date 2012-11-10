@@ -65,3 +65,15 @@
     (- (* v1x v2y) (* v1y v2x))])
 
 
+(defn vec3-dot [[v1x v1y v1z] [v2x v2y v2z]]
+  (+ (* v1x v2x) (* v1y v2y) (* v1z v2z)))
+
+
+(defn vec3-angle-between [v1 v2]
+  (let [l1 (vec3-length v1)
+        l2 (vec3-length v2)
+        dp (vec3-dot v1 v2)
+        rads (Math/acos (/ dp (* l1 l2)))
+        degs (* (/ rads Math/PI) 180.0) ]
+    degs))
+
