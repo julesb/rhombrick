@@ -171,7 +171,7 @@
 (defn load-library-tileset [idx]
   (when (< idx (count @library-tilesets))
     (set-tileset (@library-tilesets idx))
-    (soft-init-tiler (get-tileset-as-set))))
+    (init-tiler (get-tileset-as-set))))
 
 
 (defn load-next-library-tileset []
