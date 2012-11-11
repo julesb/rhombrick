@@ -142,7 +142,7 @@
       (set-current-tileset-digit selected-tile-idx
                                  selected-digit-idx
                                  new-digit)
-      (soft-init-tiler (get-tileset-as-set)))))
+      (init-tiler (get-tileset-as-set)))))
 
 
 (defn level-up []
