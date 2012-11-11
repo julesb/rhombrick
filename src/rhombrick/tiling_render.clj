@@ -286,7 +286,7 @@
                   az (Math/atan2 dy dx)
                   el (- (Math/asin dz))]
               (if (face-digit-like-compatible? d)
-                (do (fill 160 160 220 128))
+                (do (fill 160 160 220 255))
                 (do
                   (if (re-find #"[a-f]+" (str d))
                     (fill 255 255 255 255)
@@ -415,18 +415,19 @@
 
 (defn draw-curve-solid [f1-idx f2-idx steps]
   (when (not= f1-idx f2-idx)
-    (doseq [i (range 1 (- steps 0))]
+    (doseq [i (range 1 (inc steps))]
       (let [t (* i (/ 1 steps))
             bp (get-bezier-point-3d f1-idx f2-idx t)
-            prev-bp (get-bezier-point-3d f1-idx f2-idx(- t (/ 1 steps)))
+            prev-bp (get-bezier-point-3d f1-idx f2-idx (- t (/ 1 steps)))
+            pos (vec3-scale (vec3-add bp prev-bp) 0.5)
             [dx dy dz] (vec3-normalize (vec3-sub bp prev-bp))
             az (Math/atan2 dy dx)
             el (- (Math/asin dz))]
-        (with-translation bp
+        (with-translation pos ; bp
           (scale 0.5)
           (rotate az 0 0 1)
           (rotate el 0 1 0)
-          (box 0.5 0.25 0.25))))))
+          (box 0.55 0.25 0.25))))))
 
 
 (defn draw-curve [f1-idx f2-idx]
@@ -583,7 +584,7 @@
     ;  (draw-curve (endpoints 0) (endpoints 1)))
  
     (no-stroke)
-    (fill (col 0) (col 1) (col 2) 240)
+    (fill (col 0) (col 1) (col 2) 255)
     (doseq [endpoints endpoint-pairs]
       (draw-curve-solid (endpoints 0) (endpoints 1) 8))
     
