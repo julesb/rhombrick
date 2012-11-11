@@ -10,3 +10,25 @@ Clone the repo then do: lein deps; lein run.
 
 
 <img src="http://xanthus.zapto.org/rhombrick-screen.png" title="rhombrick" />
+
+
+| Key   | Action
+| ---     ------
+| wasd  | Move camera (behaviour depends on camera mode)
+| khjl  | same as wasd
+| , \.  | change model scale 
+| r     | soft init tiler
+| R     | init tiler with random tile set
+| \- =  | camera field of view
+| c     | cycle camera mode (1 - mouse/kb, 2 - rubberband to glider, 3 - follow paths)
+| f     | toggle draw faces
+| g     | toggle draw gliders
+| t T   | decrease/increase max tiles
+| \[ \] | decrease/increase tiler adhd
+| \{ \} | decrease/increase tiler autism (adhd and autism are parameters which affect the tiler's characteristics regarding backtracking)
+| p     | pause/unpause tiler
+| \( \) | decrease/increase assemblage max radius
+| < >   | load prev/next saved tileset from library
+| S     | save the current tileset to library
+| n m   | symmetry display index (debugging)
+| \#    | save frame to image file
