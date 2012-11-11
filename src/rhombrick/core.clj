@@ -233,6 +233,8 @@
           (swap! symmetry-display-index dec))
     \m #(do
           (swap! symmetry-display-index inc))
+    \# #(do
+          (save-frame))
 
        })
 
