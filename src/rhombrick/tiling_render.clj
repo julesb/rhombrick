@@ -317,6 +317,7 @@
             (box 0.05 0.5 0.5)
                             ))))))
 
+
 (defn draw-face-idx-numbers [pos use-face-color?]
   (no-lights)
   (doseq [i (range 12)]
@@ -345,6 +346,7 @@
               (translate 10 0 0))
             (text (str i) 0 0 0)                
                             ))))))
+
 
 (defn draw-empty []
   (fill 0 255 0 192)
@@ -409,7 +411,23 @@
               bt (get-bezier-tangent-3d f1-idx f2-idx t)
               bts (vec3-add b (vec3-scale bt 0.25))]
           (line (b 0) (b 1) (b 2) (bts 0) (bts 1) (bts 2)))))))
- 
+
+
+(defn draw-curve-solid [f1-idx f2-idx steps]
+  (when (not= f1-idx f2-idx)
+    (doseq [i (range 1 (- steps 0))]
+      (let [t (* i (/ 1 steps))
+            bp (get-bezier-point-3d f1-idx f2-idx t)
+            prev-bp (get-bezier-point-3d f1-idx f2-idx(- t (/ 1 steps)))
+            [dx dy dz] (vec3-normalize (vec3-sub bp prev-bp))
+            az (Math/atan2 dy dx)
+            el (- (Math/asin dz))]
+        (with-translation bp
+          (scale 0.5)
+          (rotate az 0 0 1)
+          (rotate el 0 1 0)
+          (box 0.5 0.25 0.25))))))
+
 
 (defn draw-curve [f1-idx f2-idx]
   (when (not= f1-idx f2-idx)
@@ -532,13 +550,7 @@
 (defn draw-facecode-color [code col]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (get-num-connected code)
-        ; col (get-tile-color code); (rd-face-colors (mod num-connected 12))
-        ;col2 (get-group-color code)
-        fill-col (rd-face-colors 
-                   (connecting-faces (mod num-connected 12)))
-        weight (- 9 (* (/ num-connected 12) 8))
-        ;col-idx (mod (Integer/parseInt code 2) 12)
-        ]
+        weight (- 9 (* (/ num-connected 12) 8))]
     (push-style)
 
     (if (= code nil)
@@ -555,9 +567,6 @@
 
     (stroke-weight weight) 
     (stroke (col 0) (col 1) (col 2) (col 3)) 
-    ;(stroke 192 192 255 192)
-    ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
-    ;(stroke 150 150 255 128)
     
     (if (= num-connected 1)
       (let [p (co-verts (first (get-connected-idxs code)))]
@@ -568,14 +577,15 @@
         (no-fill))
         )
 
-    (stroke-weight weight)
-    ;(fill (col2 0) (col2 1) (col2 2) 32)
-    ;(stroke (col2 0) (col2 1) (col2 2) 32)
-
-    (stroke (col 0) (col 1) (col 2) (col 3))
-    ;(stroke 192 192 255 192)
+    ;(stroke-weight weight)
+    ;(stroke (col 0) (col 1) (col 2) (col 3))
+    ;(doseq [endpoints endpoint-pairs]
+    ;  (draw-curve (endpoints 0) (endpoints 1)))
+ 
+    (no-stroke)
+    (fill (col 0) (col 1) (col 2) 240)
     (doseq [endpoints endpoint-pairs]
-      (draw-curve (endpoints 0) (endpoints 1)))
+      (draw-curve-solid (endpoints 0) (endpoints 1) 8))
     
     ;draw tangent vectors
     ;(stroke-weight 1)
@@ -583,10 +593,6 @@
     ;(doseq [endpoints endpoint-pairs]
     ;  (draw-curve-tangents (endpoints 0) (endpoints 1) 3))
 
-    ;(stroke-weight 2)
-    ;(stroke (col2 0) (col2 1) (col2 2) 255)
-    ;(doseq [endpoints endpoint-pairs]
-    ;  (draw-curve (endpoints 0) (endpoints 1)))
     (pop-style)
       ))
 
@@ -642,6 +648,10 @@
 
 
 
+;(defn attenuate-color [col distance]
+;  (let [att (abs (int (* (/ (* @model-scale @assemblage-max-radius) (* distance 1.0)) 255)))]
+;
+;    ))
 
 
 (defn draw-tiling []

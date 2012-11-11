@@ -665,7 +665,7 @@
 (def pfh-tilecode-map-hex [0 1 3 6 7 9 ])
 
 (defn convert-pfh-tilecode-hex [phf-code]
-  (apply str (map #(if (some #{%} pfh-tilecode-map)
+  (apply str (map #(if (some #{%} pfh-tilecode-map-hex)
                     (.charAt phf-code (.indexOf pfh-tilecode-map-hex %))
                     \-)
                   (range 12))))
@@ -684,5 +684,6 @@
                   "cadAAA" ; 0
                   "dadBBB" ; 1
                   "cbdBBB" ; 1
-                  "dbdAAA" ; 0])
+                  "dbdAAA" ; 0
+                  ])
 
