@@ -481,17 +481,27 @@
 ; 5. Go to step 2.
 
 
-; Todo:
-; fix rd-face to tilecode mapping so that opposite faces are 6 chars
-; apart in the tilecode.
-;
-; Investigate and fix tilecode rotations, simple string rotation
-; isn't correct as it is in 2d.
-;
-;
 
-
-
+; I think the less perfect patterns encountered along the way would be
+; interesting in their own right, however. I encourage you to look at some of
+; them. The perfected patterns are neat and one can imagine deliberately
+; engineering them by mimicking your procedure. But the imperfect ones that
+; would be created by bounded-scale backtracking would also be interesting.
+; Try treating the backtracking as a model parameter, and see what sorts of
+; patterns you get with none, with backtracking only a single step, with
+; backtracking 1-3 steps with a damped distribution (something as simple
+; as {1,1,1,1,2,2,3} would work fine), and compare the result to scale free
+; backtracking.
+;
+; Programmatically, put in a modular subroutine at that step and let it depend
+; on a global parameter. Then do runs - from this set of allowed tiles, here
+; are some shapes that arise with no backtracking, with backtracking 1, with
+; backtracking 1-3 damped, with scale free backtracking. I am sure the results
+; would be interesting. The point generalizes. To understand the impact of a
+; given step in an algorithm on the overall behaviors seen, one does
+; "sensitivity analysis" on that step.
+;
+; [http://forum.wolframscience.com/showthread.php?s=&threadid=866]
 
 ; _______________________________________________________________________
 
@@ -639,4 +649,40 @@
         (if (< (Math/random) 0.1)
           (make-tile [i j k] "000000000000"))))))
 
+
+
+; map tilecodes between pfh's 2d codes and the current implementation
+;
+; hexagonal:
+;   "AaAa--"  ->  "Aa-----A-a--"
+;
+;   hex index map:
+;   [0 1 3 6 7 9]
+;
+; square:
+; ...
+
+(def pfh-tilecode-map-hex [0 1 3 6 7 9 ])
+
+(defn convert-pfh-tilecode-hex [phf-code]
+  (apply str (map #(if (some #{%} pfh-tilecode-map)
+                    (.charAt phf-code (.indexOf pfh-tilecode-map-hex %))
+                    \-)
+                  (range 12))))
+
+
+; pfh code for CA rule 110: 
+(def ca-rule-110 [
+                  "a-aC-C"
+                  "a-bC-D"
+                  "b-aD-C"
+                  "b-bD-D"
+                  "cacAAA" ; 0
+                  "dacBBB" ; 1
+                  "cbcBBB" ; 1
+                  "dbcBBB" ; 1
+                  "cadAAA" ; 0
+                  "dadBBB" ; 1
+                  "cbdBBB" ; 1
+                  "dbdAAA" ; 0])
 
