@@ -116,6 +116,11 @@
   (swap! tiles dissoc pos))
 
 
+(defn delete-neighbours [pos]
+  (doseq [pos (get-neighbours pos)]
+    (delete-tile [pos]) 
+  ))
+
 (defn neighbour-states [pos]
   "Returns vector of boolean, one for each neighbour. The value represents "
   "whether the abutting face is connected or not"
@@ -605,7 +610,9 @@
           new-neighbourhood (get-neighbourhood new-pos)
           new-code (choose-tilecode2 new-neighbourhood tileset)]
       (if (nil? new-code)
-        (add-to-dead-loci (get-outer-facecode2 new-neighbourhood))
+        (do
+          (add-to-dead-loci (get-outer-facecode2 new-neighbourhood))
+          (delete-neighbours new-pos))
         (do
           (make-tile new-pos new-code)
           (reset! assemblage-center (find-assemblage-center))))
@@ -613,6 +620,7 @@
               (nil? new-code))
         (do
           (delete-tile new-pos)
+          (delete-neighbours new-pos)
           (backtrack))
         (do
           (add-tile-to-facelist new-pos)
