@@ -384,6 +384,16 @@
     [p1 p2 p3 p4]))
 
 
+(defn get-bezier-controls-with-offset [f1-idx f2-idx offset]
+  "Given two face indices, returns a vec of four 3d bezier control points"
+  "offset is a vector to specify the offset for bezier boxes."
+  (let [p1 (vec3-add (co-verts f1-idx) offset)
+        p2 (vec3-add (vec3-scale p1 0.5) offset)
+        p4 (vec3-add (co-verts f2-idx) offset)
+        p3 (vec3-add (vec3-scale p4 0.5) offset)]
+    [p1 p2 p3 p4]))
+
+
 (defn get-bezier-point-3d [f1-idx f2-idx t]
   (when (not= f1-idx f2-idx)
     (let [[p1 p2 p3 p4] (get-bezier-controls f1-idx f2-idx)
@@ -659,10 +669,12 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          cam-dist (get-camera-distance pos)
-          att (abs (int (* (/ (* @model-scale @assemblage-max-radius) (* cam-dist 1.0)) 255)))
-          col1 (get-tile-color code)
-          col (assoc col1 3 att)
+          col (conj (get-tile-color code) 255)
+
+          ;cam-dist (get-camera-distance pos)
+          ;att (abs (int (* (/ (* @model-scale @assemblage-max-radius) (* cam-dist 1.0)) 255)))
+          ;col1 (get-tile-color code)
+          ;col (assoc col1 3 att)
           ]
       ;(println col)
       (draw-face-boundaries pos code)
