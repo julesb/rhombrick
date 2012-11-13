@@ -424,7 +424,7 @@
                      ((bezier-anchor-offsets f-idx) 3)]
             colors [[255 0 0] [255 128 0] [255 255 0] [0 255 0]] ]
         ; draw anchors
-        (stroke-weight 4)
+        (stroke-weight 2)
         (doseq [i (range 4)] 
           (let [off-vec (vec3-scale (offsets i) 0.5)
                 [x1 y1 z1] (co-verts f-idx)
@@ -492,6 +492,12 @@
       [bx by bz])))
 
 
+(defn get-bezier-point [[p1 p2 p3 p4] t]
+  [ (bezier-point (p1 0) (p2 0) (p3 0) (p4 0) t)
+    (bezier-point (p1 1) (p2 1) (p3 1) (p4 1) t)
+    (bezier-point (p1 2) (p2 2) (p3 2) (p4 2) t)])
+
+
 (defn get-bezier-tangent-3d [f1-idx f2-idx t]
   (when (not= f1-idx f2-idx)
     (let [[p1 p2 p3 p4] (get-bezier-controls f1-idx f2-idx)
@@ -529,17 +535,22 @@
           (box 0.55 0.25 0.25))))))
 
 
+
 (defn draw-bezier-box [f1-idx f2-idx steps]
   (let [f1-offsets (map #(vec3-scale % 0.125) (bezier-anchor-offsets f1-idx))
         f2-offsets (map #(vec3-scale % 0.125) (bezier-anchor-offsets f2-idx))
-        controls (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
-                       f1-offsets f2-offsets)]
-        (doseq [[p1 p2 p3 p4] controls]
-          (bezier (p1 0) (p1 1) (p1 2)
-                  (p2 0) (p2 1) (p2 2)
-                  (p3 0) (p3 1) (p3 2)
-                  (p4 0) (p4 1) (p4 2))
-  )))
+        controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
+                       f1-offsets f2-offsets))]
+    (doseq [c1-idx (range (count controls))]
+      (let [c2-idx (mod (inc c1-idx) 4)
+            c1 (controls c1-idx)
+            c2 (controls c2-idx)]
+        (begin-shape :triangle-strip)
+        (doseq [i (range 0 (inc steps))]
+          (let [t (* i (/ 1 steps))]
+            (apply vertex (get-bezier-point c1 t))
+            (apply vertex (get-bezier-point c2 t))))
+        (end-shape)))))
 
 
 (defn draw-curve [f1-idx f2-idx]
@@ -696,10 +707,11 @@
     ;(doseq [endpoints endpoint-pairs]
     ;  (draw-curve (endpoints 0) (endpoints 1)))
  
-    ;(no-stroke)
-    ;(fill (col 0) (col 1) (col 2) 255)
-    (stroke (col 0) (col 1) (col 2) 255)
-    (no-fill)
+    (no-stroke)
+    ;(stroke-weight 1)
+    (fill (col 0) (col 1) (col 2) 128)
+    ;(stroke (col 0) (col 1) (col 2) 255)
+    ;(no-fill)
     (doseq [endpoints endpoint-pairs]
       ;(draw-curve-solid (endpoints 0) (endpoints 1) 8)
       (draw-bezier-box (endpoints 0) (endpoints 1) 8)
