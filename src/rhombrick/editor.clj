@@ -337,11 +337,13 @@
         (draw-faces-with-info rd-verts rd-faces col)
         (no-fill)
         (draw-facecode code)
+        (draw-facecode-color code [128 128 128 255])
         (scale 2)
         (draw-face-boundaries [0 0 0] code)
         (draw-face-idx-numbers [0 0 0] false)
-        (rotate rads dx dy dz)
-        (draw-face-idx-numbers [0 0 0] true)
+        ;(rotate rads dx dy dz)
+        ;(draw-face-idx-numbers [0 0 0] true)
+        (draw-bezier-anchor-test [0 0 0])
                       )))
 
 
@@ -350,7 +352,7 @@
   (let [level (get-level)
         selected (get-selected 1)
         preview-pos [x (+ y bscale 10)]
-        preview-scale 320 
+        preview-scale 640
         rotations-pos [(+ preview-scale (preview-pos 0)) (preview-pos 1)  ]
         rotations-scale 180]
     (doseq [i (range (count tileset))]

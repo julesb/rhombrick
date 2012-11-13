@@ -348,6 +348,94 @@
                             ))))))
 
 
+(def bezier-anchor-offsets [
+  (vec (map vec3-normalize [(co-verts 8)
+                            (rd-verts 12)
+                            (co-verts 2)
+                            (rd-verts 8)])) ; ok
+
+  (vec (map vec3-normalize [(rd-verts 11)
+                            (co-verts 5)
+                            (rd-verts 13)
+                            (co-verts 11)])) ; ok
+ 
+  (vec (map vec3-normalize [(co-verts 0)
+                            (rd-verts 12)
+                            (co-verts 6)
+                            (rd-verts 8)])) ; ok
+
+  (vec (map vec3-normalize [(co-verts 10)
+                            (rd-verts 10)
+                            (co-verts 4)
+                            (rd-verts 9)])) ; ok
+
+  (vec (map vec3-normalize [(co-verts 9)
+                            (rd-verts 9)
+                            (co-verts 3)
+                            (rd-verts 10)])) ; ok
+
+  (vec (map vec3-normalize [(rd-verts 11)
+                            (co-verts 7)
+                            (rd-verts 13)
+                            (co-verts 1)])) ; ok
+
+
+  (vec (map vec3-normalize [(co-verts 8)
+                            (rd-verts 12)
+                            (co-verts 2)
+                            (rd-verts 8)])) ; ok
+
+  (vec (map vec3-normalize [(rd-verts 11)
+                            (co-verts 5)
+                            (rd-verts 13)
+                            (co-verts 11)])) ; ok
+
+  (vec (map vec3-normalize [(co-verts 0)
+                            (rd-verts 12)
+                            (co-verts 6)
+                            (rd-verts 8)])) ; ok
+
+  (vec (map vec3-normalize [(co-verts 10)
+                            (rd-verts 10)
+                            (co-verts 4)
+                            (rd-verts 9)])) ; ok
+
+  (vec (map vec3-normalize [(co-verts 9)
+                            (rd-verts 9)
+                            (co-verts 3)
+                            (rd-verts 10)])) ; ok
+
+  (vec (map vec3-normalize [(rd-verts 11)
+                            (co-verts 7)
+                            (rd-verts 13)
+                            (co-verts 1)])) ; ok
+  
+  
+])
+
+
+
+(defn draw-bezier-anchor-test [pos]
+  (doseq [f-idx (range 12)]
+    (when (= (count (bezier-anchor-offsets f-idx)) 4)
+      (let [offsets [((bezier-anchor-offsets f-idx) 0)
+                     ((bezier-anchor-offsets f-idx) 1)
+                     ((bezier-anchor-offsets f-idx) 2)
+                     ((bezier-anchor-offsets f-idx) 3)]
+            colors [[255 0 0] [255 128 0] [255 255 0] [0 255 0]] ]
+        ; draw anchors
+        (stroke-weight 4)
+        (doseq [i (range 4)] 
+          (let [off-vec (vec3-scale (offsets i) 0.5)
+                [x1 y1 z1] (co-verts f-idx)
+                [x2 y2 z2] (vec3-add (co-verts f-idx) off-vec)]
+            (apply stroke (colors i))
+            (with-translation pos
+              (scale 0.5)
+              (line x1 y1 z1 x2 y2 z2))))
+        ))))
+
+
 (defn draw-empty []
   (fill 0 255 0 192)
   (doseq [tile @empty-positions]
@@ -384,13 +472,14 @@
     [p1 p2 p3 p4]))
 
 
-(defn get-bezier-controls-with-offset [f1-idx f2-idx offset]
+(defn get-bezier-controls-with-offset [f1-idx f2-idx f1-offset f2-offset]
   "Given two face indices, returns a vec of four 3d bezier control points"
   "offset is a vector to specify the offset for bezier boxes."
-  (let [p1 (vec3-add (co-verts f1-idx) offset)
-        p2 (vec3-add (vec3-scale p1 0.5) offset)
-        p4 (vec3-add (co-verts f2-idx) offset)
-        p3 (vec3-add (vec3-scale p4 0.5) offset)]
+  (let [p1 (vec3-add (co-verts f1-idx) f1-offset)
+        p2 (vec3-sub p1 (vec3-scale (co-verts f1-idx) 0.5))
+        p4 (vec3-add (co-verts f2-idx) f2-offset)
+        p3 (vec3-sub p4 (vec3-scale (co-verts f2-idx) 0.5))
+        ]
     [p1 p2 p3 p4]))
 
 
@@ -438,6 +527,19 @@
           (rotate az 0 0 1)
           (rotate el 0 1 0)
           (box 0.55 0.25 0.25))))))
+
+
+(defn draw-bezier-box [f1-idx f2-idx steps]
+  (let [f1-offsets (map #(vec3-scale % 0.125) (bezier-anchor-offsets f1-idx))
+        f2-offsets (map #(vec3-scale % 0.125) (bezier-anchor-offsets f2-idx))
+        controls (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
+                       f1-offsets f2-offsets)]
+        (doseq [[p1 p2 p3 p4] controls]
+          (bezier (p1 0) (p1 1) (p1 2)
+                  (p2 0) (p2 1) (p2 2)
+                  (p3 0) (p3 1) (p3 2)
+                  (p4 0) (p4 1) (p4 2))
+  )))
 
 
 (defn draw-curve [f1-idx f2-idx]
@@ -576,7 +678,8 @@
         (pop-matrix)
         (no-fill)))
 
-    (stroke-weight weight) 
+    (stroke-weight 4) 
+
     (stroke (col 0) (col 1) (col 2) (col 3)) 
     
     (if (= num-connected 1)
@@ -593,10 +696,14 @@
     ;(doseq [endpoints endpoint-pairs]
     ;  (draw-curve (endpoints 0) (endpoints 1)))
  
-    (no-stroke)
-    (fill (col 0) (col 1) (col 2) 255)
+    ;(no-stroke)
+    ;(fill (col 0) (col 1) (col 2) 255)
+    (stroke (col 0) (col 1) (col 2) 255)
+    (no-fill)
     (doseq [endpoints endpoint-pairs]
-      (draw-curve-solid (endpoints 0) (endpoints 1) 8))
+      ;(draw-curve-solid (endpoints 0) (endpoints 1) 8)
+      (draw-bezier-box (endpoints 0) (endpoints 1) 8)
+      )
     
     ;draw tangent vectors
     ;(stroke-weight 1)
@@ -659,17 +766,12 @@
 
 
 
-;(defn attenuate-color [col distance]
-;  (let [att (abs (int (* (/ (* @model-scale @assemblage-max-radius) (* distance 1.0)) 255)))]
-;
-;    ))
-
 
 (defn draw-tiling []
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 255)
+          col (conj (get-tile-color code) 128)
 
           ;cam-dist (get-camera-distance pos)
           ;att (abs (int (* (/ (* @model-scale @assemblage-max-radius) (* cam-dist 1.0)) 255)))
