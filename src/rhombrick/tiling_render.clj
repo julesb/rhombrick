@@ -538,7 +538,7 @@
 
 
 (defn draw-bezier-box [f1-idx f2-idx steps]
-  (let [thickness 0.25
+  (let [thickness 0.5
         f1-offsets (map #(vec3-scale % thickness) (bezier-anchor-offsets f1-idx))
         f2-offsets (map #(vec3-scale % thickness) (bezier-anchor-offsets f2-idx))
         controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
@@ -583,7 +583,7 @@
 
 
 (defn draw-bezier-box-lines [f1-idx f2-idx steps]
-  (let [thickness 0.25
+  (let [thickness 0.5
         f1-offsets (map #(vec3-scale % thickness) (bezier-anchor-offsets f1-idx))
         f2-offsets (map #(vec3-scale % thickness) (bezier-anchor-offsets f2-idx))
         controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
@@ -701,24 +701,25 @@
 
 
 (defn draw-facecode-color [code col]
-  (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
-        num-connected (get-num-connected code)
+  (let [num-connected (get-num-connected code)
+        endpoint-pairs (if (< num-connected 4)
+                         (make-curve-endpoints (get-connected-idxs code))
+                         (vec (filter #(not= 6 (abs (- (% 1) (% 0))))
+                                      (make-curve-endpoints (get-connected-idxs code)))))
         weight (- 9 (* (/ num-connected 12) 8))]
     (push-style)
 
     (if (= code nil)
       (do 
         (fill 255 32 32 128)
-        ;(no-fill)
         (stroke 255 0 0 192)
         (push-matrix)
         (scale 0.05)
         (box 1 1 1)
-        ;(draw-faces rd-verts rd-faces nil)
         (pop-matrix)
         (no-fill)))
 
-    (stroke-weight 4) 
+    (stroke-weight 8)
 
     (stroke (col 0) (col 1) (col 2) (col 3)) 
     
@@ -743,9 +744,12 @@
     ;(no-fill)
     (doseq [endpoints endpoint-pairs]
       (no-stroke)
+      (fill (col 0) (col 1) (col 2) 255)
       ;(draw-curve-solid (endpoints 0) (endpoints 1) 8)
       (draw-bezier-box (endpoints 0) (endpoints 1) 8)
-      (stroke (col 0) (col 1) (col 2) 255)
+      ;(stroke (col 0) (col 1) (col 2) 255)
+      (stroke 0 0 0 192)
+      (no-fill)
       (draw-bezier-box-lines (endpoints 0) (endpoints 1) 8)
       )
     
