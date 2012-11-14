@@ -294,6 +294,7 @@
               (with-translation (vec3-scale (co-verts i) 0.93)
                 (rotate az 0 0 1)
                 (rotate el 0 1 0)
+                (rotate (/ Math/PI 4.0) 1 0 0)
                 (box 0.2)))))))))
 
 
@@ -537,8 +538,9 @@
 
 
 (defn draw-bezier-box [f1-idx f2-idx steps]
-  (let [f1-offsets (map #(vec3-scale % 0.125) (bezier-anchor-offsets f1-idx))
-        f2-offsets (map #(vec3-scale % 0.125) (bezier-anchor-offsets f2-idx))
+  (let [thickness 0.25
+        f1-offsets (map #(vec3-scale % thickness) (bezier-anchor-offsets f1-idx))
+        f2-offsets (map #(vec3-scale % thickness) (bezier-anchor-offsets f2-idx))
         controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
                        f1-offsets f2-offsets))]
     (doseq [c1-idx (range (count controls))]
@@ -547,10 +549,21 @@
             c2 (controls c2-idx)]
         (begin-shape :triangle-strip)
         (doseq [i (range 0 (inc steps))]
-          (let [t (* i (/ 1 steps))]
-            (apply vertex (get-bezier-point c1 t))
-            (apply vertex (get-bezier-point c2 t))))
-        (end-shape)))))
+          (let [t (* i (/ 1 steps))
+                p1 (get-bezier-point c1 t)
+                p2 (get-bezier-point c2 t)
+                ;center (get-bezier-point-3d f1-idx f2-idx t)
+                ;n1 (vec3-normalize (vec3-sub center p1))
+                ;n2 (vec3-normalize (vec3-sub center p2))
+                ]
+            ;(apply normal n1)
+            (apply vertex p1)
+            ;(apply normal n2)
+            (apply vertex p2)))
+        (end-shape)
+        
+        ))))
+
 
 
 (defn draw-curve [f1-idx f2-idx]
@@ -562,6 +575,22 @@
               (p4 0) (p4 1) (p4 2)))))
 
 
+(defn draw-curve-with-controls [[p1 p2 p3 p4]]
+  (bezier (p1 0) (p1 1) (p1 2)
+          (p2 0) (p2 1) (p2 2)
+          (p3 0) (p3 1) (p3 2)
+          (p4 0) (p4 1) (p4 2)))
+
+
+(defn draw-bezier-box-lines [f1-idx f2-idx steps]
+  (let [thickness 0.25
+        f1-offsets (map #(vec3-scale % thickness) (bezier-anchor-offsets f1-idx))
+        f2-offsets (map #(vec3-scale % thickness) (bezier-anchor-offsets f2-idx))
+        controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
+                       f1-offsets f2-offsets))]
+    (doseq [c controls]
+      (draw-curve-with-controls c)))) 
+        
 (defn make-curve-endpoints-orig [connected-idxs]
   (let [num-points (count connected-idxs)]
     (map #(vector %1 (nth connected-idxs (mod (+ %2 1) num-points)))
@@ -709,12 +738,15 @@
  
     (no-stroke)
     ;(stroke-weight 1)
-    (fill (col 0) (col 1) (col 2) 128)
+    (fill (col 0) (col 1) (col 2) 255)
     ;(stroke (col 0) (col 1) (col 2) 255)
     ;(no-fill)
     (doseq [endpoints endpoint-pairs]
+      (no-stroke)
       ;(draw-curve-solid (endpoints 0) (endpoints 1) 8)
       (draw-bezier-box (endpoints 0) (endpoints 1) 8)
+      (stroke (col 0) (col 1) (col 2) 255)
+      (draw-bezier-box-lines (endpoints 0) (endpoints 1) 8)
       )
     
     ;draw tangent vectors
@@ -783,14 +815,7 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 128)
-
-          ;cam-dist (get-camera-distance pos)
-          ;att (abs (int (* (/ (* @model-scale @assemblage-max-radius) (* cam-dist 1.0)) 255)))
-          ;col1 (get-tile-color code)
-          ;col (assoc col1 3 att)
-          ]
-      ;(println col)
+          col (conj (get-tile-color code) 128)]
       (draw-face-boundaries pos code)
       (with-translation pos 
         (scale 0.5)
