@@ -80,3 +80,6 @@
 
 (defn vec3-distance [p1 p2]
   (vec3-length (vec3-sub p2 p1)))
+
+(defn vec3-bisect [p1 p2]
+  (vec3-scale (vec3-add p1 p2) 0.5))
