@@ -40,7 +40,7 @@
 (def draw-facelist? (atom false))
 (def draw-editor? (atom false))
 (def draw-gliders? (atom false))
-
+(def draw-boundaries? (atom false))
 
 ; _______________________________________________________________________
 
@@ -235,7 +235,8 @@
           (swap! symmetry-display-index inc))
     \# #(do
           (save-frame))
-
+    \b #(do
+          (swap! draw-boundaries? not))
        })
 
 (def key-editor-map
@@ -442,7 +443,7 @@
       (draw-face-list))
       ;(draw-face-list-textured))
 
-    (draw-tiling)
+    (draw-tiling @draw-boundaries?)
 
     ;(when (seq @empty-positions)
     ;  (draw-empty))
