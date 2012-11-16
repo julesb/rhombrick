@@ -77,3 +77,6 @@
         degs (* (/ rads Math/PI) 180.0) ]
     degs))
 
+
+(defn vec3-distance [p1 p2]
+  (vec3-length (vec3-sub p2 p1)))
