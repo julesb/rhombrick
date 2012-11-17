@@ -12,7 +12,21 @@
 (def rhomb-tex (atom nil))
 (def current-tileset-colors (atom {}))
 (def model-scale (atom 50))
-; _______________________________________________________________________
+
+; map facecode digit to bezier anchor scale
+(def bezier-box-thicknesses {\1 0.25
+                             \2 0.5
+                             \3 0.75
+                             \4 1.0
+                             \a 0.25
+                             \A 0.25
+                             \b 0.5
+                             \B 0.5
+                             \c 0.75
+                             \C 0.75
+                             \d 1.0
+                             \D 1.0
+                             })
 
 
 (defn draw-rhomb-verts []
@@ -284,7 +298,8 @@
                   dir (co-verts i)
                   [dx dy dz] (vec3-normalize dir)
                   az (Math/atan2 dy dx)
-                  el (- (Math/asin dz))]
+                  el (- (Math/asin dz))
+                  thickness (* 1.333 (bezier-box-thicknesses (.charAt code i)))]
               (if (face-digit-like-compatible? d)
                 (do (fill 160 160 220 255))
                 (do
@@ -295,7 +310,7 @@
                 (rotate az 0 0 1)
                 (rotate el 0 1 0)
                 ;(rotate (/ Math/PI 4.0) 1 0 0)
-                (box 0.25 0.5 0.5)))))))))
+                (box 0.25 thickness thickness)))))))))
 
 
 (defn draw-color-markers [pos]
@@ -356,6 +371,7 @@
               (vec3-bisect (o 2) (o 3))
               (vec3-bisect (o 3) (o 0))])))
 
+
 ; this is hideous and horrible but as long as it spits out the right numbers
 ; it will do, since it will only be used for precomputing triangle strip data 
 (defn get-bezier-anchor-offsets [f1-idx f2-idx]
@@ -407,7 +423,6 @@
         ]
     [f1-offsets-swapped-2 f2-offsets-swapped-2]
   ))
-
 
 
 (defn draw-bezier-anchor-test [pos]
@@ -546,24 +561,10 @@
           (p4 0) (p4 1) (p4 2)))
 
 
-; map facecode digit to bezier anchor scale
-(def bezier-box-thicknesses {\1 0.25
-                             \2 0.5
-                             \3 0.75
-                             \4 1.0
-                             \a 0.25
-                             \A 0.25
-                             \b 0.5
-                             \B 0.5
-                             \c 0.75
-                             \C 0.75
-                             \d 1.0
-                             \D 1.0
-                             })
+
 
 (defn draw-bezier-box [f1-idx f2-idx f1-scale f2-scale steps]
-  (let [;thickness 0.4
-        [f1-off f2-off] (get-bezier-anchor-offsets f1-idx f2-idx)
+  (let [[f1-off f2-off] (get-bezier-anchor-offsets f1-idx f2-idx)
         f1-offsets (map #(vec3-scale % f1-scale) f1-off)
         f2-offsets (map #(vec3-scale % f2-scale) f2-off)
         controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
