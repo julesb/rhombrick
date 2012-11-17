@@ -356,6 +356,8 @@
               (vec3-bisect (o 2) (o 3))
               (vec3-bisect (o 3) (o 0))])))
 
+; this is hideous and horrible but as long as it spits out the right numbers
+; it will do, since it will only be used for precomputing triangle strip data 
 (defn get-bezier-anchor-offsets [f1-idx f2-idx]
   (let [f1-center (co-verts f1-idx)
         f2-center (co-verts f2-idx)
@@ -380,19 +382,30 @@
         f1-test-vec (vec3-sub f1-center (f1-offsets-sorted 0))
         f2-test-vec (vec3-sub f2-center (f2-offsets-sorted 0))
 
+        f1-offsets-sorted-by-angle (vec (sort-by #(+ 180.0 (vec3-angle-between f1-test-vec
+                                                                               (vec3-sub f1-center % )))
+                                                 f1-offsets-sorted))
+        f2-offsets-sorted-by-angle (vec (sort-by #(+ 180.0 (vec3-angle-between f2-test-vec
+                                                                               (vec3-sub f2-center % )))
+                                                 f2-offsets-sorted))
 
-        f1-offsets-sorted-by-angle (sort-by #(+ 180.0 (vec3-angle-between f1-test-vec (vec3-sub f1-center % )))
-                                            f1-offsets-sorted)
-        f2-offsets-sorted-by-angle (sort-by #(+ 180.0 (vec3-angle-between f2-test-vec (vec3-sub f2-center % )))
-                                            f2-offsets-sorted)
-
-        ;[f1-offsets f2-offsets]
+        f1-offsets-swapped f1-offsets-sorted-by-angle
+        f2-offsets-swapped (if (= 120 (round (get-angle-for-face-idxs [f1-idx f2-idx])))
+                             [(f2-offsets-sorted-by-angle 0)
+                              (f2-offsets-sorted-by-angle 2)
+                              (f2-offsets-sorted-by-angle 1)
+                              (f2-offsets-sorted-by-angle 3)]
+                              f2-offsets-sorted-by-angle)
+        f1-offsets-swapped-2 [(f1-offsets-swapped 0)
+                              (f1-offsets-swapped 1)
+                              (f1-offsets-swapped  3)
+                              (f1-offsets-swapped  2)]
+        f2-offsets-swapped-2 [(f2-offsets-swapped  0)
+                              (f2-offsets-swapped  1)
+                              (f2-offsets-swapped  3)
+                              (f2-offsets-swapped  2)]
         ]
-    ;[f1-off-2 f2-off-2]
-    ;[f1-offsets-sorted f2-offsets-sorted]
-    [f1-offsets-sorted-by-angle f2-offsets-sorted-by-angle]
-
-
+    [f1-offsets-swapped-2 f2-offsets-swapped-2]
   ))
 
 
