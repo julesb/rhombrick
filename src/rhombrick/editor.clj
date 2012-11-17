@@ -29,9 +29,18 @@
 (def library-tileset-index (atom 0))
 
 (def next-digit {\- \1
-                 \1 \a
+                 \1 \2
+                 \2 \3
+                 \3 \4
+                 \4 \a
                  \a \A
-                 \A \-})
+                 \A \b
+                 \b \B
+                 \B \c
+                 \c \C
+                 \C \d
+                 \d \D
+                 \D \-})
 
 (def symmetry-display-index (atom 0))
 

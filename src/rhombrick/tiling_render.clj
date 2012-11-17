@@ -546,11 +546,26 @@
           (p4 0) (p4 1) (p4 2)))
 
 
-(defn draw-bezier-box [f1-idx f2-idx steps]
-  (let [thickness 0.4
+; map facecode digit to bezier anchor scale
+(def bezier-box-thicknesses {\1 0.25
+                             \2 0.5
+                             \3 0.75
+                             \4 1.0
+                             \a 0.25
+                             \A 0.25
+                             \b 0.5
+                             \B 0.5
+                             \c 0.75
+                             \C 0.75
+                             \d 1.0
+                             \D 1.0
+                             })
+
+(defn draw-bezier-box [f1-idx f2-idx f1-scale f2-scale steps]
+  (let [;thickness 0.4
         [f1-off f2-off] (get-bezier-anchor-offsets f1-idx f2-idx)
-        f1-offsets (map #(vec3-scale % thickness) f1-off)
-        f2-offsets (map #(vec3-scale % thickness) f2-off)
+        f1-offsets (map #(vec3-scale % f1-scale) f1-off)
+        f2-offsets (map #(vec3-scale % f2-scale) f2-off)
         controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
                        f1-offsets f2-offsets))]
     (doseq [c1-idx (range (count controls))]
@@ -574,11 +589,11 @@
         ))))
 
 
-(defn draw-bezier-box-lines [f1-idx f2-idx steps]
-  (let [thickness 0.4
+(defn draw-bezier-box-lines [f1-idx f2-idx f1-scale f2-scale steps]
+  (let [;thickness 0.4 
         [f1-off f2-off] (get-bezier-anchor-offsets f1-idx f2-idx)
-        f1-offsets (map #(vec3-scale % thickness) f1-off)
-        f2-offsets (map #(vec3-scale % thickness) f2-off)
+        f1-offsets (map #(vec3-scale % f1-scale) f1-off)
+        f2-offsets (map #(vec3-scale % f2-scale) f2-off)
         controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
                        f1-offsets f2-offsets))]
     (doseq [c controls]
@@ -697,7 +712,7 @@
 (defn draw-facecode-color [code col]
   (let [num-connected (get-num-connected code)
         endpoint-pairs (if (< num-connected 4)
-                         (make-curve-endpoints (get-connected-idxs code))
+                         (vec (make-curve-endpoints (get-connected-idxs code)))
                          (vec (filter #(not= 6 (abs (- (% 1) (% 0))))
                                       (make-curve-endpoints (get-connected-idxs code)))))
         weight (- 9 (* (/ num-connected 12) 8))]
@@ -737,20 +752,23 @@
     ;(stroke (col 0) (col 1) (col 2) 255)
     ;(no-fill)
     (doseq [endpoints endpoint-pairs]
-      (no-stroke)
-      ;(stroke 0 0 0 255)
-      ;(fill (- 255 (col 0)) (- 255 (col 1)) (- 255 (col 2)) 255)
-      ;(draw-curve-solid (endpoints 0) (endpoints 1) 8)
+      (let [f1-thickness (bezier-box-thicknesses (.charAt code (endpoints 0)))
+            f2-thickness (bezier-box-thicknesses (.charAt code (endpoints 1)))
+            ]
+        (no-stroke)
+        ;(stroke 0 0 0 255)
+        ;(fill (- 255 (col 0)) (- 255 (col 1)) (- 255 (col 2)) 255)
+        ;(draw-curve-solid (endpoints 0) (endpoints 1) 8)
 
-      (no-stroke)
-      (fill (col 0) (col 1) (col 2) 240)
-      (draw-bezier-box (endpoints 0) (endpoints 1) 8)
-      
-      ;(stroke (col 0) (col 1) (col 2) 255)
-      (stroke 0 0 0 192)
-      (no-fill)
-      (draw-bezier-box-lines (endpoints 0) (endpoints 1) 8)
-      )
+        (no-stroke)
+        (fill (col 0) (col 1) (col 2) 255)
+        (draw-bezier-box (endpoints 0) (endpoints 1) f1-thickness f2-thickness 8)
+        
+        ;(stroke (col 0) (col 1) (col 2) 255)
+        (stroke 0 0 0 192)
+        (no-fill)
+        (draw-bezier-box-lines (endpoints 0) (endpoints 1) f1-thickness f2-thickness 8)
+        ))
     
     ;draw tangent vectors
     ;(stroke-weight 1)
