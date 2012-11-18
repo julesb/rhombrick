@@ -572,9 +572,20 @@
 
 
 (def bezier-box-tristrip-cache (atom {}))
+(def bezier-box-line-cache (atom {}))
 
 (defn bezier-box-tristrip-cache-reset []
   (reset! bezier-box-tristrip-cache {}))
+
+
+(defn bezier-box-line-cache-reset []
+  (reset! bezier-box-line-cache {}))
+
+
+(defn bezier-box-cache-reset []
+  (bezier-box-tristrip-cache-reset)
+  (bezier-box-line-cache-reset))
+
 
 (defn get-bezier-point-fake [[p1 p2 p3 p4] t]
   [0 0 0])
@@ -584,6 +595,12 @@
   (map #(let [t (* % (/ 1 steps))]
          [(get-bezier-point c1 t)
           (get-bezier-point c2 t)])
+       (range (inc steps))))
+
+
+(defn get-bezier-points [c1 steps]
+  (map #(let [t (* % (/ 1 steps))]
+          (get-bezier-point c1 t))
        (range (inc steps))))
 
 
@@ -599,6 +616,20 @@
                 c2 (controls c2-idx)]
             (apply concat (get-bezier-strip c1 c2 steps)))
          (range (count controls)))))
+
+
+(defn make-bezier-box-lines [f1-idx f2-idx f1-scale f2-scale steps]
+  (let [[f1-off f2-off] (get-bezier-anchor-offsets f1-idx f2-idx)
+        f1-offsets (map #(vec3-scale % f1-scale) f1-off)
+        f2-offsets (map #(vec3-scale % f2-scale) f2-off)
+        controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
+                       f1-offsets f2-offsets))]
+    (map #(let [c1 (controls %)]
+            (get-bezier-points c1 steps))
+            ;(apply concat (get-bezier-points c1 steps)))
+         (range (count controls)))))
+
+
 
 
 (defn draw-bezier-box2 [f1-idx f2-idx f1-scale f2-scale steps]
@@ -622,6 +653,18 @@
          endpoint-pairs)))
 
 
+(defn make-facecode-bezier-box-lines [code steps]
+  (let [num-connected (get-num-connected code)
+        endpoint-pairs (if (< num-connected 4)
+                         (vec (make-curve-endpoints (get-connected-idxs code)))
+                         (vec (filter #(not= 6 (abs (- (% 1) (% 0))))
+                                      (make-curve-endpoints (get-connected-idxs code)))))]
+    (map #(let [f1-thickness (bezier-box-thicknesses (.charAt code (% 0)))
+                f2-thickness (bezier-box-thicknesses (.charAt code (% 1)))]
+            (make-bezier-box-lines (% 0) (% 1) f1-thickness f2-thickness steps))
+         endpoint-pairs)))
+
+
 (defn get-bezier-box-triangles [code steps]
   "Gets bezier box triangle strips from cache if present, otherwise computes "
   "the triangle strips, adds them to the cache, then returns them."
@@ -631,9 +674,16 @@
   (@bezier-box-tristrip-cache code))
 
 
+(defn get-bezier-box-lines [code steps]
+  "Gets bezier box outline verts from cache if present, otherwise computes "
+  "the verts, adds them to the cache, then returns them."
+  (when (not (contains? @bezier-box-line-cache code))
+    (let [lines (make-facecode-bezier-box-lines code steps)]
+      (swap! bezier-box-line-cache assoc code lines)))
+  (@bezier-box-line-cache code))
 
 
-(defn draw-bezier-box [f1-idx f2-idx f1-scale f2-scale steps]
+(defn draw-bezier-box-slow [f1-idx f2-idx f1-scale f2-scale steps]
   (let [[f1-off f2-off] (get-bezier-anchor-offsets f1-idx f2-idx)
         f1-offsets (map #(vec3-scale % f1-scale) f1-off)
         f2-offsets (map #(vec3-scale % f2-scale) f2-off)
@@ -770,17 +820,29 @@
       ))
 
 
+(defn draw-facecode-bezier-box-lines [code col]
+  (apply stroke col)
+  (stroke-weight 5)
+  (no-fill)
+  (doseq [line-verts (get-bezier-box-lines code 8)]
+    (doseq [vert line-verts]
+      (begin-shape)
+      (doseq [[vx vy vz] vert]
+        (vertex vx vy vz))
+      (end-shape))))
+
 (defn draw-facecode-bezier-boxes [code col]
   (apply fill col)
-  (stroke 0 0 0 192)
+  ;(stroke 0 0 0 192)
   (no-stroke)
-  (stroke-weight 2)
+  ;(stroke-weight 2)
   (doseq [bbox (get-bezier-box-triangles code 8)]
     (doseq [strip bbox]
       (begin-shape :triangle-strip)
       (doseq [[vx vy vz] strip]
         (vertex vx vy vz))
       (end-shape))))
+
 
 (defn draw-facecode-color [code col]
   (let [num-connected (get-num-connected code)
@@ -910,7 +972,7 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 255)]
+          col (conj (get-tile-color code) 128)]
       (when with-boundaries?
         (draw-face-boundaries pos code))
       (with-translation pos 
@@ -919,6 +981,7 @@
         ;(stroke 0 0 0 64)
         (no-fill) 
         (draw-facecode-bezier-boxes (@tiles pos) col)
+        (draw-facecode-bezier-box-lines (@tiles pos) col)
         ;(draw-facecode-color (@tiles pos) col)
                         ))))
 
