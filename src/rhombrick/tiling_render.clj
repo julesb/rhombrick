@@ -561,6 +561,46 @@
           (p4 0) (p4 1) (p4 2)))
 
 
+(def bezier-box-tri-strips 
+  {
+   "----1---1---" [[[0 0 0] [0 1 0] [1 0 1] [1 1 0]]
+                   [[0 0 0] [0 1 0] [1 0 1] [1 1 0]]
+                   [[0 0 0] [0 1 0] [1 0 1] [1 1 0]]]
+  })
+
+(defn get-bezier-point-fake [[p1 p2 p3 p4] t]
+  [0 0 0])
+
+
+(defn get-bezier-strip [c1 c2 steps]
+  (map #(let [t (* % (/ 1 steps))]
+         [(get-bezier-point c1 t)
+          (get-bezier-point c2 t)])
+       (range (inc steps))))
+
+
+(defn make-bezier-box-triangles [f1-idx f2-idx f1-scale f2-scale steps]
+  (let [[f1-off f2-off] (get-bezier-anchor-offsets f1-idx f2-idx)
+        f1-offsets (map #(vec3-scale % f1-scale) f1-off)
+        f2-offsets (map #(vec3-scale % f2-scale) f2-off)
+        controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
+                       f1-offsets f2-offsets))]
+    (map #(let [c1-idx %
+                c2-idx (mod (inc c1-idx) 4)
+                c1 (controls c1-idx)
+                c2 (controls c2-idx)]
+            (apply concat (get-bezier-strip c1 c2 steps)))
+         (range (count controls)))))
+
+
+(defn draw-bezier-box2 [f1-idx f2-idx f1-scale f2-scale steps]
+  (let [strips (make-bezier-box-triangles f1-idx f2-idx f1-scale f2-scale steps)]
+    (doseq [strip strips]
+      (begin-shape :triangle-strip)
+      (doseq [[vx vy vz] strip]
+        (vertex vx vy vz))
+      (end-shape))))
+
 
 
 (defn draw-bezier-box [f1-idx f2-idx f1-scale f2-scale steps]
@@ -763,12 +803,13 @@
 
         (no-stroke)
         (fill (col 0) (col 1) (col 2) 255)
-        (draw-bezier-box (endpoints 0) (endpoints 1) f1-thickness f2-thickness 8)
+        (draw-bezier-box2 (endpoints 0) (endpoints 1) f1-thickness f2-thickness 8)
+        ;(make-bezier-box-triangles 1 2 0.5 0.5 8)
         
         ;(stroke (col 0) (col 1) (col 2) 255)
-        (stroke 0 0 0 192)
-        (no-fill)
-        (draw-bezier-box-lines (endpoints 0) (endpoints 1) f1-thickness f2-thickness 8)
+        ;(stroke 128 128 128 255)
+        ;(no-fill)
+        ;(draw-bezier-box-lines (endpoints 0) (endpoints 1) f1-thickness f2-thickness 8)
         ))
     
     ;draw tangent vectors
