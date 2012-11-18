@@ -73,6 +73,7 @@
 ;        num-uniq (count tileset)]
   (reset! (@editor-state :tileset) [])
   (reset! current-tileset-colors {})
+  (bezier-box-tristrip-cache-reset)
   (let [col-offset (rand-int 12)]
     (doseq [i (range (count tileset))]
       (let [code (tileset i)

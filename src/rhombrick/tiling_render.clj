@@ -561,12 +561,20 @@
           (p4 0) (p4 1) (p4 2)))
 
 
-(def bezier-box-tri-strips 
-  {
-   "----1---1---" [[[0 0 0] [0 1 0] [1 0 1] [1 1 0]]
-                   [[0 0 0] [0 1 0] [1 0 1] [1 1 0]]
-                   [[0 0 0] [0 1 0] [1 0 1] [1 1 0]]]
-  })
+(defn make-curve-endpoints-orig [connected-idxs]
+  (let [num-points (count connected-idxs)]
+    (map #(vector %1 (nth connected-idxs (mod (+ %2 1) num-points)))
+         connected-idxs (range num-points))))
+
+
+(defn make-curve-endpoints [connected-idxs]
+  (map vec (vec (combinations connected-idxs 2))))
+
+
+(def bezier-box-tristrip-cache (atom {}))
+
+(defn bezier-box-tristrip-cache-reset []
+  (reset! bezier-box-tristrip-cache {}))
 
 (defn get-bezier-point-fake [[p1 p2 p3 p4] t]
   [0 0 0])
@@ -602,6 +610,28 @@
       (end-shape))))
 
 
+(defn make-facecode-bezier-box-triangles [code steps]
+  (let [num-connected (get-num-connected code)
+        endpoint-pairs (if (< num-connected 4)
+                         (vec (make-curve-endpoints (get-connected-idxs code)))
+                         (vec (filter #(not= 6 (abs (- (% 1) (% 0))))
+                                      (make-curve-endpoints (get-connected-idxs code)))))]
+    (map #(let [f1-thickness (bezier-box-thicknesses (.charAt code (% 0)))
+                f2-thickness (bezier-box-thicknesses (.charAt code (% 1)))]
+            (make-bezier-box-triangles (% 0) (% 1) f1-thickness f2-thickness steps))
+         endpoint-pairs)))
+
+
+(defn get-bezier-box-triangles [code steps]
+  "Gets bezier box triangle strips from cache if present, otherwise computes "
+  "the triangle strips, adds them to the cache, then returns them."
+  (when (not (contains? @bezier-box-tristrip-cache code))
+    (let [strips (make-facecode-bezier-box-triangles code steps)]
+      (swap! bezier-box-tristrip-cache assoc code strips)))
+  (@bezier-box-tristrip-cache code))
+
+
+
 
 (defn draw-bezier-box [f1-idx f2-idx f1-scale f2-scale steps]
   (let [[f1-off f2-off] (get-bezier-anchor-offsets f1-idx f2-idx)
@@ -631,24 +661,14 @@
 
 
 (defn draw-bezier-box-lines [f1-idx f2-idx f1-scale f2-scale steps]
-  (let [;thickness 0.4 
-        [f1-off f2-off] (get-bezier-anchor-offsets f1-idx f2-idx)
-        f1-offsets (map #(vec3-scale % f1-scale) f1-off)
-        f2-offsets (map #(vec3-scale % f2-scale) f2-off)
-        controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
-                       f1-offsets f2-offsets))]
+  (let [[f1-off f2-off] (get-bezier-anchor-offsets f1-idx f2-idx)
+         f1-offsets (map #(vec3-scale % f1-scale) f1-off)
+         f2-offsets (map #(vec3-scale % f2-scale) f2-off)
+         controls (vec (map #(get-bezier-controls-with-offset f1-idx f2-idx %1 %2)
+                            f1-offsets f2-offsets))]
     (doseq [c controls]
       (draw-curve-with-controls c))))
         
-
-(defn make-curve-endpoints-orig [connected-idxs]
-  (let [num-points (count connected-idxs)]
-    (map #(vector %1 (nth connected-idxs (mod (+ %2 1) num-points)))
-         connected-idxs (range num-points))))
-
-
-(defn make-curve-endpoints [connected-idxs]
-  (map vec (vec (combinations connected-idxs 2))))
 
 
 (defn draw-gliders [frame]
@@ -750,6 +770,18 @@
       ))
 
 
+(defn draw-facecode-bezier-boxes [code col]
+  (apply fill col)
+  (stroke 0 0 0 192)
+  (no-stroke)
+  (stroke-weight 2)
+  (doseq [bbox (get-bezier-box-triangles code 8)]
+    (doseq [strip bbox]
+      (begin-shape :triangle-strip)
+      (doseq [[vx vy vz] strip]
+        (vertex vx vy vz))
+      (end-shape))))
+
 (defn draw-facecode-color [code col]
   (let [num-connected (get-num-connected code)
         endpoint-pairs (if (< num-connected 4)
@@ -769,7 +801,7 @@
         (pop-matrix)
         (no-fill)))
 
-    (stroke-weight 8)
+    (stroke-weight 2)
 
     (stroke (col 0) (col 1) (col 2) (col 3)) 
     
@@ -807,9 +839,9 @@
         ;(make-bezier-box-triangles 1 2 0.5 0.5 8)
         
         ;(stroke (col 0) (col 1) (col 2) 255)
-        ;(stroke 128 128 128 255)
-        ;(no-fill)
-        ;(draw-bezier-box-lines (endpoints 0) (endpoints 1) f1-thickness f2-thickness 8)
+        (stroke 128 128 128 255)
+        (no-fill)
+        (draw-bezier-box-lines (endpoints 0) (endpoints 1) f1-thickness f2-thickness 8)
         ))
     
     ;draw tangent vectors
@@ -878,7 +910,7 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 128)]
+          col (conj (get-tile-color code) 255)]
       (when with-boundaries?
         (draw-face-boundaries pos code))
       (with-translation pos 
@@ -886,5 +918,7 @@
         (stroke-weight 8)
         ;(stroke 0 0 0 64)
         (no-fill) 
-        (draw-facecode-color (@tiles pos) col)))))
+        (draw-facecode-bezier-boxes (@tiles pos) col)
+        ;(draw-facecode-color (@tiles pos) col)
+                        ))))
 
