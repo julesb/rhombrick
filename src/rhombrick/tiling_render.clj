@@ -303,7 +303,7 @@
               (if (face-digit-like-compatible? d)
                 (do (fill 160 160 220 255))
                 (do
-                  (if (re-find #"[a-f]+" (str d))
+                  (if (>= (int d) 97)
                     (fill 255 255 255 255)
                     (fill 0 0 0 255))))
               (with-translation (vec3-scale (co-verts i) 0.91)
@@ -822,7 +822,7 @@
 
 (defn draw-facecode-bezier-box-lines [code col]
   (apply stroke col)
-  (stroke-weight 5)
+  (stroke-weight 4)
   (no-fill)
   (doseq [line-verts (get-bezier-box-lines code 8)]
     (doseq [vert line-verts]
