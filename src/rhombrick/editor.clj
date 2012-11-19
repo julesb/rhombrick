@@ -328,7 +328,7 @@
 (defn draw-tile-editor [[x y] code bscale parent-idx]
   (let [bx (+ x (/ bscale 2))
         by (+ y (/ bscale 2))
-        col [64 64 64 190]
+        col (get-tile-color code)
         ang ((symmetries-flattened @symmetry-display-index) 0)
         rads (* (/ ang 180) Math/PI)
         [dx dy dz] ((symmetries-flattened @symmetry-display-index) 1)
@@ -349,8 +349,10 @@
         (hint :enable-depth-test)
         (draw-faces-with-info rd-verts rd-faces col)
         (no-fill)
-        (draw-facecode code)
-        (draw-facecode-color code [128 128 128 255])
+        ;(draw-facecode code)
+        ;(draw-facecode-color code [128 128 128 255])
+        (draw-facecode-bezier-boxes code col)
+        (draw-facecode-bezier-box-lines code col)
         (scale 2)
         (draw-face-boundaries [0 0 0] code)
         (draw-face-idx-numbers [0 0 0] false)
