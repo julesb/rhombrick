@@ -123,6 +123,7 @@
                ;(str "-------------")
                (str "scale: " @model-scale)
                (str "fps: " (int (current-frame-rate)))
+               (str "tileset:" (get-tileset))
                ]]
     (fill 255 255 255 255)
     (doseq [i (range (count lines))]
@@ -354,7 +355,7 @@
 
   (when @draw-gliders?   
     (update-gliders))
-    
+
   (background 32 32 64)
   ;(background 0 0 0)
 
