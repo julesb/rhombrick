@@ -299,7 +299,7 @@
                   [dx dy dz] (vec3-normalize dir)
                   az (Math/atan2 dy dx)
                   el (- (Math/asin dz))
-                  thickness (* 1.333 (bezier-box-thicknesses (.charAt code i)))]
+                  thickness (* 1.3 (bezier-box-thicknesses (.charAt code i)))]
               (if (face-digit-like-compatible? d)
                 (do (fill 160 160 220 255))
                 (do
@@ -348,11 +348,12 @@
         (let [dir (co-verts i)
              [dx dy dz] (vec3-normalize dir)
              az (Math/atan2 dy dx)
-             el (- (Math/asin dz))]
+             el (- (Math/asin dz))
+             tw (text-width (str i))]
           (if use-face-color?
             (fill r g b 192)
             (fill 255 255 255 192))
-          (with-translation (vec3-scale (co-verts i) 0.975)
+          (with-translation (vec3-scale (co-verts i) 1.01) ;0.975)
             (rotate az 0 0 1)
             (rotate el 0 1 0)
             (scale 0.025)
@@ -360,7 +361,7 @@
             (if use-face-color?
               (translate -10 0 0)
               (translate 10 0 0))
-            (text (str i) 0 0 0)                
+            (text (str i) (- tw) 0 0)                
                             ))))))
 
 
