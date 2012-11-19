@@ -109,10 +109,12 @@
             v1 (verts (vert-idx 1))
             v2 (verts (vert-idx 2))
             v3 (verts (vert-idx 3))
-            col (if (seq colors) (colors i) 0)]
+            col-idx (mod i (count colors))
+            [r g b a] (if (= (count colors) 12) (colors col-idx) colors)]
         
         (if (seq colors)
-          (fill (/ (col 0) 3.0) (/ (col 1) 3.0) (/ (col 2) 3.0) 255 ))
+          (stroke r g b a))
+        ;  (fill (/ (col 0) 3.0) (/ (col 1) 3.0) (/ (col 2) 3.0) 255 ))
         (begin-shape :quads)
         (vertex (v0 0) (v0 1) (v0 2))
         (vertex (v1 0) (v1 1) (v1 2))
@@ -973,16 +975,17 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 128)]
+          col (conj (get-tile-color code) 192)
+          line-col [0 0 0 255] ]
       (when with-boundaries?
         (draw-face-boundaries pos code))
       (with-translation pos 
         (scale 0.5)
-        (stroke-weight 8)
+        ;(stroke-weight 8)
         ;(stroke 0 0 0 64)
-        (no-fill) 
+        ;(no-fill) 
         (draw-facecode-bezier-boxes (@tiles pos) col)
-        (draw-facecode-bezier-box-lines (@tiles pos) col)
+        (draw-facecode-bezier-box-lines (@tiles pos) line-col)
         ;(draw-facecode-color (@tiles pos) col)
                         ))))
 
