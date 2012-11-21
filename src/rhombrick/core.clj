@@ -41,7 +41,9 @@
 (def draw-editor? (atom false))
 (def draw-gliders? (atom false))
 (def draw-boundaries? (atom false))
-
+(def draw-bezier-box-lines? (atom true))
+(def draw-bezier-box-faces? (atom true))
+(def tiler-auto-seed? (atom false))
 ; _______________________________________________________________________
 
 
@@ -188,7 +190,7 @@
          (if (= @camera-mode 2)
            (no-cursor)
            (cursor))))
-    \f #(do
+    \F #(do
          (swap! draw-facelist? not)
          (when @draw-facelist?
            (build-face-list))
@@ -238,6 +240,10 @@
           (save-frame))
     \b #(do
           (swap! draw-boundaries? not))
+    \l #(do
+          (swap! draw-bezier-box-lines? not))
+    \f #(do
+          (swap! draw-bezier-box-faces? not))
        })
 
 (def key-editor-map
@@ -336,6 +342,17 @@
     (ellipse 0 0 rad rad)))
 
 
+
+(defn auto-seed-tiler []
+  (when (or (and (> @tiler-iterations 100)
+                 (< (count @tiles) 5))
+            (= @tiler-state :halted))
+      (editor/set-tileset (get-random-tileset))
+      (init-tiler (editor/get-tileset-as-set))
+      (println "random tileset:" (editor/get-tileset-as-set)) 
+      (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
+      (init-gliders num-gliders)))
+
 (defn draw []
   ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
@@ -343,6 +360,11 @@
   ;(when (< (editor/get-level) 2)
     (do-movement-keys)
   ;  )
+
+
+  (when @tiler-auto-seed?
+    (auto-seed-tiler))
+  
 
   (when (= @tiler-state :running)
     (if (and (> (count @empty-positions) 0)
@@ -444,7 +466,9 @@
       (draw-face-list))
       ;(draw-face-list-textured))
 
-    (draw-tiling @draw-boundaries?)
+    (draw-tiling @draw-boundaries?
+                 @draw-bezier-box-faces?
+                 @draw-bezier-box-lines?)
 
     ;(when (seq @empty-positions)
     ;  (draw-empty))

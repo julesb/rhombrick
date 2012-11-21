@@ -292,10 +292,12 @@
     (let [[r g b] (get-tile-color code)]
       (with-translation pos
         (scale 0.5)
-        (stroke-weight 1)
-        (stroke r g b 255)
+        ;(stroke-weight 1)
+        (no-stroke)
+        ;(stroke r g b 255)
         (doseq [i (range 12)]
-          (when (not= (.charAt code i) \-)
+          (when (and (not= (.charAt code i) \-)
+                     (is-empty? (get-neighbour-pos pos i)))
             (let [d (.charAt code i)
                   dir (co-verts i)
                   [dx dy dz] (vec3-normalize dir)
@@ -571,7 +573,9 @@
 
 
 (defn make-curve-endpoints [connected-idxs]
-  (map vec (vec (combinations connected-idxs 2))))
+  (if (> (count connected-idxs) 1)
+    (map vec (vec (combinations connected-idxs 2)))
+    [[(nth connected-idxs 0) (nth connected-idxs 0)]]))
 
 
 (def bezier-box-tristrip-cache (atom {}))
@@ -834,6 +838,7 @@
         (vertex vx vy vz))
       (end-shape))))
 
+
 (defn draw-facecode-bezier-boxes [code col]
   (apply fill col)
   ;(stroke 0 0 0 192)
@@ -971,11 +976,11 @@
 
 
 
-(defn draw-tiling [with-boundaries?]
+(defn draw-tiling [with-boundaries? with-faces? with-lines?]
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 192)
+          col (conj (get-tile-color code) 240)
           line-col [0 0 0 255] ]
       (when with-boundaries?
         (draw-face-boundaries pos code))
@@ -984,8 +989,10 @@
         ;(stroke-weight 8)
         ;(stroke 0 0 0 64)
         ;(no-fill) 
-        (draw-facecode-bezier-boxes (@tiles pos) col)
-        (draw-facecode-bezier-box-lines (@tiles pos) line-col)
+        (when with-faces?
+          (draw-facecode-bezier-boxes (@tiles pos) col))
+        (when with-lines?
+          (draw-facecode-bezier-box-lines (@tiles pos) line-col))
         ;(draw-facecode-color (@tiles pos) col)
                         ))))
 
