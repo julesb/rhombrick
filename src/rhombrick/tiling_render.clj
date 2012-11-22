@@ -827,11 +827,11 @@
       ))
 
 
-(defn draw-facecode-bezier-box-lines [code col]
+(defn draw-facecode-bezier-box-lines [code col steps]
   (apply stroke col)
   (stroke-weight 4)
   (no-fill)
-  (doseq [line-verts (get-bezier-box-lines code 8)]
+  (doseq [line-verts (get-bezier-box-lines code steps)]
     (doseq [vert line-verts]
       (begin-shape)
       (doseq [[vx vy vz] vert]
@@ -839,12 +839,12 @@
       (end-shape))))
 
 
-(defn draw-facecode-bezier-boxes [code col]
+(defn draw-facecode-bezier-boxes [code col steps]
   (apply fill col)
   ;(stroke 0 0 0 192)
   (no-stroke)
   ;(stroke-weight 2)
-  (doseq [bbox (get-bezier-box-triangles code 8)]
+  (doseq [bbox (get-bezier-box-triangles code steps)]
     (doseq [strip bbox]
       (begin-shape :triangle-strip)
       (doseq [[vx vy vz] strip]
@@ -981,7 +981,8 @@
     (let [pos tile
           code (@tiles pos)
           col (conj (get-tile-color code) 240)
-          line-col [0 0 0 255] ]
+          line-col [0 0 0 255]
+          bezier-steps 8]
       (when with-boundaries?
         (draw-face-boundaries pos code))
       (with-translation pos 
@@ -990,9 +991,9 @@
         ;(stroke 0 0 0 64)
         ;(no-fill) 
         (when with-faces?
-          (draw-facecode-bezier-boxes (@tiles pos) col))
+          (draw-facecode-bezier-boxes (@tiles pos) col bezier-steps))
         (when with-lines?
-          (draw-facecode-bezier-box-lines (@tiles pos) line-col))
+          (draw-facecode-bezier-box-lines (@tiles pos) line-col bezier-steps))
         ;(draw-facecode-color (@tiles pos) col)
                         ))))
 
