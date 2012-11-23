@@ -474,14 +474,16 @@
     (draw-horizon)
     (draw-assemblage-radius)
 
-    (when @draw-facelist?
-      (draw-face-list))
+    ;(when @draw-facelist?
+    ;  (draw-face-list))
       ;(draw-face-list-textured))
 
     (draw-tiling @draw-boundaries?
                  @draw-bezier-box-faces?
                  @draw-bezier-box-lines?)
 
+    (when @draw-facelist?
+      (draw-face-list))
     ;(when (seq @empty-positions)
     ;  (draw-empty))
 
