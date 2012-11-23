@@ -123,6 +123,7 @@
                (str "dead: " (count @dead-loci))
                (str "radius: " @assemblage-max-radius)
                ;(str "-------------")
+               (str "bbox detail: " @bezier-box-resolution)
                (str "scale: " @model-scale)
                (str "fps: " (int (current-frame-rate)))
                (str "tileset:" (get-tileset))
@@ -244,6 +245,14 @@
           (swap! draw-bezier-box-lines? not))
     \f #(do
           (swap! draw-bezier-box-faces? not))
+    \_ #(do
+          (when (> @bezier-box-resolution 1)
+            (swap! bezier-box-resolution dec)
+            (bezier-box-cache-reset)))
+    \+ #(do
+          (when (< @bezier-box-resolution 32)
+            (swap! bezier-box-resolution inc)
+            (bezier-box-cache-reset)))
        })
 
 (def key-editor-map
@@ -493,7 +502,7 @@
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info 10 (- (height) 180))
+  (draw-info 10 (- (height) 170))
   (camera)
 
   (when (> (editor/get-level) 0)

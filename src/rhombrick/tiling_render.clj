@@ -12,6 +12,7 @@
 (def rhomb-tex (atom nil))
 (def current-tileset-colors (atom {}))
 (def model-scale (atom 50))
+(def bezier-box-resolution (atom 8))
 
 ; map facecode digit to bezier anchor scale
 (def bezier-box-thicknesses {\1 0.25
@@ -905,13 +906,17 @@
 
         (no-stroke)
         (fill (col 0) (col 1) (col 2) 255)
-        (draw-bezier-box2 (endpoints 0) (endpoints 1) f1-thickness f2-thickness 8)
+        (draw-bezier-box2 (endpoints 0) (endpoints 1)
+                          f1-thickness f2-thickness
+                          @bezier-box-resolution)
         ;(make-bezier-box-triangles 1 2 0.5 0.5 8)
         
         ;(stroke (col 0) (col 1) (col 2) 255)
         (stroke 128 128 128 255)
         (no-fill)
-        (draw-bezier-box-lines (endpoints 0) (endpoints 1) f1-thickness f2-thickness 8)
+        (draw-bezier-box-lines (endpoints 0) (endpoints 1)
+                               f1-thickness f2-thickness
+                               @bezier-box-resolution)
         ))
     
     ;draw tangent vectors
@@ -982,7 +987,7 @@
           code (@tiles pos)
           col (conj (get-tile-color code) 240)
           line-col [0 0 0 255]
-          bezier-steps 8]
+          bezier-steps @bezier-box-resolution]
       (when with-boundaries?
         (draw-face-boundaries pos code))
       (with-translation pos 
