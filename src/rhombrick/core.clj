@@ -170,14 +170,16 @@
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
          (soft-init-tiler (editor/get-tileset-as-set))
-         (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
-         (init-gliders num-gliders))
+         ;(make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
+         ;(init-gliders num-gliders)
+         )
    \R #(do 
          (editor/set-tileset (get-random-tileset))
          (init-tiler (editor/get-tileset-as-set))
-         (println "random tileset:" (editor/get-tileset-as-set)) 
-         (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
-         (init-gliders num-gliders)
+         (println "random tileset:" (editor/get-tileset-as-set))
+         ;(.start (Thread. run-backtracking-tiling-thread))
+         ;(make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
+         ;(init-gliders num-gliders)
          )
    \- #(do 
          (swap! camera-fov - 1)
@@ -233,10 +235,10 @@
           (editor/load-next-library-tileset))
     \S #(do
           (editor/save-current-tileset-to-library))
-    \n #(do
-          (swap! symmetry-display-index dec))
-    \m #(do
-          (swap! symmetry-display-index inc))
+    ;\n #(do
+    ;      (swap! symmetry-display-index dec))
+    ;\m #(do
+    ;      (swap! symmetry-display-index inc))
     \# #(do
           (save-frame))
     \b #(do
@@ -362,6 +364,7 @@
       (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
       (init-gliders num-gliders)))
 
+
 (defn draw []
   ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
@@ -371,18 +374,18 @@
   ;  )
 
 
-  (when @tiler-auto-seed?
-    (auto-seed-tiler))
+;  (when @tiler-auto-seed?
+;    (auto-seed-tiler))
   
 
-  (when (= @tiler-state :running)
-    (if (and (> (count @empty-positions) 0)
-             (> (count (editor/get-tileset)) 0))
-      ;(make-backtracking-tiling-iteration2 @tiles @current-tileset)
-      (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
-      (do
-        (build-face-list)
-        (halt-tiler))))
+;  (when (= @tiler-state :running)
+;    (if (and (> (count @empty-positions) 0)
+;             (> (count (editor/get-tileset)) 0))
+;      ;(make-backtracking-tiling-iteration2 @tiles @current-tileset)
+;      (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
+;      (do
+;        (build-face-list)
+;        (halt-tiler))))
 
   (when @draw-gliders?   
     (update-gliders))

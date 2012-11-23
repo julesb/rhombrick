@@ -31,6 +31,7 @@
 (def assemblage-center (atom [0 0 0]))
 (def assemblage-max-radius (atom 6))
 (def dead-loci (atom #{}))
+(def empty-positions (atom #{}))
 (def tileset-expanded (atom #{}))
 (def facecode-compatible #{
   [\- \-]
@@ -111,17 +112,37 @@
 
 
 (defn find-assemblage-center []
-  (vec3-scale (reduce vec3-add (keys @tiles))
-              (/ 1 (count @tiles))))
+  (if (> (count @tiles) 0)
+    (vec3-scale (reduce vec3-add (keys @tiles))
+                (/ 1 (count @tiles)))
+    [0 0 0]))
 
+
+(defn init-empty-positions []
+  (reset! empty-positions #{}))
+
+
+(defn add-to-empty-positions [pos]
+  (if (and (< (+ (count @empty-positions) (count @tiles))
+         @max-tiles)
+           (< (vec3-length pos) @assemblage-max-radius))
+    (swap! empty-positions conj pos)))
+
+
+(defn remove-from-empty-positions [pos]
+  (swap! empty-positions disj pos))
+
+(defn is-empty? [pos]
+  (not (contains? @tiles pos)))
 
 (defn get-neighbour-pos [pos face]
   (vec3-add pos (rd-neighbour-offsets face)))
 
-
 (defn get-neighbours [pos]
   (vec (map #(get-neighbour-pos pos %) (range 12))))
 
+(defn get-connected-neighbours [pos]
+  (filter #(not (is-empty? %)) (get-neighbours pos)))
 
 (defn get-neighbourhood [pos]
   "returns a vector containing facecodes for all neighbours"
@@ -129,8 +150,6 @@
 
 
 
-(defn is-empty? [pos]
-  (not (contains? @tiles pos)))
 
 
 (defn make-tile [pos facecode]
@@ -139,13 +158,16 @@
 
 
 (defn delete-tile [pos]
+;  (doseq [nb-pos (get-connected-neighbours pos)]
+;    (when (contains? @empty-positions nb-pos)
+;      (remove-from-empty-positions nb-pos)))
   (swap! tiles dissoc pos))
 
 
 (defn delete-neighbours [pos]
-  (doseq [pos (get-neighbours pos)]
-    (delete-tile [pos]) 
-  ))
+  (doseq [nb-pos (get-neighbours pos)]
+    (delete-tile nb-pos)))
+
 
 (defn neighbour-states [pos]
   "Returns vector of boolean, one for each neighbour. The value represents "
@@ -250,22 +272,7 @@
 
 
 
-(def empty-positions (atom #{}))
 
-
-(defn init-empty-positions []
-  (reset! empty-positions #{}))
-
-
-(defn add-to-empty-positions [pos]
-  (if (and (< (+ (count @empty-positions) (count @tiles))
-         @max-tiles)
-           (< (vec3-length pos) @assemblage-max-radius))
-    (swap! empty-positions conj pos)))
-
-
-(defn remove-from-empty-positions [pos]
-  (swap! empty-positions disj pos))
 
 
 ;(defn push-neighbours-to-empty-positions [pos]
@@ -432,38 +439,6 @@
             (expand-tiles-preserving-symmetry tileset))))
 
 
-(defn seed-tiler [tileset]
-  (when (> (count tileset) 0)
-  (let [pos [0 0 0]
-        code (rand-nth (vec (expand-tiles-preserving-symmetry tileset)))]
-    (make-tile pos code) 
-    (push-connected-neighbours-to-empty-positions pos))))
-
-; _______________________________________________________________________
-
-
-(defn init-tiler [tileset]
-  (reset! tiles {})
-  (reset! tiler-iterations 0)
-  (reset! face-list #{})
-  (update-tileset-expanded tileset)
-  (init-empty-positions)
-  (init-dead-loci)
-  (seed-tiler tileset)
-  (reset! tiler-state :running)
-  (println "tiler started"))
-
-; same as init-tiles but doesnt reset dead-loci
-(defn soft-init-tiler [tileset]
-  (reset! tiles {})
-  (reset! tiler-iterations 0)
-  (reset! face-list #{})
-  (update-tileset-expanded tileset)
-  (init-empty-positions)
-  (seed-tiler tileset)
-  (reset! tiler-state :running)
-  (println "tiler started"))
-
 
 
 (defn halt-tiler []
@@ -472,8 +447,8 @@
            "tiles:" (count @tiles)
            "iters:" @tiler-iterations
            "dead:" (count @dead-loci)
-           "i/t" (float (/ @tiler-iterations (count @tiles)))
-           "t/i" (float (/ (count @tiles) @tiler-iterations ))
+           ;"i/t" (float (/ @tiler-iterations (count @tiles)))
+           ;"t/i" (float (/ (count @tiles) @tiler-iterations ))
            ;"tileset:" @rhombrick.editor/current-tileset))
            ))
 
@@ -623,7 +598,6 @@
       ; remove n most recent @tiles
       (reset! tiles (ordered-map (take ni @tiles)))
       (reset! assemblage-center (find-assemblage-center))
-      (update-empty-positions)
       ;(println "| tiles:" num-tiles 
       ;         "| backtracked:" n)
       (build-face-list)
@@ -638,22 +612,68 @@
       (if (nil? new-code)
         (do
           (add-to-dead-loci (get-outer-facecode2 new-neighbourhood))
-          (delete-neighbours new-pos))
+          (delete-neighbours new-pos)
+          (update-empty-positions))
         (do
           (make-tile new-pos new-code)
           (reset! assemblage-center (find-assemblage-center))))
       (if (or (creates-untileable-region? new-pos)
               (nil? new-code))
         (do
+          (add-to-dead-loci new-pos)
           (delete-tile new-pos)
           (delete-neighbours new-pos)
-          (backtrack))
+          (backtrack)
+          (update-empty-positions))
         (do
           (add-tile-to-facelist new-pos)
           (push-connected-neighbours-to-empty-positions new-pos)
           (remove-from-empty-positions new-pos)))
       (swap! tiler-iterations inc))
     (halt-tiler)))
+
+
+(defn run-backtracking-tiling-thread [tiles tileset]
+  (while (and (= @tiler-state :running)
+              (> (count @empty-positions) 0)
+              (> (count tileset) 0))
+      (make-backtracking-tiling-iteration2 tiles tileset))
+  (println "tiler thread ended"))
+
+(defn seed-tiler [tileset]
+  (when (> (count tileset) 0)
+  (let [pos [0 0 0]
+        code (rand-nth (vec (expand-tiles-preserving-symmetry tileset)))]
+    (make-tile pos code) 
+    (push-connected-neighbours-to-empty-positions pos))))
+
+; _______________________________________________________________________
+
+
+(defn init-tiler [tileset]
+  (reset! tiles {})
+  (reset! tiler-iterations 0)
+  (reset! face-list #{})
+  (update-tileset-expanded tileset)
+  (init-empty-positions)
+  (init-dead-loci)
+  (seed-tiler tileset)
+  (reset! tiler-state :running)
+  (future (run-backtracking-tiling-thread @tiles tileset))
+  (println "tiler started"))
+
+; same as init-tiles but doesnt reset dead-loci
+(defn soft-init-tiler [tileset]
+  (reset! tiles {})
+  (reset! tiler-iterations 0)
+  (reset! face-list #{})
+  (update-tileset-expanded tileset)
+  (init-empty-positions)
+  (seed-tiler tileset)
+  (reset! tiler-state :running)
+  (future (run-backtracking-tiling-thread @tiles tileset))
+  (println "tiler started"))
+
 
 ; _______________________________________________________________________
 

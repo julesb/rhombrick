@@ -841,7 +841,8 @@
 
 
 (defn draw-facecode-bezier-boxes [code col steps]
-  (apply fill col)
+  
+  (when (contains? #{3 4} (count col)) (apply fill col))
   ;(stroke 0 0 0 192)
   (no-stroke)
   ;(stroke-weight 2)
