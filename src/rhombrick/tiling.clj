@@ -33,6 +33,8 @@
 (def dead-loci (atom #{}))
 (def empty-positions (atom #{}))
 (def tileset-expanded (atom #{}))
+(def tiler-thread (atom nil))
+
 (def facecode-compatible #{
   [\- \-]
   [\1 \1]
@@ -165,8 +167,8 @@
 
 
 (defn delete-neighbours [pos]
-  (doseq [nb-pos (get-neighbours pos)]
-    (delete-tile nb-pos)))
+  (doseq [pos (get-neighbours pos)]
+    (delete-tile pos)))
 
 
 (defn neighbour-states [pos]
@@ -443,6 +445,7 @@
 
 (defn halt-tiler []
   (reset! tiler-state :halted)
+  (future-cancel @tiler-thread)
   (println "#  HALTED - "
            "tiles:" (count @tiles)
            "iters:" @tiler-iterations
@@ -598,6 +601,7 @@
       ; remove n most recent @tiles
       (reset! tiles (ordered-map (take ni @tiles)))
       (reset! assemblage-center (find-assemblage-center))
+      (update-empty-positions)
       ;(println "| tiles:" num-tiles 
       ;         "| backtracked:" n)
       (build-face-list)
@@ -612,19 +616,23 @@
       (if (nil? new-code)
         (do
           (add-to-dead-loci (get-outer-facecode2 new-neighbourhood))
-          (delete-neighbours new-pos)
-          (update-empty-positions))
+          ;(delete-neighbours new-pos)
+          ;(update-empty-positions)
+          )
         (do
           (make-tile new-pos new-code)
           (reset! assemblage-center (find-assemblage-center))))
       (if (or (creates-untileable-region? new-pos)
               (nil? new-code))
         (do
-          (add-to-dead-loci new-pos)
+          ;(add-to-dead-loci new-pos)
+          ;(when (> (count @tiles) 1)
           (delete-tile new-pos)
           (delete-neighbours new-pos)
           (backtrack)
-          (update-empty-positions))
+          ;(update-empty-positions)
+            )
+          ;)
         (do
           (add-tile-to-facelist new-pos)
           (push-connected-neighbours-to-empty-positions new-pos)
@@ -634,11 +642,16 @@
 
 
 (defn run-backtracking-tiling-thread [tiles tileset]
-  (while (and (= @tiler-state :running)
-              (> (count @empty-positions) 0)
-              (> (count tileset) 0))
+  (when (not= @tiler-state :running)
+    (reset! tiler-state :running)
+    (while (and (= @tiler-state :running)
+                (> (count @empty-positions) 0)
+                (> (count tileset) 0))
       (make-backtracking-tiling-iteration2 tiles tileset))
-  (println "tiler thread ended"))
+    (halt-tiler)
+    (println "tiler thread ended")
+  ))
+
 
 (defn seed-tiler [tileset]
   (when (> (count tileset) 0)
@@ -651,6 +664,8 @@
 
 
 (defn init-tiler [tileset]
+  (when (not= @tiler-thread nil)
+    (halt-tiler))
   (reset! tiles {})
   (reset! tiler-iterations 0)
   (reset! face-list #{})
@@ -658,20 +673,21 @@
   (init-empty-positions)
   (init-dead-loci)
   (seed-tiler tileset)
-  (reset! tiler-state :running)
-  (future (run-backtracking-tiling-thread @tiles tileset))
+  ;(reset! tiler-state :running)
+  (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
   (println "tiler started"))
 
 ; same as init-tiles but doesnt reset dead-loci
 (defn soft-init-tiler [tileset]
+  (halt-tiler) 
   (reset! tiles {})
   (reset! tiler-iterations 0)
   (reset! face-list #{})
   (update-tileset-expanded tileset)
   (init-empty-positions)
   (seed-tiler tileset)
-  (reset! tiler-state :running)
-  (future (run-backtracking-tiling-thread @tiles tileset))
+  ;(reset! tiler-state :running)
+  (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
   (println "tiler started"))
 
 
