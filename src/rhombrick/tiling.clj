@@ -50,19 +50,6 @@
                            })
 
 
-
-; interesting tilesets:
-;
-; (set-current-tileset ...)
-; #{"a01b01A01B01" "00000A00000a" "00000B00000b"})
-; #{"000000001001" "000000001101" "a01b01A01B01" "00000A00000a" "00000B00000b"}
-; #{"000000001001" "A00100a00100" "111111111111" "A00a00A00a00" "000001000001"
-;   "00000a00000a" "A00000A00000"}
-; #{"111111111111" "100000a00000" "A00000b00000" "B00000100000" }
-; #{"000000010001" "A000a0001000"}
-; ["A-AAA-A-AAA-" "-----A-----1" "-----a-----1" "-----1-----1"] 
-; ["-----------1" "-A1--11aA---" "--------a---" "-1---------1" "-A------1-1-"]
-;
 ; _______________________________________________________________________
 
 (defn get-num-connected [code]
@@ -93,7 +80,6 @@
                 \d \d \d \d
                 \D \D \D \D
                 ]
-
         code (apply str (map (fn [_] (rand-nth digits)) (range 12)))]
     (if (= code "------------") "-----------1" code)))
 
@@ -102,9 +88,6 @@
   (let [num-tiles (+ 1 (rand-int 5))]
     (vec (map (fn [_] (make-random-tilecode))
          (range num-tiles)))))
-
-
-; _______________________________________________________________________
 
 
 (defn update-assemblage-center [new-pos]
@@ -149,9 +132,6 @@
 (defn get-neighbourhood [pos]
   "returns a vector containing facecodes for all neighbours"
   (vec (map #(@tiles (get-neighbour-pos pos %)) (range 12))))
-
-
-
 
 
 (defn make-tile [pos facecode]
@@ -601,7 +581,7 @@
       ; remove n most recent @tiles
       (reset! tiles (ordered-map (take ni @tiles)))
       (reset! assemblage-center (find-assemblage-center))
-      (update-empty-positions)
+      ;(update-empty-positions)
       ;(println "| tiles:" num-tiles 
       ;         "| backtracked:" n)
       (build-face-list)
@@ -609,6 +589,7 @@
     
 
 (defn make-backtracking-tiling-iteration2 [tiles tileset]
+  (update-empty-positions)
   (if-let [positions (choose-positions tileset)]
     (let [new-pos (find-closest-to-point positions (find-assemblage-center))
           new-neighbourhood (get-neighbourhood new-pos)
@@ -616,7 +597,7 @@
       (if (nil? new-code)
         (do
           (add-to-dead-loci (get-outer-facecode2 new-neighbourhood))
-          ;(delete-neighbours new-pos)
+          (delete-neighbours new-pos)
           ;(update-empty-positions)
           )
         (do
@@ -627,8 +608,9 @@
         (do
           ;(add-to-dead-loci new-pos)
           ;(when (> (count @tiles) 1)
-          (delete-tile new-pos)
-          (delete-neighbours new-pos)
+            (delete-tile new-pos)
+          ;)
+          ;(delete-neighbours new-pos)
           (backtrack)
           ;(update-empty-positions)
             )
@@ -647,7 +629,7 @@
     (while (and (= @tiler-state :running)
                 (> (count @empty-positions) 0)
                 (> (count tileset) 0))
-      (make-backtracking-tiling-iteration2 tiles tileset))
+      (dosync (make-backtracking-tiling-iteration2 tiles tileset)))
     (halt-tiler)
     (println "tiler thread ended")
   ))
@@ -674,8 +656,11 @@
   (init-dead-loci)
   (seed-tiler tileset)
   ;(reset! tiler-state :running)
-  (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
-  (println "tiler started"))
+  (if (nil? @tiler-thread)
+    (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
+    (if (future-done? @tiler-thread)
+      (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
+      (println "tiler thread already running, not starting"))))
 
 ; same as init-tiles but doesnt reset dead-loci
 (defn soft-init-tiler [tileset]
@@ -687,8 +672,11 @@
   (init-empty-positions)
   (seed-tiler tileset)
   ;(reset! tiler-state :running)
-  (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
-  (println "tiler started"))
+  (if (nil? @tiler-thread)
+    (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
+    (if (future-done? @tiler-thread)
+      (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
+      (println "tiler thread already running, not starting"))))
 
 
 ; _______________________________________________________________________

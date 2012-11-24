@@ -481,6 +481,8 @@
     (draw-tiling @draw-boundaries?
                  @draw-bezier-box-faces?
                  @draw-bezier-box-lines?)
+    
+    (draw-assemblage-center)
 
     (when @draw-facelist?
       (draw-face-list))
@@ -489,14 +491,10 @@
 
     ;(lights)
     (when @draw-gliders?
-      (let [selected-tile ((get-glider 1) :current-tile)
-            tile-color (get-group-color selected-tile)]
+      (let [selected-tile ((get-glider 1) :current-tile)]
         ;(draw-neighbours selected-tile)
         ;(draw-curve-boundary-points selected-tile)
-        (draw-selected-tile selected-tile)
-        ;(point-light (tile-color 0) (tile-color 1) (tile-color 2)
-        ;             (selected-tile 0) (selected-tile 1) (selected-tile 2))
-        ))
+        (draw-selected-tile selected-tile)))
     (pop-matrix)
   )
 

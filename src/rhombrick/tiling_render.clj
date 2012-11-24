@@ -14,6 +14,8 @@
 (def model-scale (atom 50))
 (def bezier-box-resolution (atom 8))
 
+(def face-id-text (atom []))
+
 ; map facecode digit to bezier anchor scale
 (def bezier-box-thicknesses {\1 0.25
                              \2 0.5
@@ -30,31 +32,30 @@
                              })
 
 
-(defn draw-rhomb-verts []
-  (stroke 0 0 255 255)
-  (doseq [v rd-verts]
-    (point (v 0) (v 1) (v 2))
-    ))
-
+;(defn draw-rhomb-verts []
+;  (stroke 0 0 255 255)
+;  (doseq [v rd-verts]
+;    (point (v 0) (v 1) (v 2))
+;    ))
+; _______________________________________________________________________
+;
+;
+;(defn draw-verts [vert-array]
+;  (doseq [v vert-array]
+;    (point (v 0) (v 1) (v 2))
+;    ))
+;
 ; _______________________________________________________________________
 
 
-(defn draw-verts [vert-array]
-  (doseq [v vert-array]
-    (point (v 0) (v 1) (v 2))
-    ))
-
-; _______________________________________________________________________
 
 
-
-
-(defn compute-tile-color-1 [code]
-  (if (not= nil code)
-    (let [n (hash (apply str (set (rotations code))))
-          c (int (mod n 12))]
-      (rd-face-colors c))
-    [255 0 0]))
+;(defn compute-tile-color-1 [code]
+;  (if (not= nil code)
+;    (let [n (hash (apply str (set (rotations code))))
+;          c (int (mod n 12))]
+;      (rd-face-colors c))
+;    [255 0 0]))
 
 
 
@@ -78,30 +79,27 @@
       (@current-tileset-colors code))))
 
 
-(defn get-group-color [code]
-  (rd-face-colors (mod (count (get-connected-idxs code))
-                       12)))
+;(defn get-group-color [code]
+;  (rd-face-colors (mod (count (get-connected-idxs code))
+;                       12)))
 
 
-(defn get-unique-color [code])
-
-
-(defn draw-connected-faces [code]
-  (let [col (get-tile-color code)]
-    (fill (col 0) (col 1) (col 2) 128)
-    (doseq [idx (get-connected-idxs code)]
-      (let [vert-idx (rd-faces idx)
-            v0 (rd-verts (vert-idx 0))
-            v1 (rd-verts (vert-idx 1))
-            v2 (rd-verts (vert-idx 2))
-            v3 (rd-verts (vert-idx 3))]
-        (begin-shape :quads)
-        (vertex (v0 0) (v0 1) (v0 2))
-        (vertex (v1 0) (v1 1) (v1 2))
-        (vertex (v2 0) (v2 1) (v2 2))
-        (vertex (v3 0) (v3 1) (v3 2))
-        (end-shape)))))
-
+;(defn draw-connected-faces [code]
+;  (let [col (get-tile-color code)]
+;    (fill (col 0) (col 1) (col 2) 128)
+;    (doseq [idx (get-connected-idxs code)]
+;      (let [vert-idx (rd-faces idx)
+;            v0 (rd-verts (vert-idx 0))
+;            v1 (rd-verts (vert-idx 1))
+;            v2 (rd-verts (vert-idx 2))
+;            v3 (rd-verts (vert-idx 3))]
+;        (begin-shape :quads)
+;        (vertex (v0 0) (v0 1) (v0 2))
+;        (vertex (v1 0) (v1 1) (v1 2))
+;        (vertex (v2 0) (v2 1) (v2 2))
+;        (vertex (v3 0) (v3 1) (v3 2))
+;        (end-shape)))))
+;
 
 (defn draw-faces [verts faces colors]
   (doseq [i (range (count faces))]
@@ -139,45 +137,42 @@
       (vertex (v3 0) (v3 1) (v3 2))
       (end-shape))))
 
-(def face-id-text (atom []))
 
-
-(defn draw-faces-with-info [verts faces col]
-  (reset! face-id-text [])
-  (apply stroke col)
-  (doseq [i (range (count faces))]
-    (let [vert-idx (faces i)
-          v0 (verts (vert-idx 0))
-          v1 (verts (vert-idx 1))
-          v2 (verts (vert-idx 2))
-          v3 (verts (vert-idx 3))
-          sx (screen-x (v0 0) (v0 1) (v0 2))
-          sy (screen-y (v0 0) (v0 1) (v0 2))
-          sz (screen-z (v0 0) (v0 1) (v0 2))
-          v0-sc (vec3-scale v0 50)]
-      ;(println "screen-z:" sz)
-      (no-fill)
-      (begin-shape :quads)
-      (vertex (v0 0) (v0 1) (v0 2))
-      (vertex (v1 0) (v1 1) (v1 2))
-      (vertex (v2 0) (v2 1) (v2 2))
-      (vertex (v3 0) (v3 1) (v3 2))
-      (end-shape)
-      (swap! face-id-text conj [i v0-sc])
-      ;(hint :disable-depth-test)
-      ;(fill 255 255 255 255)
-      ;(text (str i) sx sy)
-      ;(hint :enable-depth-test)
-      )))
+;(defn draw-faces-with-info [verts faces col]
+;  (reset! face-id-text [])
+;  (apply stroke col)
+;  (doseq [i (range (count faces))]
+;    (let [vert-idx (faces i)
+;          v0 (verts (vert-idx 0))
+;          v1 (verts (vert-idx 1))
+;          v2 (verts (vert-idx 2))
+;          v3 (verts (vert-idx 3))
+;          sx (screen-x (v0 0) (v0 1) (v0 2))
+;          sy (screen-y (v0 0) (v0 1) (v0 2))
+;          sz (screen-z (v0 0) (v0 1) (v0 2))
+;          v0-sc (vec3-scale v0 50)]
+;      ;(println "screen-z:" sz)
+;      (no-fill)
+;      (begin-shape :quads)
+;      (vertex (v0 0) (v0 1) (v0 2))
+;      (vertex (v1 0) (v1 1) (v1 2))
+;      (vertex (v2 0) (v2 1) (v2 2))
+;      (vertex (v3 0) (v3 1) (v3 2))
+;      (end-shape)
+;      (swap! face-id-text conj [i v0-sc])
+;      ;(hint :disable-depth-test)
+;      ;(fill 255 255 255 255)
+;      ;(text (str i) sx sy)
+;      ;(hint :enable-depth-test)
+;      )))
 ; _______________________________________________________________________
 
 
 (defn draw-face-list []
-  (fill 32 32 32 245)
+  (fill 32 32 32 128)
   ;(no-fill)
   ;(stroke 0 0 0 192)
   (stroke 40 40 40 190)
-
   (stroke-weight 4)
   ;(no-stroke)
   (doseq [face-verts @face-list]
@@ -252,23 +247,23 @@
 ; _______________________________________________________________________
 
 
-(defn draw-curve-boundary-points [pos]
-  (when (contains? @tiles pos)
-    (let [code (@tiles pos)
-          num-connected (get-num-connected code)
-          col (get-tile-color code)] ;(rd-face-colors (mod num-connected 12))]
-      (no-stroke)
-      (fill (col 0) (col 1) (col 2) 240)
-      (with-translation pos
-        (scale 0.5)
-        (doseq [i (range 12)]
-          (if (not= (.charAt code i) \-)
-           (with-translation (co-verts i)
-            (scale 0.02)
-            ;(sphere 0.05)
-            (draw-faces rd-verts rd-faces nil)
-                             )))))))
-  
+;(defn draw-curve-boundary-points [pos]
+;  (when (contains? @tiles pos)
+;    (let [code (@tiles pos)
+;          num-connected (get-num-connected code)
+;          col (get-tile-color code)] ;(rd-face-colors (mod num-connected 12))]
+;      (no-stroke)
+;      (fill (col 0) (col 1) (col 2) 240)
+;      (with-translation pos
+;        (scale 0.5)
+;        (doseq [i (range 12)]
+;          (if (not= (.charAt code i) \-)
+;           (with-translation (co-verts i)
+;            (scale 0.02)
+;            ;(sphere 0.05)
+;            (draw-faces rd-verts rd-faces nil)
+;                             )))))))
+;  
 
 (defn draw-face-boundaries-basic [pos]
   (when (contains? @tiles pos)
@@ -466,8 +461,8 @@
 
 (defn draw-assemblage-center []
   (let [[cx cy cz] @assemblage-center]
-    (stroke 255 255 0 32)
-    (stroke-weight 1)
+    (stroke 255 0 0 192)
+    (stroke-weight 4)
     ;(fill 255 255 0 32)
     (no-fill)
     (with-translation @assemblage-center
@@ -534,22 +529,22 @@
           (line (b 0) (b 1) (b 2) (bts 0) (bts 1) (bts 2)))))))
 
 
-(defn draw-curve-solid [f1-idx f2-idx steps]
-  (when (not= f1-idx f2-idx)
-    (doseq [i (range 1 (inc steps))]
-      (let [t (* i (/ 1 steps))
-            bp (get-bezier-point-3d f1-idx f2-idx t)
-            prev-bp (get-bezier-point-3d f1-idx f2-idx (- t (/ 1 steps)))
-            pos (vec3-scale (vec3-add bp prev-bp) 0.5)
-            [dx dy dz] (vec3-normalize (vec3-sub bp prev-bp))
-            az (Math/atan2 dy dx)
-            el (- (Math/asin dz))]
-        (with-translation pos ; bp
-          (scale 0.5)
-          (rotate az 0 0 1)
-          (rotate el 0 1 0)
-          (box 0.25 0.5 0.5))))))
-
+;(defn draw-curve-solid [f1-idx f2-idx steps]
+;  (when (not= f1-idx f2-idx)
+;    (doseq [i (range 1 (inc steps))]
+;      (let [t (* i (/ 1 steps))
+;            bp (get-bezier-point-3d f1-idx f2-idx t)
+;            prev-bp (get-bezier-point-3d f1-idx f2-idx (- t (/ 1 steps)))
+;            pos (vec3-scale (vec3-add bp prev-bp) 0.5)
+;            [dx dy dz] (vec3-normalize (vec3-sub bp prev-bp))
+;            az (Math/atan2 dy dx)
+;            el (- (Math/asin dz))]
+;        (with-translation pos ; bp
+;          (scale 0.5)
+;          (rotate az 0 0 1)
+;          (rotate el 0 1 0)
+;          (box 0.25 0.5 0.5))))))
+;
 
 (defn draw-curve [f1-idx f2-idx]
   (when (not= f1-idx f2-idx)
@@ -573,10 +568,13 @@
          connected-idxs (range num-points))))
 
 
+;(defn make-curve-endpoints [connected-idxs]
+;  (if (> (count connected-idxs) 1)
+;    (map vec (vec (combinations connected-idxs 2)))
+;    [[(nth connected-idxs 0) (nth connected-idxs 0)]]))
+
 (defn make-curve-endpoints [connected-idxs]
-  (if (> (count connected-idxs) 1)
-    (map vec (vec (combinations connected-idxs 2)))
-    [[(nth connected-idxs 0) (nth connected-idxs 0)]]))
+  (map vec (vec (combinations connected-idxs 2))))
 
 
 (def bezier-box-tristrip-cache (atom {}))
@@ -636,8 +634,6 @@
             (get-bezier-points c1 steps))
             ;(apply concat (get-bezier-points c1 steps)))
          (range (count controls)))))
-
-
 
 
 (defn draw-bezier-box2 [f1-idx f2-idx f1-scale f2-scale steps]
@@ -736,7 +732,6 @@
     (push-style)
     (stroke-weight 4)
     (stroke 255 255 192 192)
-    ;(let [tile-color (get-group-color (@tiles ((get-glider 1) :current-tile)))]
     (doseq [glider @gliders]
       (let [pos (get-glider-pos (glider :id))
             col (glider :color)
@@ -771,10 +766,8 @@
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (get-num-connected code)
         col (get-tile-color code); (rd-face-colors (mod num-connected 12))
-        col2 (get-group-color code)
         fill-col (rd-face-colors 
                    (connecting-faces (mod num-connected 12)))
-        ;col-idx (mod (Integer/parseInt code 2) 12)
         ]
     (push-style)
 
@@ -930,52 +923,52 @@
       ))
 
 
-(defn draw-facecode-lite [code]
-  (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
-        num-connected (count (filter #(= \1 %) code))
-        ;col (get-tile-color code) ; (rd-face-colors (mod num-connected 12))
-        col (get-group-color code) ;(rd-face-colors (mod num-connected 12))
-        col (compute-tile-color code)
-        ;col2 (get-group-color code)
-        ;fill-col (rd-face-colors 
-        ;           (connecting-faces (mod num-connected 12)))
-        ;col-idx (mod (Integer/parseInt code 2) 12)
-        ]
-    (push-style)
-    (if (= code nil)
-      (do 
-        (fill 255 32 32 128)
-        ;(no-fill)
-        (stroke 255 0 0 192)
-        (push-matrix)
-        (scale 0.05)
-        (box 1 1 1)
-        (pop-matrix)
-        (no-fill)))
-     
-    (stroke (col 0) (col 1) (col 2) 128)
-    ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
-    ;(stroke 150 150 255 128)
-    
-    (if (= num-connected 1)
-      (let [p (co-verts (first (get-connected-idxs code)))]
-        (line 0 0 0 (p 0) (p 1) (p 2))
-        (fill 255 128 128 128)
-        (box 0.05125 0.05125 0.05125)
-        (no-fill))
-        )
-
-    (stroke-weight 4)
-    (stroke (col 0) (col 1) (col 2) 192)
-    (doseq [endpoints endpoint-pairs]
-      (draw-curve (endpoints 0) (endpoints 1)))
-    
-;    (stroke-weight 2)
+;(defn draw-facecode-lite [code]
+;  (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
+;        num-connected (count (filter #(= \1 %) code))
+;        ;col (get-tile-color code) ; (rd-face-colors (mod num-connected 12))
+;        col (get-group-color code) ;(rd-face-colors (mod num-connected 12))
+;        col (compute-tile-color code)
+;        ;col2 (get-group-color code)
+;        ;fill-col (rd-face-colors 
+;        ;           (connecting-faces (mod num-connected 12)))
+;        ;col-idx (mod (Integer/parseInt code 2) 12)
+;        ]
+;    (push-style)
+;    (if (= code nil)
+;      (do 
+;        (fill 255 32 32 128)
+;        ;(no-fill)
+;        (stroke 255 0 0 192)
+;        (push-matrix)
+;        (scale 0.05)
+;        (box 1 1 1)
+;        (pop-matrix)
+;        (no-fill)))
+;     
+;    (stroke (col 0) (col 1) (col 2) 128)
+;    ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
+;    ;(stroke 150 150 255 128)
+;    
+;    (if (= num-connected 1)
+;      (let [p (co-verts (first (get-connected-idxs code)))]
+;        (line 0 0 0 (p 0) (p 1) (p 2))
+;        (fill 255 128 128 128)
+;        (box 0.05125 0.05125 0.05125)
+;        (no-fill))
+;        )
+;
+;    (stroke-weight 4)
 ;    (stroke (col 0) (col 1) (col 2) 192)
 ;    (doseq [endpoints endpoint-pairs]
 ;      (draw-curve (endpoints 0) (endpoints 1)))
-    (pop-style)
-      ))
+;    
+;;    (stroke-weight 2)
+;;    (stroke (col 0) (col 1) (col 2) 192)
+;;    (doseq [endpoints endpoint-pairs]
+;;      (draw-curve (endpoints 0) (endpoints 1)))
+;    (pop-style)
+;      ))
 
 ; _______________________________________________________________________
 
@@ -986,8 +979,8 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 240)
-          line-col [0 0 0 255]
+          col (conj (get-tile-color code) 255)
+          line-col [0 0 0 192]
           bezier-steps @bezier-box-resolution]
       (when with-boundaries?
         (draw-face-boundaries pos code))
