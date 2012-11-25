@@ -119,7 +119,7 @@
         lines [(str "state: " @tiler-state)
                (str "iters: " @tiler-iterations)
                (str "tiles: " (count @tiles) "/" @max-tiles) 
-               (str "empty: " (count @empty-positions)) 
+               ;(str "empty: " (count @empty-positions)) 
                (str "dead: " (count @dead-loci))
                (str "radius: " @assemblage-max-radius)
                ;(str "-------------")
@@ -361,7 +361,7 @@
       (editor/set-tileset (get-random-tileset))
       (init-tiler (editor/get-tileset-as-set))
       (println "random tileset:" (editor/get-tileset-as-set)) 
-      (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
+      ;(make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
       (init-gliders num-gliders)))
 
 

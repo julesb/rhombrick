@@ -449,7 +449,7 @@
 
 (defn draw-empty []
   (fill 0 255 0 192)
-  (doseq [tile @empty-positions]
+  (doseq [tile (get-empty-positions)]
     (let [pos tile]
       (with-translation pos 
         (scale 0.05)
