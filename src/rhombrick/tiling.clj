@@ -104,21 +104,6 @@
     [0 0 0]))
 
 
-;(defn init-empty-positions []
-;  (reset! empty-positions #{}))
-
-
-;(defn add-to-empty-positions [pos]
-;  (if (and (< (+ (count @empty-positions) (count @tiles))
-;         @max-tiles)
-;           (< (vec3-length pos) @assemblage-max-radius))
-;    (swap! empty-positions conj pos)))
-
-
-;(defn remove-from-empty-positions [pos]
-;  (swap! empty-positions disj pos))
-
-
 (defn is-empty? [pos]
   (not (contains? @tiles pos)))
 
@@ -144,21 +129,18 @@
   (when (is-empty? pos)
     (swap! tiles assoc pos facecode)))
 
+
 (defn make-tile [_tiles pos facecode]
   (assoc _tiles pos facecode))
 
-;(defn delete-tile! [pos]
-;  (swap! tiles dissoc pos))
 
 (defn delete-tile [_tiles pos]
   (dissoc _tiles pos))
 
-;(defn delete-neighbours! [pos]
-;  (doseq [pos (get-neighbours pos)]
-;    (delete-tile! pos)))
 
 (defn delete-neighbours [_tiles pos]
   (filter #(not (contains? (get-neighbours pos) %)) _tiles))
+
 
 (defn neighbour-states [pos]
   "Returns vector of boolean, one for each neighbour. The value represents "
@@ -182,36 +164,13 @@
     (if (nil? nb-code) \. (nth nb-code op-face-idx))))
 
 
-;(defn get-outer-facecode [pos]
-;  (apply str (map #(get-neighbour-abutting-face pos %) (range 12))))
-
-
 (defn get-outer-facecode2 [neighbourhood]
   (apply str (map #(get-neighbour-abutting-face2 neighbourhood %) (range 12))))
 
 
-
-
-; generate all unique rotations of tiles 
-; intended to be be used on the working tileset
-; when choosing a tile
-;(defn expand-tiles [tiles]
-;  (set (flatten (map #(rotations %) tiles))))
-
-
-;(defn expand-tiles-experiment [tiles]
-;  (set (flatten (conj (map #(rotations %) tiles)
-;                      (map #(rotations %) (reverse-tiles tiles))))))
-
+; generate all unique rotations of tiles in tileset 
 (defn expand-tiles-preserving-symmetry [tiles]
   (set (flatten (map #(get-code-symmetries %) tiles))))
-
-;(defn expand-tiles-preserving-symmetry [tiles]
-;  (set (flatten (conj (map #(rotations-preserving-symmetry %) tiles)
-;                      (map #(rotations-preserving-symmetry %) (reverse-tiles tiles))))))
-
-
-
 
 
 ; compares single digits of two facecodes, using the
@@ -234,13 +193,6 @@
                          innercode outercode)))))
 
 
-;(defn find-candidates2 [neighbourhood tileset]
-;  (let [outercode (get-outer-facecode2 neighbourhood)]
-;    (if (contains? @dead-loci outercode)
-;      ()
-;      (filter #(facecodes-directly-compatible? outercode %)
-;              (expand-tiles-preserving-symmetry tileset)))))
-
 (defn find-candidates2 [neighbourhood tileset]
   (let [outercode (get-outer-facecode2 neighbourhood)]
     (if (contains? @dead-loci outercode)
@@ -255,47 +207,6 @@
     (if (seq candidates)
       (nth candidates (rand-int (count candidates)))
       nil)))
-
-
-
-; _______________________________________________________________________
-
-
-
-
-
-
-
-;(defn push-neighbours-to-empty-positions [pos]
-;  (dotimes [face 12]
-;    (let [neighbour (get-neighbour-pos pos face)]
-;      (if (is-empty? neighbour)
-;          (add-to-empty-positions neighbour)))))
-
-
-;(defn push-connected-neighbours-to-empty-positions [pos]
-;  (doseq [idx (get-connected-idxs (@tiles pos))]
-;    (let [neighbour (get-neighbour-pos pos idx)]
-;      (if (is-empty? neighbour)
-;          (add-to-empty-positions neighbour)))))
- 
-
-;(defn update-empty-positions-nonconnected []
-;  (do
-;    (init-empty-positions)
-;    (doseq [tile (keys @tiles)]
-;      (doseq [n (get-neighbours tile)]
-;        (if (is-empty? n)
-;          (add-to-empty-positions n))))))
-
-
-
-
-
-;(defn update-empty-positions []
-;  (init-empty-positions)
-;  (doseq [pos (keys @tiles)]
-;    (push-connected-neighbours-to-empty-positions pos)))
 
 
 (defn get-connected-neighbours [_tiles pos]
@@ -328,29 +239,12 @@
     ))
 
 
-;(defn creates-untilable-region-orig? [pos]
-;  (let [neighbours (get-neighbours pos)
-;        empty-neighbours (filter #(is-empty? %) neighbours)
-;        untileable-neighbours (filter #(contains? @dead-loci 
-;                                                  (get-outer-facecode2 (get-neighbourhood %)))
-;                                      empty-neighbours)]
-;    (> (count untileable-neighbours) 0)))
-
-
-;(defn get-untileable-neighbours [pos]
-;  (->> (get-neighbours pos)
-;       (filter #(is-empty? %))
-;       (filter #(contains? @dead-loci 
-;                           (get-outer-facecode2 (get-neighbourhood %))))))
-
-
 (defn creates-untileable-region? [_tiles pos]
   (> (count (->> (get-neighbours pos)
                  (filter #(is-empty? %))
                  (filter #(contains? @dead-loci 
                                      (get-outer-facecode2 (get-neighbourhood _tiles %))))))
      0))
-
 
 
 (defn face-idxs-to-verts [face-idxs]
@@ -560,21 +454,6 @@
         (recur (inc n))))))
 
 
-(defn backtrack! []
-  (let [num-tiles (count @tiles)
-        n (compute-backtrack-amount num-tiles)
-        ni (- num-tiles n)]
-    (when (and (> num-tiles 1)
-               (< n num-tiles))
-      ; remove n most recent @tiles
-      (reset! tiles (ordered-map (take ni @tiles)))
-      (reset! assemblage-center (find-assemblage-center @tiles))
-      ;(update-empty-positions)
-      ;(println "| tiles:" num-tiles 
-      ;         "| backtracked:" n)
-      (build-face-list)
-      )))
-
 (defn backtrack [_tiles]
   (let [num-tiles (count _tiles)
         n (compute-backtrack-amount num-tiles)
@@ -603,30 +482,6 @@
     (do
       (halt-tiler)
       _tiles)))
-
-
-;(defn make-backtracking-tiling-iteration2 [_tiles tileset]
-;  (println "tiling-iteration")
-;  (if-let [positions (choose-positions _tiles tileset (get-empty-positions _tiles))]
-;    (let [new-pos (find-closest-to-point positions (find-assemblage-center _tiles))
-;          new-neighbourhood (get-neighbourhood _tiles new-pos)
-;          new-code (choose-tilecode2 new-neighbourhood tileset)]
-;      (if (nil? new-code)
-;        (do
-;          (add-to-dead-loci! (get-outer-facecode2 new-neighbourhood))
-;          (delete-neighbours! new-pos))
-;        (do
-;          (make-tile! new-pos new-code)))
-;      (if (or (creates-untileable-region? @tiles new-pos)
-;              (nil? new-code))
-;        (do
-;          (delete-tile! new-pos)
-;          (backtrack!))
-;        (do
-;          (add-tile-to-facelist new-pos)))
-;      (swap! tiler-iterations inc))
-;    ;(halt-tiler)
-;    ))
 
 
 (defn run-backtracking-tiling-thread [_tiles tileset]
@@ -689,32 +544,6 @@
 
 
 ; _______________________________________________________________________
-
-
-
-; _______________________________________________________________________
-
-
-
-
-; _______________________________________________________________________
-; _______________________________________________________________________
-; _______________________________________________________________________
-; _______________________________________________________________________
-; _______________________________________________________________________
-
-(defn make-cubic-tiling [xr yr zr]
-  ;(reset! tiles {})
-  (doseq [i (range (- 0 xr) xr)
-          j (range (- 0 yr) yr)
-          k (range (- 0 zr) zr)]
-    (let [x (* i 1)
-          y (* j 1)
-          z (* k 1)
-          modsum (+ (mod i 2) (mod j 2) (mod k 2)) ]
-      (if (or (= modsum 1) (= modsum 3))
-        (if (< (Math/random) 0.1)
-          (make-tile! [i j k] "000000000000"))))))
 
 
 
