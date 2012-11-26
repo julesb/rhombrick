@@ -13,7 +13,7 @@
 (def current-tileset-colors (atom {}))
 (def model-scale (atom 50))
 (def bezier-box-resolution (atom 8))
-
+(def face-list (atom #{}))
 (def face-id-text (atom []))
 
 ; map facecode digit to bezier anchor scale
@@ -166,6 +166,47 @@
 ;      ;(hint :enable-depth-test)
 ;      )))
 ; _______________________________________________________________________
+
+(defn face-idxs-to-verts [face-idxs]
+  (vec (map #(rd-verts %) face-idxs)))
+
+
+(defn facelist-contains-rotations? [face-verts]
+  (or
+    (> (count (filter #(contains? @face-list %)
+                      (rotations-vec face-verts)))
+       0)
+    (> (count (filter #(contains? @face-list %)
+                      (rotations-vec (vec (reverse face-verts)))))
+       0)   
+       ))
+
+
+(defn remove-from-facelist [face-verts]
+    (let [face-rots (concat (rotations-vec face-verts) 
+                            (rotations-vec (reverse face-verts)))]
+        (doseq [f face-rots]
+          (if (contains? @face-list f)
+            (swap! face-list disj f)))))
+      
+  
+
+; we dont need to check every face in the face list here
+; only need to check the neighbours.
+(defn add-tile-to-facelist [pos]
+  (doseq [f rd-faces]
+    (let [fv (face-idxs-to-verts f)
+          fvw (vec (map #(vec3-add pos (vec3-scale % 0.5)) fv))]
+    (if (not (facelist-contains-rotations? fvw))
+      (swap! face-list conj fvw)
+      (do
+        (remove-from-facelist fvw))))))
+
+
+(defn build-face-list []
+  (reset! face-list #{})
+  (doseq [tile (keys @tiles)]
+    (add-tile-to-facelist tile)))
 
 
 (defn draw-face-list []

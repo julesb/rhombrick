@@ -27,7 +27,6 @@
 (def tiles (atom (ordered-map)))
 (def tiler-iterations (atom 0))
 (def tiler-state (atom :halted)) ; :halted :running :paused
-(def face-list (atom #{}))
 (def assemblage-center (atom [0 0 0]))
 (def assemblage-max-radius (atom 6))
 (def dead-loci (atom #{}))
@@ -91,10 +90,10 @@
          (range num-tiles)))))
 
 
-(defn update-assemblage-center [new-pos]
-  (let [new-center (vec3-scale (vec3-add new-pos @assemblage-center)
-                               (/ 1.0 (count @tiles)))]
-    (reset! assemblage-center new-center)))
+;(defn update-assemblage-center [new-pos]
+;  (let [new-center (vec3-scale (vec3-add new-pos @assemblage-center)
+;                               (/ 1.0 (count @tiles)))]
+;    (reset! assemblage-center new-center)))
 
 
 (defn find-assemblage-center [tiles]
@@ -116,8 +115,8 @@
   (vec (map #(get-neighbour-pos pos %) (range 12))))
 
 
-(defn get-connected-neighbours [pos]
-  (filter #(not (is-empty? %)) (get-neighbours pos)))
+;(defn get-connected-neighbours [pos]
+;  (filter #(not (is-empty? %)) (get-neighbours pos)))
 
 
 (defn get-neighbourhood [_tiles pos]
@@ -211,7 +210,7 @@
 
 (defn get-connected-neighbours [_tiles pos]
   (if (contains? _tiles pos)
-    (map #(get-neighbour-pos pos %) (get-connected-idxs (tiles pos)))
+    (map #(get-neighbour-pos pos %) (get-connected-idxs (_tiles pos)))
     ()))
 
 
@@ -247,90 +246,17 @@
      0))
 
 
-(defn face-idxs-to-verts [face-idxs]
-  (vec (map #(rd-verts %) face-idxs)))
-
-
-(defn facelist-contains-rotations? [face-verts]
-  (or
-    (> (count (filter #(contains? @face-list %)
-                      (rotations-vec face-verts)))
-       0)
-    (> (count (filter #(contains? @face-list %)
-                      (rotations-vec (vec (reverse face-verts)))))
-       0)   
-       ))
-
-
-(defn remove-from-facelist [face-verts]
-    (let [face-rots (concat (rotations-vec face-verts) 
-                            (rotations-vec (reverse face-verts)))]
-        (doseq [f face-rots]
-          (if (contains? @face-list f)
-            (swap! face-list disj f)))))
-      
-  
-
-; we dont need to check every face in the face list here
-; only need to check the neighbours.
-(defn add-tile-to-facelist [pos]
-  (doseq [f rd-faces]
-    (let [fv (face-idxs-to-verts f)
-          fvw (vec (map #(vec3-add pos (vec3-scale % 0.5)) fv))]
-    (if (not (facelist-contains-rotations? fvw))
-      (swap! face-list conj fvw)
-      (do
-        (remove-from-facelist fvw))))))
-
-
-(defn add-tile-to-facelist2 [pos]
-  (let [code (@tiles pos)
-        idxs (get-nonconnected-idxs code)
-        faces (map #(rd-faces %1) idxs)]
-    (doseq [f faces]
-      (let [fv (face-idxs-to-verts f)
-            fvw (vec (map #(vec3-add pos (vec3-scale % 0.5)) fv))]
-        ;(swap! face-list conj fvw)))))
-        (if (not (facelist-contains-rotations? fvw))
-          (swap! face-list conj fvw))))))
-        ; (remove-from-facelist fvw))))))
-
-
-(defn build-face-list []
-  (reset! face-list #{})
-  (doseq [tile (keys @tiles)]
-    (add-tile-to-facelist tile)))
-
-
-
-; _______________________________________________________________________
-
 (defn update-tileset-expanded [tileset]
   (when (> (count tileset) 0)
     (reset! tileset-expanded
             (expand-tiles-preserving-symmetry tileset))))
 
 
-
-
 (defn halt-tiler []
   (reset! tiler-state :halted)
-  (future-cancel @tiler-thread)
-;  (println "#  HALTED - "
-;           "tiles:" (count @tiles)
-;           "iters:" @tiler-iterations
-;           "dead:" (count @dead-loci)
-;           ;"i/t" (float (/ @tiler-iterations (count @tiles)))
-;           ;"t/i" (float (/ (count @tiles) @tiler-iterations ))
-;           ;"tileset:" @rhombrick.editor/current-tileset))
-;           )
-           )
-
-; _______________________________________________________________________
-
-
-(defn rotate-str-n [s n]
-  (nth (rotations s) n))
+  (if (future-cancel @tiler-thread)
+    (println "tiler halted")
+    (println "halt-tiler: failed to cancel tiler thread")))
 
 
 
@@ -438,7 +364,6 @@
       ((first tie-winners) 0)
       ((rand-nth tie-winners) 0))))
 
-; _______________________________________________________________________
 
 (def autism (atom 1.0))
 (def adhd (atom 2.0)) ; lower = more adhd
@@ -465,7 +390,6 @@
 
 
 (defn make-backtracking-tiling-iteration3 [_tiles tileset]
-  ;(println "tiling-iteration")
   (if-let [positions (choose-positions _tiles tileset (get-empty-positions _tiles))]
     (let [new-pos (find-closest-to-point positions (find-assemblage-center _tiles))
           new-neighbourhood (get-neighbourhood _tiles new-pos)
@@ -508,15 +432,12 @@
     (make-tile! pos code) 
     )))
 
-; _______________________________________________________________________
-
 
 (defn init-tiler [tileset]
   (when (not= @tiler-thread nil)
     (halt-tiler))
   (reset! tiles {})
   (reset! tiler-iterations 0)
-  (reset! face-list #{})
   (update-tileset-expanded tileset)
   (init-dead-loci)
   (seed-tiler tileset)
@@ -532,7 +453,6 @@
   (halt-tiler) 
   (reset! tiles {})
   (reset! tiler-iterations 0)
-  (reset! face-list #{})
   (update-tileset-expanded tileset)
   (seed-tiler tileset)
   ;(reset! tiler-state :running)

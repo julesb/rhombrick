@@ -50,6 +50,7 @@
 (defn rotate-str [s]
   (apply str (concat (rest s) [(first s)])))
 
+
 ; generate a list of rotations of a string
 (defn rotations [s]
     (loop [n (count s)
@@ -58,12 +59,16 @@
         (recur (dec n) (conj accum (rotate-str (last accum))))
         accum)))
 
+(defn rotate-str-n [s n]
+  (nth (rotations s) n))
+
+
 ;(defn rotations [s]
 ;  (map #(rotate-str-n s %1) (range (count s))))
 
+
 (defn reverse-tiles [tiles]
   (map #(apply str (reverse %)) tiles))
-
 
 (defn is-facecode-rotation-of? [a b]
   (boolean (some #{a} (rotations b))))
