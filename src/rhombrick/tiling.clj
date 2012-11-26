@@ -41,6 +41,11 @@
   [\2 \2]
   [\3 \3]
   [\4 \4]
+  [\5 \5]
+  [\6 \6]
+  [\7 \7]
+  [\8 \8]
+  [\9 \9]
   [\a \A]
   [\b \B]
   [\c \C]
@@ -55,7 +60,8 @@
 (defn get-num-connected [code]
   (count (filter #(not= \- %) code)))
 
-
+; NOTE: the tile renderer currently expects face digits no higher than 4 or D 
+; for simplicity, even though the tiler will handle any hex digit.
 (def ^:const random-tilecode-distribution [
   \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
   \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
@@ -116,11 +122,8 @@
 
 
 (defn get-neighbours [pos]
+  "returns a vector containing the positions of the neighbours of a given point"
   (vec (map #(get-neighbour-pos pos %) (range 12))))
-
-
-;(defn get-connected-neighbours [pos]
-;  (filter #(not (is-empty? %)) (get-neighbours pos)))
 
 
 (defn get-neighbourhood [_tiles pos]
@@ -218,17 +221,28 @@
     ()))
 
 
-(defn get-empty-neighbours [_tiles pos]
-  (->> (get-connected-idxs (_tiles pos))
-       (map #(get-neighbour-pos pos %))
+(defn get-empty-connected-neighbours [_tiles pos]
+  (->> (get-connected-neighbours _tiles pos)
        (filter is-empty?)
-       (filter #(< (vec3-length %) @assemblage-max-radius))
-    ))
+       (filter #(< (vec3-length %) @assemblage-max-radius))))
 
+;(defn get-empty-neighbours [_tiles pos]
+;  (->> (get-connected-idxs (_tiles pos))
+;       (map #(get-neighbour-pos pos %))
+;       (filter is-empty?)
+;       (filter #(< (vec3-length %) @assemblage-max-radius))
+;    ))
+
+
+
+;(defn get-empty-positions [_tiles]
+;  (into #{} (apply concat (map #(get-empty-neighbours _tiles %) (keys _tiles)))))
 
 (defn get-empty-positions [_tiles]
-  (into #{} (apply concat (map #(get-empty-neighbours _tiles %) (keys _tiles)))))
-
+  (->> (keys _tiles)
+       (map #(get-empty-connected-neighbours _tiles %))
+       (apply concat)
+       (set)))
 
 
 (defn init-dead-loci []
@@ -451,6 +465,7 @@
     (if (future-done? @tiler-thread)
       (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
       (println "tiler thread already running, not starting"))))
+
 
 ; same as init-tiles but doesnt reset dead-loci
 (defn soft-init-tiler [tileset]
