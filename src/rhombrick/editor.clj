@@ -152,7 +152,7 @@
       (set-current-tileset-digit selected-tile-idx
                                  selected-digit-idx
                                  new-digit)
-      (init-tiler (get-tileset-as-set)))))
+      (start-tiler (get-tileset-as-set) false))))
 
 
 (defn level-up []
@@ -181,7 +181,7 @@
 (defn load-library-tileset [idx]
   (when (< idx (count @library-tilesets))
     (set-tileset (@library-tilesets idx))
-    (init-tiler (get-tileset-as-set))))
+    ))
 
 
 (defn load-next-library-tileset []

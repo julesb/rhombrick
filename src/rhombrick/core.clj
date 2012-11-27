@@ -216,9 +216,11 @@
           (swap! assemblage-max-radius inc))
 
     \< #(do
-          (editor/load-prev-library-tileset))
+          (editor/load-prev-library-tileset)
+          (start-tiler (editor/get-tileset-as-set) false))
     \> #(do
-          (editor/load-next-library-tileset))
+          (editor/load-next-library-tileset)
+          (start-tiler (editor/get-tileset-as-set) false))
     \S #(do
           (editor/save-current-tileset-to-library))
     ;\n #(do
@@ -359,20 +361,9 @@
     (do-movement-keys)
   ;  )
 
-
 ;  (when @tiler-auto-seed?
 ;    (auto-seed-tiler))
   
-
-;  (when (= @tiler-state :running)
-;    (if (and (> (count @empty-positions) 0)
-;             (> (count (editor/get-tileset)) 0))
-;      ;(make-backtracking-tiling-iteration2 @tiles @current-tileset)
-;      (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
-;      (do
-;        (build-face-list)
-;        (halt-tiler))))
-
   (when @draw-gliders?   
     (update-gliders))
 

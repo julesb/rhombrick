@@ -4,24 +4,6 @@
         [rhombrick.facecode]
         [ordered.map]))
 
-;(def tiler (atom {
-;  :max-tiles 200
-;  :state :halted
-;  :iterations 0
-;  :tiles (ordered-map)
-;  :empty-positions #{}
-;  :dead-loci #{}
-;}))
-
-; increment :iterations
-; (swap! tiler assoc :iterations (inc (@tiler :iterations)))
-;
-; add a tile
-; (swap! tiler assoc :tiles (assoc (@tiler :tiles) [0 0 0] "abc"))
-;
-;
-;
-;
 
 (def max-tiles (atom 200))
 (def tiles (atom (ordered-map)))
@@ -30,7 +12,6 @@
 (def assemblage-center (atom [0 0 0]))
 (def assemblage-max-radius (atom 6))
 (def dead-loci (atom #{}))
-;(def empty-positions (atom #{}))
 (def tileset-expanded (atom #{}))
 (def tiler-thread (atom nil))
 (def tiler-thread-id (atom 0))
@@ -270,66 +251,6 @@
             (expand-tiles-preserving-symmetry tileset))))
 
 
-(defn halt-tiler []
-  (reset! tiler-state :halted)
-  (if (future-cancel @tiler-thread)
-    (println "tiler halted")
-    (println "halt-tiler: failed to cancel tiler thread")))
-
-
-
-; _______________________________________________________________________
-;
-; Backtracking tiler algorithm
-; ============================
-;
-; 1. Place a random tile in the center of the grid
-;
-; 2. Make a list of empty locations in the grid with abutting non-empty 
-; edges. If there are no such locations, halt. 
-;
-; Otherwise, if there are any sites where only either one or zero 
-; types of tile could be added, restrict the list to just these sites.
-; From the list, choose the location closest to the center of the
-; assemblage. 
-
-; 3. If there is no tile that fits at that location, or if it can be
-; determined that for any tile that might be added the assemblage will
-; become non-completable (see next section), perform backtracking. That
-; is, remove some number of tiles from the assemblage in the reverse
-; order to which they were added (see the section after next).
-;
-; 4. Otherwise choose a tile at random from the remaining possibilities,
-; and put it at the location.
-;
-; 5. Go to step 2.
-
-
-
-; I think the less perfect patterns encountered along the way would be
-; interesting in their own right, however. I encourage you to look at some of
-; them. The perfected patterns are neat and one can imagine deliberately
-; engineering them by mimicking your procedure. But the imperfect ones that
-; would be created by bounded-scale backtracking would also be interesting.
-; Try treating the backtracking as a model parameter, and see what sorts of
-; patterns you get with none, with backtracking only a single step, with
-; backtracking 1-3 steps with a damped distribution (something as simple
-; as {1,1,1,1,2,2,3} would work fine), and compare the result to scale free
-; backtracking.
-;
-; Programmatically, put in a modular subroutine at that step and let it depend
-; on a global parameter. Then do runs - from this set of allowed tiles, here
-; are some shapes that arise with no backtracking, with backtracking 1, with
-; backtracking 1-3 damped, with scale free backtracking. I am sure the results
-; would be interesting. The point generalizes. To understand the impact of a
-; given step in an algorithm on the overall behaviors seen, one does
-; "sensitivity analysis" on that step.
-;
-; [http://forum.wolframscience.com/showthread.php?s=&threadid=866]
-
-; _______________________________________________________________________
-
-
 ; returns a list of todo locations with 0 or 1 matching tiles
 (defn find-best-positions2 [_tiles tileset empty-positions]
   (filter #(< (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 2)
@@ -349,7 +270,6 @@
       best)))
  
 
-; _______________________________________________________________________
 
 ; Receive a vector of positions and return the closest to the center
 ; ie the vector with the shortest length. If there are more than one
@@ -422,25 +342,35 @@
             (backtrack _tiles)
             new-tiles))))
     (do
-      (halt-tiler)
+      (reset! tiler-state :halted)
       _tiles)))
 
 
+(defn halt-tiler []
+  (reset! tiler-state :halted)
+  (println "tiler-state -> halted"))
+
+
+(defn tiler-can-iterate? []
+  (and (= @tiler-state :running)
+       (> (count @tiles) 0)
+       (< (count @tiles) @max-tiles)
+       (> (count (get-empty-positions @tiles)) 0)
+       (> (count @tileset-expanded) 0)))
+
+
 (defn run-backtracking-tiling-thread [_tiles tileset]
-  (when (not= @tiler-state :running)
-    (reset! tiler-state :running)
-    (println "tiler thread starting")
-    (while (and (= @tiler-state :running)
-                (> (count @tiles) 0)
-                (< (count @tiles) @max-tiles)
-                ;(> (count (get-empty-positions tiles)) 0)
-                (> (count tileset) 0))
-      (dosync 
-        (reset! tiles (ordered-map (make-backtracking-tiling-iteration3 @tiles tileset)))
-        (swap! tiler-iterations inc))))
-  (halt-tiler)
-  (println "tiler thread ended")
-  )
+  (println "tiler thread starting")
+  ;(while tiler-can-iterate? 
+  (while (and (= @tiler-state :running)
+       (> (count @tiles) 0)
+       (< (count @tiles) @max-tiles)
+       (> (count (get-empty-positions @tiles)) 0)
+       (> (count @tileset-expanded) 0))
+    (dosync
+      (reset! tiles (ordered-map (make-backtracking-tiling-iteration3 @tiles tileset)))
+      (swap! tiler-iterations inc)))
+  (halt-tiler))
 
 
 (defn seed-tiler [tileset]
@@ -450,25 +380,31 @@
     (make-tile! pos code) 
     )))
 
+(defn cancel-tiler-thread []
+  (when (future? @tiler-thread)
+    (future-cancel @tiler-thread)
+    (if (or (future-cancelled? @tiler-thread)
+            (future-done? @tiler-thread))
+      (halt-tiler)
+      (println "cancel-tiler-thread failed"))))
+
 
 (defn init-tiler [tileset]
-  (when (not= @tiler-thread nil)
-    (halt-tiler))
   (reset! tiles (ordered-map))
   (reset! tiler-iterations 0)
-  (update-tileset-expanded tileset)
-  (seed-tiler tileset))
+  (update-tileset-expanded tileset))
+
 
 
 (defn start-tiler [tileset soft-start?]
+  (cancel-tiler-thread)
+  (Thread/sleep 100)
   (init-tiler tileset)
+  (seed-tiler tileset)
   (when-not soft-start?
     (init-dead-loci!))
-  (if (nil? @tiler-thread)
-    (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
-    (if (future-done? @tiler-thread)
-      (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
-      (println "tiler thread already running, not starting"))))
+  (reset! tiler-state :running)
+  (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset))))
 
 
 
@@ -511,4 +447,57 @@
                   "cbdBBB" ; 1
                   "dbdAAA" ; 0
                   ])
+
+; _______________________________________________________________________
+;
+; Backtracking tiler algorithm
+; ============================
+;
+; 1. Place a random tile in the center of the grid
+;
+; 2. Make a list of empty locations in the grid with abutting non-empty 
+; edges. If there are no such locations, halt. 
+;
+; Otherwise, if there are any sites where only either one or zero 
+; types of tile could be added, restrict the list to just these sites.
+; From the list, choose the location closest to the center of the
+; assemblage. 
+
+; 3. If there is no tile that fits at that location, or if it can be
+; determined that for any tile that might be added the assemblage will
+; become non-completable (see next section), perform backtracking. That
+; is, remove some number of tiles from the assemblage in the reverse
+; order to which they were added (see the section after next).
+;
+; 4. Otherwise choose a tile at random from the remaining possibilities,
+; and put it at the location.
+;
+; 5. Go to step 2.
+
+
+
+; I think the less perfect patterns encountered along the way would be
+; interesting in their own right, however. I encourage you to look at some of
+; them. The perfected patterns are neat and one can imagine deliberately
+; engineering them by mimicking your procedure. But the imperfect ones that
+; would be created by bounded-scale backtracking would also be interesting.
+; Try treating the backtracking as a model parameter, and see what sorts of
+; patterns you get with none, with backtracking only a single step, with
+; backtracking 1-3 steps with a damped distribution (something as simple
+; as {1,1,1,1,2,2,3} would work fine), and compare the result to scale free
+; backtracking.
+;
+; Programmatically, put in a modular subroutine at that step and let it depend
+; on a global parameter. Then do runs - from this set of allowed tiles, here
+; are some shapes that arise with no backtracking, with backtracking 1, with
+; backtracking 1-3 damped, with scale free backtracking. I am sure the results
+; would be interesting. The point generalizes. To understand the impact of a
+; given step in an algorithm on the overall behaviors seen, one does
+; "sensitivity analysis" on that step.
+;
+; [http://forum.wolframscience.com/showthread.php?s=&threadid=866]
+
+; _______________________________________________________________________
+
+; _______________________________________________________________________
 
