@@ -63,8 +63,6 @@
 
 
 (defn setup []
-    ;(println "applet:" my-applet)
-     
     ;(reset! rhomb-tex (load-image "cave_texture_01-512x512.png"))
     ;(reset! rhomb-tex (load-image "testpattern4po6.png"))
     (reset! rhomb-tex (load-image "gradient.jpg"))
@@ -73,7 +71,6 @@
     ;(println "texture:" @rhomb-tex)
     (texture-mode :normalized)
       
-    ;(println (.frame (current-applet)))
     ;(println "screen pos" (get-location-on-screen))
     ;(println "screen size:" (width) (height))
     ;(println "frame:" (.getLocation (.frame @my-applet)))
@@ -88,29 +85,21 @@
     ;(text-font (load-font "ScalaSans-Caps-32.vlw"))
     (text-font (load-font "AmericanTypewriter-24.vlw"))
     (set-state! :mouse-position (atom [0 0]))
-    (println "building normalised faced set")
-    (build-normalised-facecode-set)
+
     (println "initialising tiler")
-    ;(editor/make-indexed @current-tileset)
     (editor/init-editor)
-    (init-tiler (editor/get-tileset-as-set))
-    ;(make-tiling-iteration) ; needed so init-gliders works
-    ;(make-backtracking-tiling-iteration @current-tileset)
-    (init-gliders num-gliders)
+    (start-tiler (editor/get-tileset-as-set) false)
+    ;(init-gliders num-gliders)
     ;(println @gliders)
-    ;(init-todo)
 
 ;    (doseq [val (range 10)]
 ;      (osc-send client "/test" "i" (float val)))
+
     ;(reset! mousewarp-pos [(mouse-x) (mouse-y)])
     ;(println "mouse:" @mousewarp-pos)
 
-    ;(println "bezier test: " (bezier-point 1.0 2.0 3.0 4.0 0.5))
     (println "setup done")
     )
-    ;(doseq [code @normalised-facecodes]
-    ; (println code))
-    ;(println "total" (count @normalised-facecodes) "facecodes"))
 
 ; _______________________________________________________________________
 
@@ -169,12 +158,12 @@
         (println "model-scale: " @model-scale))
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
-         (soft-init-tiler (editor/get-tileset-as-set))
+         (start-tiler (editor/get-tileset-as-set) true)
          ;(init-gliders num-gliders)
          )
    \R #(do 
          (editor/set-tileset (get-random-tileset))
-         (init-tiler (editor/get-tileset-as-set))
+         (start-tiler (editor/get-tileset-as-set) false)
          (println "random tileset:" (editor/get-tileset-as-set))
          ;(init-gliders num-gliders)
          )

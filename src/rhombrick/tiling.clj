@@ -245,7 +245,7 @@
        (set)))
 
 
-(defn init-dead-loci []
+(defn init-dead-loci! []
   (reset! dead-loci #{}))
 
 
@@ -454,32 +454,22 @@
 (defn init-tiler [tileset]
   (when (not= @tiler-thread nil)
     (halt-tiler))
-  (reset! tiles {})
+  (reset! tiles (ordered-map))
   (reset! tiler-iterations 0)
   (update-tileset-expanded tileset)
-  (init-dead-loci)
-  (seed-tiler tileset)
-  ;(reset! tiler-state :running)
+  (seed-tiler tileset))
+
+
+(defn start-tiler [tileset soft-start?]
+  (init-tiler tileset)
+  (when-not soft-start?
+    (init-dead-loci!))
   (if (nil? @tiler-thread)
     (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
     (if (future-done? @tiler-thread)
       (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
       (println "tiler thread already running, not starting"))))
 
-
-; same as init-tiles but doesnt reset dead-loci
-(defn soft-init-tiler [tileset]
-  (halt-tiler) 
-  (reset! tiles {})
-  (reset! tiler-iterations 0)
-  (update-tileset-expanded tileset)
-  (seed-tiler tileset)
-  ;(reset! tiler-state :running)
-  (if (nil? @tiler-thread)
-    (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
-    (if (future-done? @tiler-thread)
-      (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset)))
-      (println "tiler thread already running, not starting"))))
 
 
 ; _______________________________________________________________________
