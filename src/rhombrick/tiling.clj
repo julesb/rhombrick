@@ -94,8 +94,8 @@
     [0 0 0]))
 
 
-(defn is-empty? [pos]
-  (not (contains? @tiles pos)))
+(defn is-empty? [_tiles pos]
+  (not (contains? _tiles pos)))
 
 
 (defn get-neighbour-pos [pos face]
@@ -113,7 +113,7 @@
 
 
 (defn make-tile! [pos facecode]
-  (when (is-empty? pos)
+  (when (is-empty? @tiles pos)
     (swap! tiles assoc pos facecode)))
 
 
@@ -127,21 +127,6 @@
 
 (defn delete-neighbours [_tiles pos]
   (filter #(not (contains? (get-neighbours pos) %)) _tiles))
-
-
-(defn neighbour-states [pos]
-  "Returns vector of boolean, one for each neighbour. The value represents "
-  "whether the abutting face is connected or not"
-  (map #(not (is-empty? (vec3-add pos %1)))
-       rd-neighbour-offsets))
-
-
-(defn neighbour-count [pos]
-  (count (filter #(true? %) (neighbour-states pos))))
-
-
-(defn has-neighbours? [pos]
-  (not (zero? (neighbour-count pos))))
 
 
 (defn get-neighbour-abutting-face2 [neighbourhood face-idx]
@@ -204,7 +189,7 @@
 
 (defn get-empty-connected-neighbours [_tiles pos]
   (->> (get-connected-neighbours _tiles pos)
-       (filter is-empty?)
+       (filter #(is-empty? _tiles %))
        (filter #(< (vec3-length %) @assemblage-max-radius))))
 
 ;(defn get-empty-neighbours [_tiles pos]
@@ -239,7 +224,7 @@
 
 (defn creates-untileable-region? [_tiles pos]
   (> (count (->> (get-neighbours pos)
-                 (filter #(is-empty? %))
+                 (filter #(is-empty? _tiles %))
                  (filter #(contains? @dead-loci 
                                      (get-outer-facecode2 (get-neighbourhood _tiles %))))))
      0))
@@ -380,6 +365,7 @@
     (make-tile! pos code) 
     )))
 
+
 (defn cancel-tiler-thread []
   (when (future? @tiler-thread)
     (future-cancel @tiler-thread)
@@ -393,7 +379,6 @@
   (reset! tiles (ordered-map))
   (reset! tiler-iterations 0)
   (update-tileset-expanded tileset))
-
 
 
 (defn start-tiler [tileset soft-start?]

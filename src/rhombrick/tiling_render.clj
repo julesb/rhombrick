@@ -334,7 +334,7 @@
         ;(stroke r g b 255)
         (doseq [i (range 12)]
           (when (and (not= (.charAt code i) \-)
-                     (is-empty? (get-neighbour-pos pos i)))
+                     (is-empty? @tiles (get-neighbour-pos pos i)))
             (let [d (.charAt code i)
                   dir (co-verts i)
                   [dx dy dz] (vec3-normalize dir)
