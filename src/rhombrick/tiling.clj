@@ -15,6 +15,8 @@
 (def tileset-expanded (atom #{}))
 (def tiler-thread (atom nil))
 (def tiler-thread-id (atom 0))
+(def last-iteration-time (atom 0))
+
 
 (def facecode-compatible #{
   [\- \-]
@@ -306,29 +308,37 @@
   (let [num-tiles (count _tiles)
         n (compute-backtrack-amount num-tiles)
         ni (- num-tiles n)]
-    (if (and (> num-tiles 1)
-             (< n num-tiles))
+    (if (and (> num-tiles 0)
+             (<= n num-tiles))
       (ordered-map (take ni @tiles))
       _tiles)))
 
 
-(defn make-backtracking-tiling-iteration3 [_tiles tileset]
+(defn make-backtracking-tiling-iteration3 [__tiles tileset]
+  (let [_tiles (if (= (count __tiles) 0)
+                 (make-tile __tiles [0 0 0] (rand-nth (vec (expand-tiles-preserving-symmetry tileset))))
+                 __tiles) ]
+
   (if-let [positions (choose-positions _tiles tileset (get-empty-positions _tiles))]
     (let [new-pos (find-closest-to-point positions (find-assemblage-center _tiles))
           new-neighbourhood (get-neighbourhood _tiles new-pos)
           new-code (choose-tilecode2 new-neighbourhood tileset)]
       (if (nil? new-code)
         (do
+          (println "no tile would fit")
           (add-to-dead-loci! (get-outer-facecode2 new-neighbourhood))
           (->> (delete-neighbours _tiles new-pos)
                (backtrack)))
         (let [new-tiles (make-tile _tiles new-pos new-code)]
           (if (creates-untileable-region? new-tiles new-pos)
-            (backtrack _tiles)
+            (do
+              (println "dead end, backtracking")
+              (backtrack _tiles)
+              )
             new-tiles))))
     (do
       (reset! tiler-state :halted)
-      _tiles)))
+      _tiles))))
 
 
 (defn halt-tiler []
@@ -348,13 +358,16 @@
   (println "tiler thread starting")
   ;(while tiler-can-iterate? 
   (while (and (= @tiler-state :running)
-       (> (count @tiles) 0)
+       ;(> (count @tiles) 0)
        (< (count @tiles) @max-tiles)
-       (> (count (get-empty-positions @tiles)) 0)
+       ;(> (count (get-empty-positions @tiles)) 0)
        (> (count @tileset-expanded) 0))
-    (dosync
-      (reset! tiles (ordered-map (make-backtracking-tiling-iteration3 @tiles tileset)))
-      (swap! tiler-iterations inc)))
+    (let [iter-start-time (System/nanoTime)]
+      (dosync
+        (reset! tiles (ordered-map (make-backtracking-tiling-iteration3 @tiles tileset)))
+        (swap! tiler-iterations inc))
+        (reset! last-iteration-time (/ 1000 (float (/ (- (System/nanoTime) iter-start-time) 1000000.0))))
+      ))
   (halt-tiler))
 
 

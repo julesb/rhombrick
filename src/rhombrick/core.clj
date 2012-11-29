@@ -108,6 +108,7 @@
         lines [(str "state: " @tiler-state)
                (str "iters: " @tiler-iterations)
                (str "tiles: " (count @tiles) "/" @max-tiles) 
+               (str "ips: " (int @last-iteration-time))
                ;(str "empty: " (count @empty-positions)) 
                (str "dead: " (count @dead-loci))
                (str "radius: " @assemblage-max-radius)
@@ -482,7 +483,7 @@
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info 10 (- (height) 170))
+  (draw-info 10 (- (height) 200))
   (camera)
 
   (when (> (editor/get-level) 0)
