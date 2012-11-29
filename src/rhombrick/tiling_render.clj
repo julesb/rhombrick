@@ -17,7 +17,8 @@
 (def face-id-text (atom []))
 
 ; map facecode digit to bezier anchor scale
-(def bezier-box-thicknesses {\1 0.25
+(def bezier-box-thicknesses {\0 0.125
+                             \1 0.25
                              \2 0.5
                              \3 0.75
                              \4 1.0
@@ -506,7 +507,7 @@
     (stroke-weight 4)
     ;(fill 255 255 0 32)
     (no-fill)
-    (with-translation @assemblage-center
+    (with-translation (find-assemblage-center @tiles)
       (scale 0.5)
       (box 1 1 1)
       ;(draw-faces rd-verts rd-faces nil)
@@ -864,7 +865,7 @@
 
 (defn draw-facecode-bezier-box-lines [code col steps]
   (apply stroke col)
-  (stroke-weight 4)
+  (stroke-weight 2)
   (no-fill)
   (doseq [line-verts (get-bezier-box-lines code steps)]
     (doseq [vert line-verts]
@@ -875,7 +876,6 @@
 
 
 (defn draw-facecode-bezier-boxes [code col steps]
-  
   (when (contains? #{3 4} (count col)) (apply fill col))
   ;(stroke 0 0 0 192)
   (no-stroke)
@@ -1020,8 +1020,8 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 255)
-          line-col [0 0 0 192]
+          col (conj (get-tile-color code) 128)
+          line-col [(col 0) (col 1) (col 2) 255] ;  [255 255 255 192]
           bezier-steps @bezier-box-resolution]
       (when with-boundaries?
         (draw-face-boundaries pos code))
@@ -1029,7 +1029,8 @@
         (scale 0.5)
         ;(stroke-weight 8)
         ;(stroke 0 0 0 64)
-        ;(no-fill) 
+        ;(no-fill)
+        ;(draw-facecode code)
         (when with-faces?
           (draw-facecode-bezier-boxes (@tiles pos) col bezier-steps))
         (when with-lines?

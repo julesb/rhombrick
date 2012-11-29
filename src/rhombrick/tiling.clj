@@ -18,6 +18,7 @@
 
 (def facecode-compatible #{
   [\- \-]
+  [\0 \0]
   [\1 \1]
   [\2 \2]
   [\3 \3]
@@ -32,14 +33,8 @@
   [\c \C]
   [\d \D]
   [\e \E]
-  [\f \F]
-                           })
+  [\f \F] })
 
-
-; _______________________________________________________________________
-
-(defn get-num-connected [code]
-  (count (filter #(not= \- %) code)))
 
 ; NOTE: the tile renderer currently expects face digits no higher than 4 or D 
 ; for simplicity, even though the tiler will handle any hex digit.
@@ -54,6 +49,7 @@
   \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
   \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
   \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
+  \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0
   \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1
   \2 \2 \2 \2 \2 \2 \2 \2
   \3 \3 \3 \3
@@ -87,10 +83,14 @@
 ;    (reset! assemblage-center new-center)))
 
 
-(defn find-assemblage-center [tiles]
-  (if (> (count tiles) 0)
-    (vec3-scale (reduce vec3-add (keys tiles))
-                (/ 1 (count tiles)))
+(defn get-num-connected [code]
+  (count (filter #(not= \- %) code)))
+
+
+(defn find-assemblage-center [_tiles]
+  (if (> (count _tiles) 0)
+    (vec3-scale (reduce vec3-add (keys _tiles))
+                (/ 1 (count _tiles)))
     [0 0 0]))
 
 
@@ -202,7 +202,7 @@
 
 
 ;(defn get-empty-positions [_tiles]
-;  (into #{} (apply concat (map #(get-empty-neighbours _tiles %) (keys _tiles)))))
+;  (into #{} (apply concat (map #(get-empty-connected-neighbours _tiles %) (keys _tiles)))))
 
 (defn get-empty-positions [_tiles]
   (->> (keys _tiles)

@@ -28,7 +28,8 @@
 (def library-tilesets (atom []))
 (def library-tileset-index (atom 0))
 
-(def next-digit {\- \1
+(def next-digit {\- \0
+                 \0 \1
                  \1 \2
                  \2 \3
                  \3 \4
