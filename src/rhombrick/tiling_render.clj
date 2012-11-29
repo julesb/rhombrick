@@ -325,7 +325,7 @@
             (box 0.2)))))))
 
 
-(defn draw-face-boundaries [pos code]
+(defn draw-face-boundaries [pos ^String code]
   (when (contains? @tiles pos)
     (let [[r g b] (get-tile-color code)]
       (with-translation pos
@@ -333,7 +333,7 @@
         ;(stroke-weight 1)
         (no-stroke)
         ;(stroke r g b 255)
-        (doseq [i (range 12)]
+        (doseq [^long i (range 12)]
           (when (and (not= (.charAt code i) \-)
                      (is-empty? @tiles (get-neighbour-pos pos i)))
             (let [d (.charAt code i)
@@ -687,7 +687,7 @@
       (end-shape))))
 
 
-(defn make-facecode-bezier-box-triangles [code steps]
+(defn make-facecode-bezier-box-triangles [^String code steps]
   (let [num-connected (get-num-connected code)
         endpoint-pairs (if (< num-connected 4)
                          (vec (make-curve-endpoints (get-connected-idxs code)))
@@ -699,7 +699,7 @@
          endpoint-pairs)))
 
 
-(defn make-facecode-bezier-box-lines [code steps]
+(defn make-facecode-bezier-box-lines [^String code steps]
   (let [num-connected (get-num-connected code)
         endpoint-pairs (if (< num-connected 4)
                          (vec (make-curve-endpoints (get-connected-idxs code)))
@@ -888,7 +888,7 @@
       (end-shape))))
 
 
-(defn draw-facecode-color [code col]
+(defn draw-facecode-color [^String code col]
   (let [num-connected (get-num-connected code)
         endpoint-pairs (if (< num-connected 4)
                          (vec (make-curve-endpoints (get-connected-idxs code)))

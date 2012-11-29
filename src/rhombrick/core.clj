@@ -47,13 +47,13 @@
 ; _______________________________________________________________________
 
 
-(defn get-location-on-screen []
-  (let [p (.getLocationOnScreen @my-applet)
-        x (.x p)
-        y (.y p)]
-    ;(reset! mousewarp-pos [(- (/ (width) 2) (* x 2))
-    ;                       (- (/ (height) 2) (* y 2)) ])
-    [x y]))
+;(defn get-location-on-screen []
+;  (let [p (.getLocationOnScreen @my-applet)
+;        x (.x p)
+;        y (.y p)]
+;    ;(reset! mousewarp-pos [(- (/ (width) 2) (* x 2))
+;    ;                       (- (/ (height) 2) (* y 2)) ])
+;    [x y]))
 
 ; _______________________________________________________________________
 ; Rendering and events 

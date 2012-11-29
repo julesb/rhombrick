@@ -293,7 +293,7 @@
   ])
 
 
-(defn get-code-symmetry [code sym-idx]
+(defn get-code-symmetry [^String code ^long sym-idx]
   (apply str (map #(.charAt code ((symmetry-face-idx-map sym-idx) %))
                   (range (count code)))))
 
