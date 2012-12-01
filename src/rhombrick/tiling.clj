@@ -37,7 +37,7 @@
   [\f \F] })
 
 
-; NOTE: the tile renderer currently expects face digits no higher than 4 or D 
+; NOTE: the tile renderer currently expects face digits no higher than 6 or D 
 ; for simplicity, even though the tiler will handle any hex digit.
 (def ^:const random-tilecode-distribution [
   \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
@@ -294,6 +294,32 @@
 ;(defn update-stats-buffer []
 ;  )
 
+(def adapt-last-tilecount (atom 0))
+(def adapt-backtrack-window 10)
+
+(defn adapt-backtrack-params []
+  (let [current-tilecount (count @tiles)
+        tilecount-delta (- current-tilecount @adapt-last-tilecount)
+        efficiency (double (/ tilecount-delta adapt-backtrack-window))
+        target-distance (- 1.0 efficiency)
+        step-scale 0.1
+        adhd-step-size (* (- 1 (rand 2)) target-distance step-scale)
+        autism-step-size (* (- 1 (rand 2)) target-distance step-scale)
+        ]
+    ;(println "tiles:" current-tilecount
+    ;         "delta:" tilecount-delta
+    ;         "efficiency:" efficiency
+    ;         "target-dist:" target-distance
+    ;         "step-size:" adhd-step-size autism-step-size)
+
+    (reset! adhd (+ @adhd adhd-step-size))
+    (reset! autism (+ @autism autism-step-size))
+    (println "adhd:" (format "%.2f" @adhd)
+             "autism:" (format "%.2f" @autism))
+    (reset! adapt-last-tilecount current-tilecount)
+  ))
+
+
 (defn compute-backtrack-amount [num-tiles]
   (loop [n 1]
     (if (or (>= n num-tiles)
@@ -362,6 +388,9 @@
                 )
       (let [iter-start-time (System/nanoTime)]
         (dosync
+          ;(when (= (mod @tiler-iterations adapt-backtrack-window) 0)
+          ;  (adapt-backtrack-params))
+
           (reset! tiles (ordered-map (make-backtracking-tiling-iteration3 @tiles tileset-expanded)))
           (swap! tiler-iterations inc))
           (reset! last-iteration-time (/ 1000 (float (/ (- (System/nanoTime) iter-start-time) 1000000.0))))
