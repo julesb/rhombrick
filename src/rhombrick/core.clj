@@ -41,8 +41,9 @@
 (def draw-editor? (atom false))
 (def draw-gliders? (atom false))
 (def draw-boundaries? (atom false))
-(def draw-bezier-box-lines? (atom true))
+(def draw-bezier-box-lines? (atom false))
 (def draw-bezier-box-faces? (atom true))
+(def draw-tilecode-lines? (atom false))
 (def tiler-auto-seed? (atom false))
 ; _______________________________________________________________________
 
@@ -234,6 +235,8 @@
           (swap! draw-boundaries? not))
     \l #(do
           (swap! draw-bezier-box-lines? not))
+    \L #(do
+          (swap! draw-tilecode-lines? not))
     \f #(do
           (swap! draw-bezier-box-faces? not))
     \_ #(do
@@ -457,10 +460,11 @@
       ;(draw-face-list-textured))
 
     (draw-tiling @draw-boundaries?
+                 @draw-tilecode-lines?
                  @draw-bezier-box-faces?
                  @draw-bezier-box-lines?)
     
-    (draw-assemblage-center)
+    ;(draw-assemblage-center)
 
     (when @draw-facelist?
       (draw-face-list))

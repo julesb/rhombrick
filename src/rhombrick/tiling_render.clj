@@ -22,14 +22,20 @@
                              \2 0.5
                              \3 0.75
                              \4 1.0
-                             \a 0.25
-                             \A 0.25
-                             \b 0.5
-                             \B 0.5
-                             \c 0.75
-                             \C 0.75
-                             \d 1.0
-                             \D 1.0
+                             \5 1.4142135623730951
+                             \6 2.0
+                             \a 0.125
+                             \A 0.125
+                             \b 0.25
+                             \B 0.25
+                             \c 0.5
+                             \C 0.5
+                             \d 0.75
+                             \D 0.75
+                             \e 1.0
+                             \E 1.0
+                             \f 1.4142135623730951
+                             \F 1.4142135623730951
                              })
 
 
@@ -334,8 +340,8 @@
         (no-stroke)
         ;(stroke r g b 255)
         (doseq [^long i (range 12)]
-          (when (and (not= (.charAt code i) \-)
-                     (is-empty? @tiles (get-neighbour-pos pos i)))
+          (when (and (not= (.charAt code i) \-))
+                     ;(is-empty? @tiles (get-neighbour-pos pos i)))
             (let [d (.charAt code i)
                   dir (co-verts i)
                   [dx dy dz] (vec3-normalize dir)
@@ -1016,12 +1022,13 @@
 
 
 
-(defn draw-tiling [with-boundaries? with-faces? with-lines?]
+(defn draw-tiling [with-boundaries? with-lines? with-bb-faces? with-bb-lines?]
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 128)
-          line-col [(col 0) (col 1) (col 2) 255] ;  [255 255 255 192]
+          col (conj (get-tile-color code) 255)
+          ;line-col [(col 0) (col 1) (col 2) 255]
+          line-col [0 0 0 192]
           bezier-steps @bezier-box-resolution]
       (when with-boundaries?
         (draw-face-boundaries pos code))
@@ -1029,11 +1036,12 @@
         (scale 0.5)
         ;(stroke-weight 8)
         ;(stroke 0 0 0 64)
-        ;(no-fill)
-        ;(draw-facecode code)
-        (when with-faces?
-          (draw-facecode-bezier-boxes (@tiles pos) col bezier-steps))
         (when with-lines?
+          (no-fill)
+          (draw-facecode code))
+        (when with-bb-faces?
+          (draw-facecode-bezier-boxes (@tiles pos) col bezier-steps))
+        (when with-bb-lines?
           (draw-facecode-bezier-box-lines (@tiles pos) line-col bezier-steps))
         ;(draw-facecode-color (@tiles pos) col)
                         ))))

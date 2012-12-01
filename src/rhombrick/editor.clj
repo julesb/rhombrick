@@ -18,10 +18,12 @@
                    :stroke-active [255 255 255 192]
                    })
 
+(def default-tileset ["A-A---------" "0-a---0-----" "4-d---D-3---" "3-------D---" "D-d---0-0---" "D-0---6-a---" "A-----6-----" "a-----d-0---" "A-----a-----" "6-----a-----"])
+
 (def default-editor-state {:level 0
                            :selected [0 0 0]
                            :selected-tilecode-digit []
-                           :tileset (atom ["--1--1--1--1"])
+                           :tileset (atom default-tileset)
                          })
 
 (def editor-state (atom default-editor-state))
@@ -33,7 +35,9 @@
                  \1 \2
                  \2 \3
                  \3 \4
-                 \4 \a
+                 \4 \5
+                 \5 \6
+                 \6 \a
                  \a \A
                  \A \b
                  \b \B
@@ -83,13 +87,10 @@
         ;(when-not (set-contains-rotations? (set tileset) code)
         (add-to-tileset code)
         (doseq [rc (get-code-symmetries code)]
-          (swap! current-tileset-colors assoc rc col))))
-    (update-tileset-expanded (get-tileset))
-    )
+          (swap! current-tileset-colors assoc rc col)))))
   (if (> ((@editor-state :selected) 1) (dec (count (get-tileset))))
     (set-selected (dec (count (get-tileset))) 1))
   ;(init-dead-loci)
-  ;(update-tileset-expanded tileset)
   ; (soft-init-tiler)
   )
 

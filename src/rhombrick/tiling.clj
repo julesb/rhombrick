@@ -5,14 +5,13 @@
         [ordered.map]))
 
 
-(def max-tiles (atom 200))
+(def max-tiles (atom 1000))
 (def tiles (atom (ordered-map)))
 (def tiler-iterations (atom 0))
 (def tiler-state (atom :halted)) ; :halted :running :paused
 (def assemblage-center (atom [0 0 0]))
-(def assemblage-max-radius (atom 6))
+(def assemblage-max-radius (atom 20))
 (def dead-loci (atom #{}))
-(def tileset-expanded (atom #{}))
 (def tiler-thread (atom nil))
 (def tiler-thread-id (atom 0))
 (def last-iteration-time (atom 0))
@@ -56,6 +55,8 @@
   \2 \2 \2 \2 \2 \2 \2 \2
   \3 \3 \3 \3
   \4 \4 \4 \4
+  \5 \5 \5 \5
+  \6 \6 \6 \6
   \a \a \a \a \a \a \a \a
   \A \A \A \A \A \A \A \A
   \b \b \b \b
@@ -74,7 +75,7 @@
 
 
 (defn get-random-tileset []
-  (let [num-tiles (+ 1 (rand-int 5))]
+  (let [num-tiles (+ 1 (rand-int 10))]
     (vec (map (fn [_] (make-random-tilecode))
          (range num-tiles)))))
 
@@ -128,6 +129,9 @@
 
 
 (defn delete-neighbours [_tiles pos]
+;  (->> _tiles
+;       (filter #(not (contains? (get-neighbours pos) %)))
+;       (filter #(not (contains? pos)))))
   (filter #(not (contains? (get-neighbours pos) %)) _tiles))
 
 
@@ -172,7 +176,7 @@
     (if (contains? @dead-loci outercode)
       ()
       (filter #(facecodes-directly-compatible? outercode %)
-              @tileset-expanded))))
+              tileset))))
 
 
 ; neighbourhood looks like ["000000001001" "000000001000" etc ]
@@ -207,10 +211,12 @@
 ;  (into #{} (apply concat (map #(get-empty-connected-neighbours _tiles %) (keys _tiles)))))
 
 (defn get-empty-positions [_tiles]
-  (->> (keys _tiles)
-       (map #(get-empty-connected-neighbours _tiles %))
-       (apply concat)
-       (set)))
+  (if (= (count _tiles) 0)
+    #{[0 0 0]}
+    (->> (keys _tiles)
+         (map #(get-empty-connected-neighbours _tiles %))
+         (apply concat)
+         (set))))
 
 
 (defn init-dead-loci! []
@@ -225,17 +231,11 @@
 
 
 (defn creates-untileable-region? [_tiles pos]
-  (> (count (->> (get-neighbours pos)
+  (> (count (->> (get-connected-neighbours _tiles pos)
                  (filter #(is-empty? _tiles %))
                  (filter #(contains? @dead-loci 
                                      (get-outer-facecode2 (get-neighbourhood _tiles %))))))
      0))
-
-
-(defn update-tileset-expanded [tileset]
-  (when (> (count tileset) 0)
-    (reset! tileset-expanded
-            (expand-tiles-preserving-symmetry tileset))))
 
 
 ; returns a list of todo locations with 0 or 1 matching tiles
@@ -261,19 +261,11 @@
 ; Receive a vector of positions and return the closest to the center
 ; ie the vector with the shortest length. If there are more than one
 ; with length equal to the shortest length then return a random one.
-;
-; !FIXME! These next two shouldnt need to call vec3-length twice. In
-; fact since we dont need the actual length, only compare them to find
-; the shortest, we shouldnt use the length function just sum of squares
-; so avoid calling sqrt!
-;
-; It is worth optimising because it's called at least once per cell.
-
 (defn find-closest-to-center [positions]
-  (let [lengths (into {} (map #(vec [%1 (vec3-length %1)]) positions))
-        sorted-lengths (sort-by #(vec3-length (key %)) lengths)
-        min-length ((first sorted-lengths) 1)
-        tie-winners (filter #(= min-length (val %)) sorted-lengths) ]
+  (let [sorted (->> (map #(vec [%1 (vec3-sum-of-squares %1)]) positions)
+                    (sort-by #(% 1)))
+        min-length ((first sorted) 1)
+        tie-winners (filter #(= min-length (% 1)) sorted)]
     (if (= 1 (count tie-winners))
       ((first tie-winners) 0)
       ((rand-nth tie-winners) 0))))
@@ -293,15 +285,21 @@
 (def autism (atom 1.0))
 (def adhd (atom 2.0)) ; lower = more adhd
 
+;(def ^const stats-buffer-length 1000)
+;(def stats-tile-count (atom []))
+;(def stats-empty-count (atom []))
+;(def stats-dead-count (atom []))
+;(def stats-backtrack (atom []))
+;(def stats-iter-time (atom []))
+;(defn update-stats-buffer []
+;  )
 
 (defn compute-backtrack-amount [num-tiles]
-  (let [t num-tiles]
-    (loop [n 1]
-      (if (or (> n (- t 1))
-              (> (rand)
-                 (Math/pow (/ n (+ n @autism)) @adhd)))
-        n
-        (recur (inc n))))))
+  (loop [n 1]
+    (if (or (>= n num-tiles)
+            (> (rand) (Math/pow (/ n (+ n @autism)) @adhd)))
+      n
+      (recur (inc n)))))
 
 
 (defn backtrack [_tiles]
@@ -310,35 +308,34 @@
         ni (- num-tiles n)]
     (if (and (> num-tiles 0)
              (<= n num-tiles))
-      (ordered-map (take ni @tiles))
+      (take ni _tiles)
       _tiles)))
 
 
-(defn make-backtracking-tiling-iteration3 [__tiles tileset]
-  (let [_tiles (if (= (count __tiles) 0)
-                 (make-tile __tiles [0 0 0] (rand-nth (vec (expand-tiles-preserving-symmetry tileset))))
-                 __tiles) ]
-
+(defn make-backtracking-tiling-iteration3 [_tiles tileset]
   (if-let [positions (choose-positions _tiles tileset (get-empty-positions _tiles))]
-    (let [new-pos (find-closest-to-point positions (find-assemblage-center _tiles))
+    (let [new-pos (find-closest-to-center positions)
+          ;new-pos (find-closest-to-point positions [0 0 0])
+          ;new-pos (find-closest-to-point positions (find-assemblage-center _tiles))
           new-neighbourhood (get-neighbourhood _tiles new-pos)
           new-code (choose-tilecode2 new-neighbourhood tileset)]
       (if (nil? new-code)
         (do
-          (println "no tile would fit")
+          ;(println "no tile would fit")
           (add-to-dead-loci! (get-outer-facecode2 new-neighbourhood))
           (->> (delete-neighbours _tiles new-pos)
-               (backtrack)))
+               (backtrack))
+          )
         (let [new-tiles (make-tile _tiles new-pos new-code)]
           (if (creates-untileable-region? new-tiles new-pos)
             (do
-              (println "dead end, backtracking")
+              ;(println "dead end, backtracking")
               (backtrack _tiles)
               )
             new-tiles))))
     (do
       (reset! tiler-state :halted)
-      _tiles))))
+      _tiles)))
 
 
 (defn halt-tiler []
@@ -351,23 +348,24 @@
        (> (count @tiles) 0)
        (< (count @tiles) @max-tiles)
        (> (count (get-empty-positions @tiles)) 0)
-       (> (count @tileset-expanded) 0)))
+       ))
 
 
 (defn run-backtracking-tiling-thread [_tiles tileset]
   (println "tiler thread starting")
-  ;(while tiler-can-iterate? 
-  (while (and (= @tiler-state :running)
-       ;(> (count @tiles) 0)
-       (< (count @tiles) @max-tiles)
-       ;(> (count (get-empty-positions @tiles)) 0)
-       (> (count @tileset-expanded) 0))
-    (let [iter-start-time (System/nanoTime)]
-      (dosync
-        (reset! tiles (ordered-map (make-backtracking-tiling-iteration3 @tiles tileset)))
-        (swap! tiler-iterations inc))
-        (reset! last-iteration-time (/ 1000 (float (/ (- (System/nanoTime) iter-start-time) 1000000.0))))
-      ))
+  (let [tileset-expanded (expand-tiles-preserving-symmetry tileset)]
+    ;(while tiler-can-iterate? 
+    (while (and (= @tiler-state :running)
+                ;(> (count @tiles) 0)
+                (< (count @tiles) @max-tiles)
+                (> (count (get-empty-positions @tiles)) 0)
+                )
+      (let [iter-start-time (System/nanoTime)]
+        (dosync
+          (reset! tiles (ordered-map (make-backtracking-tiling-iteration3 @tiles tileset-expanded)))
+          (swap! tiler-iterations inc))
+          (reset! last-iteration-time (/ 1000 (float (/ (- (System/nanoTime) iter-start-time) 1000000.0))))
+        )))
   (halt-tiler))
 
 
@@ -391,7 +389,7 @@
 (defn init-tiler [tileset]
   (reset! tiles (ordered-map))
   (reset! tiler-iterations 0)
-  (update-tileset-expanded tileset))
+  )
 
 
 (defn start-tiler [tileset soft-start?]
