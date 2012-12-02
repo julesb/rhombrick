@@ -99,6 +99,13 @@
     ;(reset! mousewarp-pos [(mouse-x) (mouse-y)])
     ;(println "mouse:" @mousewarp-pos)
 
+    (Thread/setDefaultUncaughtExceptionHandler
+      (reify Thread$UncaughtExceptionHandler
+        (uncaughtException [this thread throwable]
+          ;; do something with the exception here.. log it, for example.
+          (println this thread throwable)
+     )))
+
     (println "setup done")
     )
 
@@ -109,7 +116,7 @@
         lines [(str "state: " @tiler-state)
                (str "iters: " @tiler-iterations)
                (str "tiles: " (count @tiles) "/" @max-tiles) 
-               (str "ips: " (int @last-iteration-time))
+               (str "ips: " (int (/ 1000 @last-iteration-time)))
                ;(str "empty: " (count @empty-positions)) 
                (str "dead: " (count @dead-loci))
                (str "radius: " @assemblage-max-radius)
@@ -487,7 +494,7 @@
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info 10 (- (height) 200))
+  (draw-info 10 (- (height) 210))
   (camera)
 
   (when (> (editor/get-level) 0)
@@ -504,6 +511,8 @@
     ; bottom of screen
     ;(draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))
     ;(draw-tileset-editor [1285 20] @current-tileset 140))
+
+  (draw-graphs [20 100])
 
   (hint :enable-depth-test)
 

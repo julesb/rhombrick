@@ -65,6 +65,52 @@
 ;    [255 0 0]))
 
 
+(defn draw-graph [[x y] w h title data-range data]
+  (stroke-weight 1)
+  (stroke 128 128 128 255)
+  (fill 0 0 0 192)
+  (rect x y w h)
+  (stroke 192 192 255 255)
+  (no-fill)
+  (doseq [i (range (count data))]
+    (if-let [d (data i)]
+      (when (> d 0)
+        (let [x1 (+ x i)
+              y1 (+ y h)
+              x2 (+ x i)
+              y2 (- y1 (* (/ d data-range) h))]
+          (point x2 y2))))))
+
+
+(defn get-graph-params []
+  [{:title "tiles"
+    :range @max-tiles
+    :data @stats-tile-count}
+   {:title "iter time"
+    :range 500
+    :data @stats-iter-time}
+   {:title "backtrack"
+    :range (max 100 (count @tiles))
+    :data @stats-backtrack}
+  ])
+
+
+(defn draw-graphs [[x y]]
+  (let [graph-height 50
+        graph-space 5
+        graphs (get-graph-params)]
+    (doseq [i (range (count graphs))]
+      (let [graph (graphs i)
+            gx x
+            gy (+ y (* i graph-height) (* i graph-space))]
+        (draw-graph [gx gy]
+                    stats-buffer-length
+                    graph-height
+                    (graph :title)
+                    (graph :range)
+                    (graph :data))))))
+
+
 
 (defn facecode-to-hex [code]
   (apply str "0x" (map #(if (= \- %) \0 %) code)))

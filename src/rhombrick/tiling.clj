@@ -285,14 +285,31 @@
 (def autism (atom 1.0))
 (def adhd (atom 2.0)) ; lower = more adhd
 
-;(def ^const stats-buffer-length 1000)
-;(def stats-tile-count (atom []))
-;(def stats-empty-count (atom []))
-;(def stats-dead-count (atom []))
-;(def stats-backtrack (atom []))
-;(def stats-iter-time (atom []))
-;(defn update-stats-buffer []
-;  )
+(def stats-buffer-length 200)
+(def stats-tile-count (atom []))
+;(def stats-empty-count (atom ()))
+(def stats-dead-count (atom []))
+(def stats-backtrack (atom []))
+(def stats-iter-time (atom []))
+
+(defn append-stats-buffer! [buf new-val]
+  (swap! buf conj new-val)
+    (when (> (count @buf) stats-buffer-length)
+      (swap! buf #(vec (rest %)))))
+
+(defn get-buffer-scale [buf]
+  (if (> (count buf) 0)
+    (apply max buf)
+    100))
+
+(defn init-stats-buffers []
+  (reset! stats-tile-count [])
+  ;(reset! stats-empty-count (atom []))
+  (reset! stats-dead-count [])
+  (reset! stats-backtrack [])
+  (reset! stats-iter-time [])
+  )
+
 
 (def adapt-last-tilecount (atom 0))
 (def adapt-backtrack-window 10)
@@ -334,8 +351,12 @@
         ni (- num-tiles n)]
     (if (and (> num-tiles 0)
              (<= n num-tiles))
-      (take ni _tiles)
-      _tiles)))
+      (do
+        (append-stats-buffer! stats-backtrack n)
+        (take ni _tiles))
+      (do
+        (append-stats-buffer! stats-backtrack 0)
+        _tiles))))
 
 
 (defn make-backtracking-tiling-iteration3 [_tiles tileset]
@@ -358,7 +379,9 @@
               ;(println "dead end, backtracking")
               (backtrack _tiles)
               )
-            new-tiles))))
+            (do
+              (append-stats-buffer! stats-backtrack 0)
+              new-tiles)))))
     (do
       (reset! tiler-state :halted)
       _tiles)))
@@ -377,7 +400,7 @@
        ))
 
 
-(defn run-backtracking-tiling-thread [_tiles tileset]
+(defn run-backtracking-tiling-thread [tileset]
   (println "tiler thread starting")
   (let [tileset-expanded (expand-tiles-preserving-symmetry tileset)]
     ;(while tiler-can-iterate? 
@@ -392,9 +415,14 @@
           ;  (adapt-backtrack-params))
 
           (reset! tiles (ordered-map (make-backtracking-tiling-iteration3 @tiles tileset-expanded)))
-          (swap! tiler-iterations inc))
-          (reset! last-iteration-time (/ 1000 (float (/ (- (System/nanoTime) iter-start-time) 1000000.0))))
-        )))
+          (swap! tiler-iterations inc)
+          (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
+ 
+          (append-stats-buffer! stats-tile-count (count @tiles))
+          (append-stats-buffer! stats-dead-count (count @dead-loci))
+          (append-stats-buffer! stats-iter-time @last-iteration-time)
+          ))
+        ))
   (halt-tiler))
 
 
@@ -428,8 +456,9 @@
   (seed-tiler tileset)
   (when-not soft-start?
     (init-dead-loci!))
+  ;(init-stats-buffers)
   (reset! tiler-state :running)
-  (reset! tiler-thread (future (run-backtracking-tiling-thread @tiles tileset))))
+  (reset! tiler-thread (future (run-backtracking-tiling-thread tileset))))
 
 
 
