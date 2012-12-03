@@ -291,6 +291,7 @@
 (def stats-dead-count (atom []))
 (def stats-backtrack (atom []))
 (def stats-iter-time (atom []))
+(def stats-efficiency (atom []))
 
 (defn append-stats-buffer! [buf new-val]
   (swap! buf conj new-val)
@@ -312,7 +313,7 @@
 
 
 (def adapt-last-tilecount (atom 0))
-(def adapt-backtrack-window 10)
+(def adapt-backtrack-window 1)
 
 (defn adapt-backtrack-params []
   (let [current-tilecount (count @tiles)
@@ -323,16 +324,17 @@
         adhd-step-size (* (- 1 (rand 2)) target-distance step-scale)
         autism-step-size (* (- 1 (rand 2)) target-distance step-scale)
         ]
+    (append-stats-buffer! stats-efficiency efficiency)
     ;(println "tiles:" current-tilecount
     ;         "delta:" tilecount-delta
     ;         "efficiency:" efficiency
     ;         "target-dist:" target-distance
     ;         "step-size:" adhd-step-size autism-step-size)
 
-    (reset! adhd (+ @adhd adhd-step-size))
-    (reset! autism (+ @autism autism-step-size))
-    (println "adhd:" (format "%.2f" @adhd)
-             "autism:" (format "%.2f" @autism))
+    ;(reset! adhd (+ @adhd adhd-step-size))
+    ;(reset! autism (+ @autism autism-step-size))
+    ;(println "adhd:" (format "%.2f" @adhd)
+    ;         "autism:" (format "%.2f" @autism))
     (reset! adapt-last-tilecount current-tilecount)
   ))
 
@@ -411,12 +413,14 @@
                 )
       (let [iter-start-time (System/nanoTime)]
         (dosync
-          ;(when (= (mod @tiler-iterations adapt-backtrack-window) 0)
-          ;  (adapt-backtrack-params))
 
           (reset! tiles (ordered-map (make-backtracking-tiling-iteration3 @tiles tileset-expanded)))
           (swap! tiler-iterations inc)
           (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
+          
+          (when (= (mod @tiler-iterations adapt-backtrack-window) 0)
+            (adapt-backtrack-params)
+          )
  
           (append-stats-buffer! stats-tile-count (count @tiles))
           (append-stats-buffer! stats-dead-count (count @dead-loci))

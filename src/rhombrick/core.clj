@@ -168,13 +168,13 @@
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
          (start-tiler (editor/get-tileset-as-set) true)
-         ;(init-gliders num-gliders)
+         (init-gliders num-gliders)
          )
    \R #(do 
          (editor/set-tileset (get-random-tileset))
          (start-tiler (editor/get-tileset-as-set) false)
          (println "random tileset:" (editor/get-tileset-as-set))
-         ;(init-gliders num-gliders)
+         (init-gliders num-gliders)
          )
    \- #(do 
          (swap! camera-fov - 1)
@@ -483,7 +483,8 @@
       (let [selected-tile ((get-glider 1) :current-tile)]
         ;(draw-neighbours selected-tile)
         ;(draw-curve-boundary-points selected-tile)
-        (draw-selected-tile selected-tile)))
+        (draw-selected-tile selected-tile)
+        ))
     (pop-matrix)
   )
 

@@ -92,11 +92,14 @@
    {:title "backtrack"
     :range (max 100 (count @tiles))
     :data @stats-backtrack}
+   {:title "efficiency"
+    :range 1.0
+    :data @stats-efficiency}
   ])
 
 
 (defn draw-graphs [[x y]]
-  (let [graph-height 50
+  (let [graph-height 100
         graph-space 5
         graphs (get-graph-params)]
     (doseq [i (range (count graphs))]
@@ -323,7 +326,7 @@
     (stroke-weight 8)
     (with-translation pos
       (scale 0.5)
-      (draw-faces rd-verts rd-faces nil))))
+      (draw-faces rd-verts rd-faces [(col 0) (col 1) (col 2) 128]))))
    
 
 (defn draw-neighbours [pos]
@@ -386,20 +389,21 @@
         (no-stroke)
         ;(stroke r g b 255)
         (doseq [^long i (range 12)]
-          (when (and (not= (.charAt code i) \-))
-                     ;(is-empty? @tiles (get-neighbour-pos pos i)))
+          (when (and (not= (.charAt code i) \-)
+                     (is-empty? @tiles (get-neighbour-pos pos i)))
             (let [d (.charAt code i)
                   dir (co-verts i)
                   [dx dy dz] (vec3-normalize dir)
                   az (Math/atan2 dy dx)
                   el (- (Math/asin dz))
-                  thickness (* 1.3 (bezier-box-thicknesses (.charAt code i)))]
+                  thickness (* 1.3 (bezier-box-thicknesses (.charAt code i)))
+                  alpha 192]
               (if (face-digit-like-compatible? d)
-                (do (fill 160 160 220 255))
+                (do (fill 160 160 220 alpha))
                 (do
                   (if (>= (int d) 97)
-                    (fill 255 255 255 255)
-                    (fill 0 0 0 255))))
+                    (fill 255 255 255 alpha)
+                    (fill 0 0 0 alpha))))
               (with-translation (vec3-scale (co-verts i) 0.91)
                 (rotate az 0 0 1)
                 (rotate el 0 1 0)
@@ -848,7 +852,7 @@
               (rotate-x (* frame (+ (glider :id) 20) 0.00351471))
               (rotate-y (* frame (+ (glider :id) 20) 0.00352363))
               ;(rotate-z (* frame (glider :id) 0.0035123))
-              (draw-faces rd-verts rd-faces nil)
+              (draw-faces rd-verts rd-faces [(col 0) (col 1) (col 2) 192 ])
               ;(box 0.01 0.01 0.01)
               ;(pop-matrix)
                             ))))
@@ -1074,10 +1078,8 @@
           code (@tiles pos)
           col (conj (get-tile-color code) 255)
           ;line-col [(col 0) (col 1) (col 2) 255]
-          line-col [0 0 0 192]
+          line-col [255 255 255 128]
           bezier-steps @bezier-box-resolution]
-      (when with-boundaries?
-        (draw-face-boundaries pos code))
       (with-translation pos 
         (scale 0.5)
         ;(stroke-weight 8)
@@ -1090,5 +1092,9 @@
         (when with-bb-lines?
           (draw-facecode-bezier-box-lines (@tiles pos) line-col bezier-steps))
         ;(draw-facecode-color (@tiles pos) col)
-                        ))))
+        )
+      (when with-boundaries?
+        (draw-face-boundaries pos code))
+      
+      )))
 
