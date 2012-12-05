@@ -9,7 +9,7 @@ The tile assembler was inspired by the algorithm described in Chapter 7 of [Paul
 Clone the repo then do: lein deps; lein run.
 
 
-<img src="http://xanthus.zapto.org/collection.jpg" title="rhombrick work in progress screenshots" />
+<img src="http://xanthus.zapto.org/rhomb-screen-tmp.jpg" title="rhombrick work in progress screenshots" />
 
 ```
 Keyboard commands
