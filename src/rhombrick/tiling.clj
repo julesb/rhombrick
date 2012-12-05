@@ -600,8 +600,8 @@
 ;
 ;  1) A path in the history vector is identical to candidate-history-path.
 ;  2) A path in the history vector *ends with* candidate-history-path.
-;  3) If candidate-history-path is shorter than a path we are testing, then it
-;     can be considered a match if the candidate-history-path ends with the 
+;  3) If a path we are testing is shorter than candidate-history-path, then it
+;     can be considered a match if the candidate-history-path ends with the
 ;     test path.
 ;  4) ...?
 ;
