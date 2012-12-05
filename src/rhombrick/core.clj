@@ -112,6 +112,8 @@
 ; _______________________________________________________________________
 
 (defn draw-info [x y]
+  (when (zero? @last-iteration-time)
+    (reset! last-iteration-time 1))
   (let [line-space 22
         lines [(str "state: " @tiler-state)
                (str "iters: " @tiler-iterations)
