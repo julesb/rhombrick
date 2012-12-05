@@ -557,5 +557,51 @@
 
 ; _______________________________________________________________________
 
+; History Tracking
+; ================
+;
+; To avoid attempting to tile previously failed paths through tiling space,
+; we need to store a history of tiles placed. Let history-paths be a vector
+; containing sequences of tiles placed between backtracking (or start) events.
+; Each entry of history-paths represents a failed path through the search
+; space. There are two exceptions to this: 1) If the tiler completes, then
+; the last entry of history-paths contains a successful path. 2) While the
+; tiler is running, the current history-path is not known to be a failure path.
+;
+;
+; Populating and maintaining the history vector
+; ---------------------------------------------
+;
+; When the tiler starts, or performs backtracking,  a new entry is created in
+; the history vector. Each entry in the history vector is a vector containing the
+; tiles layed on this path. A new path is created after backtracking, and
+; is complete when the next backtrack occurs. Subsequent tile placements will
+; be added to the newly created path.
+;
+; We will need an atom current-history-path-idx to contain the index of the
+; current history path.
+;
+; Using the history vector
+; ------------------------
+;
+; When examining a candidate tile for a position, after passing compatibility,
+; the tile will be conjed to the current-history-path to create
+; candidate-history-path. If the history-paths contains a sequence identical[1]
+; to candidate-history-path then the tile should not be accepted for the
+; position.
+;
+; [1] There are details not yet worked out concerning what a "matching path"
+;     exactly means. Do we need the paths to match from beginning to end? Do
+;     we consider it a match if the current history path is a subvector of a
+;     known failure path, or perhaps only if it matches at the end of the
+;     containing path? - work this out
+;
+; (def history-paths [
+;   [[[0 0 0] "-0---d-----D"] [[-1 0 1] "-6---d------"] [[1 0 -1] "-0---d-----D"]]
+;   [[[-1 0 1] "-6---d------"] [[1 0 -1] "-0---d-----D"] [[1 0 1] "-D-----0----"]]
+;   etc...
+; ])
+
+
 ; _______________________________________________________________________
 
