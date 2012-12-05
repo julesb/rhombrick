@@ -586,15 +586,37 @@
 ;
 ; When examining a candidate tile for a position, after passing compatibility,
 ; the tile will be conjed to the current-history-path to create
-; candidate-history-path. If the history-paths contains a sequence identical[1]
-; to candidate-history-path then the tile should not be accepted for the
+; candidate-history-path. If the history-paths contains a sequence matching[1]
+; candidate-history-path then the tile should not be accepted for the
 ; position.
 ;
 ; [1] There are details not yet worked out concerning what a "matching path"
 ;     exactly means. Do we need the paths to match from beginning to end? Do
 ;     we consider it a match if the current history path is a subvector of a
 ;     known failure path, or perhaps only if it matches at the end of the
-;     containing path? - work this out
+;     containing path?
+;
+; It seems that we should consider the following scenarios a match:
+;
+;  1) A path in the history vector is identical to candidate-history-path.
+;  2) A path in the history vector *ends with* candidate-history-path.
+;  3) If candidate-history-path is shorter than a path we are testing, then it
+;     can be considered a match if the candidate-history-path ends with the 
+;     test path.
+;  4) ...?
+;
+; In terms of implementation, when searching we can ignore all history paths
+; which don't end with the same tile as the last tile in candidate-history-path.
+;
+; It would be nice to use a hashmap for the history paths, with the world
+; coord of the path's final tile as the key. There will be potentially many
+; paths like this, so we could then make the map value a vector of paths with a
+; given final tile.
+;
+; It is still not clear to me whether this history tracking idea would provide
+; a great improvement over the current simpler tactic of caching dead loci and
+; checking that no known dead loci are created by placing a tile.
+;
 ;
 ; (def history-paths [
 ;   [[[0 0 0] "-0---d-----D"] [[-1 0 1] "-6---d------"] [[1 0 -1] "-0---d-----D"]]
