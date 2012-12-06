@@ -230,11 +230,12 @@
     ))
 
 
-(defn creates-untileable-region? [_tiles pos]
+(defn creates-untileable-region? [_tiles tileset pos]
   (> (count (->> (get-connected-neighbours _tiles pos)
-                 (filter #(is-empty? _tiles %))
-                 (filter #(contains? @dead-loci 
-                                     (get-outer-facecode2 (get-neighbourhood _tiles %))))))
+                 (filter #(and (is-empty? _tiles %)
+                               (or (contains? @dead-loci
+                                              (get-outer-facecode2 (get-neighbourhood _tiles %)))
+                                   (= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 0))))))
      0))
 
 
@@ -376,8 +377,9 @@
                (backtrack))
           )
         (let [new-tiles (make-tile _tiles new-pos new-code)]
-          (if (creates-untileable-region? new-tiles new-pos)
+          (if (creates-untileable-region? new-tiles tileset new-pos)
             (do
+              ;(delete-tile new-tiles new-tiles)
               ;(println "dead end, backtracking")
               (backtrack _tiles)
               )
@@ -617,12 +619,22 @@
 ; a great improvement over the current simpler tactic of caching dead loci and
 ; checking that no known dead loci are created by placing a tile.
 ;
+; Possible data structures for history-paths:
 ;
+; vector version:
 ; (def history-paths [
 ;   [[[0 0 0] "-0---d-----D"] [[-1 0 1] "-6---d------"] [[1 0 -1] "-0---d-----D"]]
 ;   [[[-1 0 1] "-6---d------"] [[1 0 -1] "-0---d-----D"] [[1 0 1] "-D-----0----"]]
 ;   etc...
 ; ])
+;
+; map version:
+; (def history-paths {
+;   [[1 0 -1] "-0---d-----D"] [[[0 0 0] "-0---d-----D"] [[-1 0 1] "-6---d------"] [[1 0 -1] "-0---d-----D"]]
+;   [[1 0 1] "-D-----0----"] [[[-1 0 1] "-6---d------"] [[1 0 -1] "-0---d-----D"] [[1 0 1] "-D-----0----"]]
+;   etc...
+; })
+;
 
 
 ; _______________________________________________________________________
