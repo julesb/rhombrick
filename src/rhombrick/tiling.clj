@@ -230,6 +230,11 @@
     ))
 
 
+(defn get-untileable-neighbours [_tiles tileset pos]
+  (->> (get-neighbours pos)
+       (filter #(= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 0))))
+
+
 (defn creates-untileable-region? [_tiles tileset pos]
   (> (count (->> (get-connected-neighbours _tiles pos)
                  (filter #(and (is-empty? _tiles %)
@@ -370,19 +375,17 @@
           new-neighbourhood (get-neighbourhood _tiles new-pos)
           new-code (choose-tilecode2 new-neighbourhood tileset)]
       (if (nil? new-code)
-        (do
-          ;(println "no tile would fit")
+        (do ; no tile will fit 
           (add-to-dead-loci! (get-outer-facecode2 new-neighbourhood))
           (->> (delete-neighbours _tiles new-pos)
-               (backtrack))
-          )
+               (backtrack)))
         (let [new-tiles (make-tile _tiles new-pos new-code)]
           (if (creates-untileable-region? new-tiles tileset new-pos)
             (do
-              ;(delete-tile new-tiles new-tiles)
-              ;(println "dead end, backtracking")
-              (backtrack _tiles)
-              )
+              (let [untileable (get-untileable-neighbours new-tiles tileset new-pos)]
+                (doseq [t untileable]
+                  (add-to-dead-loci! (get-outer-facecode2 (get-neighbourhood new-tiles t))))
+                (backtrack _tiles)))
             (do
               (append-stats-buffer! stats-backtrack 0)
               new-tiles)))))
@@ -473,6 +476,9 @@
 
 
 ; map tilecodes between pfh's 2d codes and the current implementation
+;
+; (I think there is a problem with this. In 3 dimensions the 2 dimensional
+; tiles may be flipped as well as rotated, whereas in 2d they can only rotate)
 ;
 ; hexagonal:
 ;   "AaAa--"  ->  "Aa-----A-a--"
