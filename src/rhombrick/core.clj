@@ -30,8 +30,8 @@
 
 (def keys-down (atom #{}))
 
-(def mousewarp-pos (atom [716 356])) ; 1440x800
-;(def mousewarp-pos (atom [946 506])) ; 1900x1100
+;(def mousewarp-pos (atom [716 356])) ; 1440x800
+(def mousewarp-pos (atom [946 506])) ; 1900x1100
 (def last-mouse-delta (atom [0 0]))
 
 (def my-applet (atom nil))
@@ -538,13 +538,13 @@
 ; _______________________________________________________________________
 
 
-(defn -main [& args] 
+(defn -main [& args]
   (defsketch rhombrick 
     :title "rhombrick"
     :setup setup 
     :draw draw
-    ;:size [1900 1100]
-    :size [1440 800]
+    :size [1900 1100]
+    ;:size [1440 800]
     :renderer :opengl 
     :key-typed key-typed
     :key-pressed key-pressed
