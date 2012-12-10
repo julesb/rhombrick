@@ -45,7 +45,11 @@
                  \c \C
                  \C \d
                  \d \D
-                 \D \-})
+                 \D \e
+                 \e \E
+                 \E \f
+                 \f \F
+                 \F \-})
 
 (def symmetry-display-index (atom 0))
 
