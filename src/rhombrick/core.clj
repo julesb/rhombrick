@@ -10,6 +10,7 @@
         [rhombrick.camera]
         [rhombrick.button]
         [rhombrick.editor :as editor]
+        [rhombrick.console :as console]
         [clojure.math.combinatorics]
         ;[overtone.osc]
         )
@@ -44,7 +45,12 @@
 (def draw-bezier-box-lines? (atom false))
 (def draw-bezier-box-faces? (atom true))
 (def draw-tilecode-lines? (atom false))
+(def draw-console? (atom false))
 (def tiler-auto-seed? (atom false))
+
+(def ^:dynamic editor-font)
+(def ^:dynamic console-font)
+
 ; _______________________________________________________________________
 
 
@@ -84,6 +90,8 @@
     (println "setting font")
     ;(text-font (load-font "FreeMono-16.vlw"))
     ;(text-font (load-font "ScalaSans-Caps-32.vlw"))
+    (def console-font (load-font "FreeMono-16.vlw"))
+    (def editor-font (load-font "AmericanTypewriter-24.vlw"))
     (text-font (load-font "AmericanTypewriter-24.vlw"))
     (set-state! :mouse-position (atom [0 0]))
 
@@ -114,6 +122,7 @@
 (defn draw-info [x y]
   (when (zero? @last-iteration-time)
     (reset! last-iteration-time 1))
+  (text-font console-font)
   (let [line-space 22
         lines [(str "state: " @tiler-state)
                (str "iters: " @tiler-iterations)
@@ -190,6 +199,8 @@
          (if (= @camera-mode 2)
            (no-cursor)
            (cursor))))
+   \C #(do
+         (swap! draw-console? not))
     \F #(do
          (swap! draw-facelist? not)
          (when @draw-facelist?
@@ -500,7 +511,12 @@
   (draw-info 10 (- (height) 210))
   (camera)
 
+  (when @draw-console?
+    (text-font console-font)
+    (console/draw-buffer 230 100))
+
   (when (> (editor/get-level) 0)
+    (text-font editor-font)
     (draw-tileset-editor [20 20] (editor/get-tileset) 64)
     ;(doseq [i (range (count @face-id-text))]
     ;  (let [f (@face-id-text i)

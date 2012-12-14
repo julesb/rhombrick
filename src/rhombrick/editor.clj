@@ -5,7 +5,8 @@
         [rhombrick.tiling-render]
         [rhombrick.button]
         [rhombrick.staticgeometry]
-        [rhombrick.tileset-library]))
+        [rhombrick.tileset-library]
+        [rhombrick.console :as console]))
 
 ;(def current-tileset-colors {})
 
@@ -77,7 +78,8 @@
 
 
 (defn set-tileset [tileset]
-  (println "set-tileset: " tileset)
+  (console/writeline (str "tileset:" tileset))
+  ;(println "set-tileset: " tileset)
 ;  (let [;tileset-set (distinct tileset)
 ;        num-uniq (count tileset)]
   (reset! (@editor-state :tileset) [])
