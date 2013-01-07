@@ -390,7 +390,8 @@
         ;(stroke r g b 255)
         (doseq [^long i (range 12)]
           (when (and (not= (.charAt code i) \-)
-                     (is-empty? @tiles (get-neighbour-pos pos i)))
+                     (is-empty? @tiles (get-neighbour-pos pos i))
+                     )
             (let [d (.charAt code i)
                   dir (co-verts i)
                   [dx dy dz] (vec3-normalize dir)
@@ -859,6 +860,29 @@
     (pop-style)
     ))
      
+
+(defn draw-gliders2 [frame]
+  (do
+    (push-style)
+    (stroke-weight 4)
+    (stroke 255 255 192 192)
+    (doseq [glider @gliders]
+      (let [pos (get-glider-pos (glider :id))
+            col (glider :color)
+            tile (glider :current-tile)
+            fidx-1 (glider :entry-face-idx)
+            fidx-2 (glider :exit-face-idx)]
+        (if (contains? @tiles tile)
+          (with-translation pos
+            (fill (col 0) (col 1) (col 2) 128)
+              (scale 0.01)
+              (rotate-x (* frame (+ (glider :id) 20) 0.00351471))
+              (rotate-y (* frame (+ (glider :id) 20) 0.00352363))
+              (draw-faces rd-verts rd-faces [(col 0) (col 1) (col 2) 192 ])
+                            ))))
+    (pop-style)
+    ))
+
 
 (defn draw-facecode [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
