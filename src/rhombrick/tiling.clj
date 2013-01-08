@@ -246,7 +246,8 @@
 
 ; returns a list of todo locations with 0 or 1 matching tiles
 (defn find-best-positions2 [_tiles tileset empty-positions]
-  (filter #(< (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 2)
+  ;(filter #(< (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 2)
+  (filter #(= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 1)
           empty-positions))
 
 
