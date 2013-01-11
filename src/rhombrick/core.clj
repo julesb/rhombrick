@@ -41,11 +41,12 @@
 (def draw-facelist? (atom false))
 (def draw-editor? (atom false))
 (def draw-gliders? (atom false))
-(def draw-boundaries? (atom false))
+(def draw-boundaries? (atom true))
 (def draw-bezier-box-lines? (atom false))
 (def draw-bezier-box-faces? (atom true))
 (def draw-tilecode-lines? (atom false))
 (def draw-console? (atom false))
+(def draw-graphs? (atom false))
 (def tiler-auto-seed? (atom false))
 
 (def ^:dynamic editor-font)
@@ -210,6 +211,8 @@
           (swap! draw-gliders? not)
           (if draw-gliders?
             (init-gliders num-gliders)))
+    \G #(do
+          (swap! draw-graphs? not))
     \T #(do 
          (swap! max-tiles inc)
          (println "max tiles:" @max-tiles))
@@ -531,7 +534,8 @@
     ;(draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))
     ;(draw-tileset-editor [1285 20] @current-tileset 140))
 
-  (draw-graphs [20 100])
+  (when @draw-graphs?
+    (draw-graphs [20 100]))
 
   (hint :enable-depth-test)
 
