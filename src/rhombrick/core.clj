@@ -10,6 +10,7 @@
         [rhombrick.camera]
         [rhombrick.button]
         [rhombrick.editor :as editor]
+        [rhombrick.console :as console]
         [clojure.math.combinatorics]
         ;[overtone.osc]
         )
@@ -30,8 +31,8 @@
 
 (def keys-down (atom #{}))
 
-(def mousewarp-pos (atom [716 356])) ; 1440x800
-;(def mousewarp-pos (atom [946 506])) ; 1900x1100
+;(def mousewarp-pos (atom [716 356])) ; 1440x800
+(def mousewarp-pos (atom [946 506])) ; 1900x1100
 (def last-mouse-delta (atom [0 0]))
 
 (def my-applet (atom nil))
@@ -40,18 +41,26 @@
 (def draw-facelist? (atom false))
 (def draw-editor? (atom false))
 (def draw-gliders? (atom false))
+(def draw-boundaries? (atom false))
+(def draw-bezier-box-lines? (atom false))
+(def draw-bezier-box-faces? (atom true))
+(def draw-tilecode-lines? (atom false))
+(def draw-console? (atom false))
+(def tiler-auto-seed? (atom false))
 
+(def ^:dynamic editor-font)
+(def ^:dynamic console-font)
 
 ; _______________________________________________________________________
 
 
-(defn get-location-on-screen []
-  (let [p (.getLocationOnScreen @my-applet)
-        x (.x p)
-        y (.y p)]
-    ;(reset! mousewarp-pos [(- (/ (width) 2) (* x 2))
-    ;                       (- (/ (height) 2) (* y 2)) ])
-    [x y]))
+;(defn get-location-on-screen []
+;  (let [p (.getLocationOnScreen @my-applet)
+;        x (.x p)
+;        y (.y p)]
+;    ;(reset! mousewarp-pos [(- (/ (width) 2) (* x 2))
+;    ;                       (- (/ (height) 2) (* y 2)) ])
+;    [x y]))
 
 ; _______________________________________________________________________
 ; Rendering and events 
@@ -61,8 +70,6 @@
 
 
 (defn setup []
-    ;(println "applet:" my-applet)
-     
     ;(reset! rhomb-tex (load-image "cave_texture_01-512x512.png"))
     ;(reset! rhomb-tex (load-image "testpattern4po6.png"))
     (reset! rhomb-tex (load-image "gradient.jpg"))
@@ -71,7 +78,6 @@
     ;(println "texture:" @rhomb-tex)
     (texture-mode :normalized)
       
-    ;(println (.frame (current-applet)))
     ;(println "screen pos" (get-location-on-screen))
     ;(println "screen size:" (width) (height))
     ;(println "frame:" (.getLocation (.frame @my-applet)))
@@ -84,45 +90,52 @@
     (println "setting font")
     ;(text-font (load-font "FreeMono-16.vlw"))
     ;(text-font (load-font "ScalaSans-Caps-32.vlw"))
+    (def console-font (load-font "FreeMono-16.vlw"))
+    (def editor-font (load-font "AmericanTypewriter-24.vlw"))
     (text-font (load-font "AmericanTypewriter-24.vlw"))
     (set-state! :mouse-position (atom [0 0]))
-    (println "building normalised faced set")
-    (build-normalised-facecode-set)
+
     (println "initialising tiler")
-    ;(editor/make-indexed @current-tileset)
     (editor/init-editor)
-    (init-tiler (editor/get-tileset-as-set))
-    ;(make-tiling-iteration) ; needed so init-gliders works
-    ;(make-backtracking-tiling-iteration @current-tileset)
-    (init-gliders num-gliders)
+    (start-tiler (editor/get-tileset-as-set) false)
+    ;(init-gliders num-gliders)
     ;(println @gliders)
-    ;(init-todo)
 
 ;    (doseq [val (range 10)]
 ;      (osc-send client "/test" "i" (float val)))
+
     ;(reset! mousewarp-pos [(mouse-x) (mouse-y)])
     ;(println "mouse:" @mousewarp-pos)
 
-    ;(println "bezier test: " (bezier-point 1.0 2.0 3.0 4.0 0.5))
+    (Thread/setDefaultUncaughtExceptionHandler
+      (reify Thread$UncaughtExceptionHandler
+        (uncaughtException [this thread throwable]
+          ;; do something with the exception here.. log it, for example.
+          (println this thread throwable)
+     )))
+
     (println "setup done")
     )
-    ;(doseq [code @normalised-facecodes]
-    ; (println code))
-    ;(println "total" (count @normalised-facecodes) "facecodes"))
 
 ; _______________________________________________________________________
 
 (defn draw-info [x y]
+  (when (zero? @last-iteration-time)
+    (reset! last-iteration-time 1))
+  (text-font console-font)
   (let [line-space 22
         lines [(str "state: " @tiler-state)
                (str "iters: " @tiler-iterations)
                (str "tiles: " (count @tiles) "/" @max-tiles) 
-               (str "empty: " (count @empty-positions)) 
+               (str "ips: " (int (/ 1000 @last-iteration-time)))
+               ;(str "empty: " (count @empty-positions)) 
                (str "dead: " (count @dead-loci))
                (str "radius: " @assemblage-max-radius)
                ;(str "-------------")
+               (str "bbox detail: " @bezier-box-resolution)
                (str "scale: " @model-scale)
                (str "fps: " (int (current-frame-rate)))
+               (str "tileset:" (get-tileset))
                ]]
     (fill 255 255 255 255)
     (doseq [i (range (count lines))]
@@ -165,14 +178,13 @@
         (println "model-scale: " @model-scale))
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
-         (soft-init-tiler (editor/get-tileset-as-set))
-         (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
-         (init-gliders num-gliders))
+         (start-tiler (editor/get-tileset-as-set) true)
+         (init-gliders num-gliders)
+         )
    \R #(do 
          (editor/set-tileset (get-random-tileset))
-         (init-tiler (editor/get-tileset-as-set))
-         (println "random tileset:" (editor/get-tileset-as-set)) 
-         (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
+         (start-tiler (editor/get-tileset-as-set) false)
+         (println "random tileset:" (editor/get-tileset-as-set))
          (init-gliders num-gliders)
          )
    \- #(do 
@@ -187,7 +199,9 @@
          (if (= @camera-mode 2)
            (no-cursor)
            (cursor))))
-    \f #(do
+   \C #(do
+         (swap! draw-console? not))
+    \F #(do
          (swap! draw-facelist? not)
          (when @draw-facelist?
            (build-face-list))
@@ -224,16 +238,35 @@
           (swap! assemblage-max-radius inc))
 
     \< #(do
-          (editor/load-prev-library-tileset))
+          (editor/load-prev-library-tileset)
+          (start-tiler (editor/get-tileset-as-set) false))
     \> #(do
-          (editor/load-next-library-tileset))
+          (editor/load-next-library-tileset)
+          (start-tiler (editor/get-tileset-as-set) false))
     \S #(do
           (editor/save-current-tileset-to-library))
-    \n #(do
-          (swap! symmetry-display-index dec))
-    \m #(do
-          (swap! symmetry-display-index inc))
-
+    ;\n #(do
+    ;      (swap! symmetry-display-index dec))
+    ;\m #(do
+    ;      (swap! symmetry-display-index inc))
+    \# #(do
+          (save-frame))
+    \b #(do
+          (swap! draw-boundaries? not))
+    \l #(do
+          (swap! draw-bezier-box-lines? not))
+    \L #(do
+          (swap! draw-tilecode-lines? not))
+    \f #(do
+          (swap! draw-bezier-box-faces? not))
+    \_ #(do
+          (when (> @bezier-box-resolution 1)
+            (swap! bezier-box-resolution dec)
+            (bezier-box-cache-reset)))
+    \+ #(do
+          (when (< @bezier-box-resolution 32)
+            (swap! bezier-box-resolution inc)
+            (bezier-box-cache-reset)))
        })
 
 (def key-editor-map
@@ -332,6 +365,18 @@
     (ellipse 0 0 rad rad)))
 
 
+
+(defn auto-seed-tiler []
+  (when (or (and (> @tiler-iterations 100)
+                 (< (count @tiles) 5))
+            (= @tiler-state :halted))
+      (editor/set-tileset (get-random-tileset))
+      (init-tiler (editor/get-tileset-as-set))
+      (println "random tileset:" (editor/get-tileset-as-set)) 
+      ;(make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
+      (init-gliders num-gliders)))
+
+
 (defn draw []
   ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
@@ -340,18 +385,12 @@
     (do-movement-keys)
   ;  )
 
-  (when (= @tiler-state :running)
-    (if (and (> (count @empty-positions) 0)
-             (> (count (editor/get-tileset)) 0))
-      ;(make-backtracking-tiling-iteration2 @tiles @current-tileset)
-      (make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
-      (do
-        (build-face-list)
-        (halt-tiler))))
-
+;  (when @tiler-auto-seed?
+;    (auto-seed-tiler))
+  
   (when @draw-gliders?   
     (update-gliders))
-    
+
   (background 32 32 64)
   ;(background 0 0 0)
 
@@ -436,24 +475,28 @@
     (draw-horizon)
     (draw-assemblage-radius)
 
-    (when @draw-facelist?
-      (draw-face-list))
+    ;(when @draw-facelist?
+    ;  (draw-face-list))
       ;(draw-face-list-textured))
 
-    (draw-tiling)
+    (draw-tiling @draw-boundaries?
+                 @draw-tilecode-lines?
+                 @draw-bezier-box-faces?
+                 @draw-bezier-box-lines?)
+    
+    ;(draw-assemblage-center)
 
+    (when @draw-facelist?
+      (draw-face-list))
     ;(when (seq @empty-positions)
     ;  (draw-empty))
 
     ;(lights)
     (when @draw-gliders?
-      (let [selected-tile ((get-glider 1) :current-tile)
-            tile-color (get-group-color selected-tile)]
+      (let [selected-tile ((get-glider 1) :current-tile)]
         ;(draw-neighbours selected-tile)
         ;(draw-curve-boundary-points selected-tile)
         (draw-selected-tile selected-tile)
-        ;(point-light (tile-color 0) (tile-color 1) (tile-color 2)
-        ;             (selected-tile 0) (selected-tile 1) (selected-tile 2))
         ))
     (pop-matrix)
   )
@@ -465,10 +508,15 @@
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info 10 (- (height) 180))
+  (draw-info 10 (- (height) 210))
   (camera)
 
+  (when @draw-console?
+    (text-font console-font)
+    (console/draw-buffer 230 100))
+
   (when (> (editor/get-level) 0)
+    (text-font editor-font)
     (draw-tileset-editor [20 20] (editor/get-tileset) 64)
     ;(doseq [i (range (count @face-id-text))]
     ;  (let [f (@face-id-text i)
@@ -482,6 +530,8 @@
     ; bottom of screen
     ;(draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))
     ;(draw-tileset-editor [1285 20] @current-tileset 140))
+
+  (draw-graphs [20 100])
 
   (hint :enable-depth-test)
 
@@ -504,13 +554,13 @@
 ; _______________________________________________________________________
 
 
-(defn -main [& args] 
+(defn -main [& args]
   (defsketch rhombrick 
     :title "rhombrick"
     :setup setup 
     :draw draw
-    ;:size [1900 1100]
-    :size [1440 800]
+    :size [1900 1100]
+    ;:size [1440 800]
     :renderer :opengl 
     :key-typed key-typed
     :key-pressed key-pressed

@@ -146,9 +146,9 @@
   (do
     (reset! gliders [])
     (reset! max-glider-id 0)
-    (if (> (count @tiles) 0)
+    (when (> (count @tiles) 0)
       (doseq [i (range (+ 2 num-gliders))]
-        (let [tile [0 0 0]
+        (let [tile (rand-nth (keys @tiles))
               entry-idx (first (get-connected-idxs (@tiles tile)))
               path-idxs (choose-glider-path (@tiles tile) entry-idx)]
           (if (= (count path-idxs) 2)

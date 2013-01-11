@@ -1,4 +1,5 @@
-(ns rhombrick.staticgeometry)
+(ns rhombrick.staticgeometry
+  (:use [rhombrick.vector]))
 ; _______________________________________________________________________
 ;
 ; Rhombic dodecahedron
@@ -6,7 +7,7 @@
 ; Edges     24
 ; Vertices  14
 
-(def rd-verts [
+(def ^:const rd-verts [
   [ 1 -1 -1]
   [ 1 -1  1]
   [-1 -1  1]
@@ -23,7 +24,7 @@
   [ 0  2  0]
 ])
 
-(def rd-faces [
+(def ^:const rd-faces [
                [0 10 1 11]
                [5 8 1 10]
                [4 13 5 10]
@@ -53,7 +54,7 @@
 ;                  [128 128   0] ;  8 dark yellow
 ;                  ])
 
-(def rd-face-colors [
+(def ^:const rd-face-colors [
                   [255   0   0] ;  0 red
                   [255 128   0] ;  1 orange
                   [255 255   0] ;  2 yellow
@@ -68,7 +69,7 @@
                   [255   0 128] ;  8 pink
                   ])
 
-(def rd-neighbour-offsets-orig [
+(def ^:const rd-neighbour-offsets-orig [
                        [ 1 -1  0]
                        [ 1  0  1]
                        [ 1  1  0]
@@ -82,7 +83,7 @@
                        [-1  0 -1]
                        [-1 -1  0]])
 
-(def rd-neighbour-offsets [
+(def ^:const rd-neighbour-offsets [
                        [ 1 -1  0]
                        [ 1  0  1]
                        [ 1  1  0]
@@ -108,7 +109,7 @@
 ; faces of said polyhedron and are also used to 
 ; calculate face normals.
 
-(def co-verts-orig [
+(def ^:const co-verts-orig [
                [ 1 -1  0] ;  0 red
                [ 1  0  1] ;  1 orange
                [ 1  1  0] ;  2 yellow
@@ -123,7 +124,7 @@
                [-1 -1  0] ;  8 dark yellow
                ])
 
-(def co-verts [
+(def ^:const co-verts [
                        [ 1 -1  0]
                        [ 1  0  1]
                        [ 1  1  0]
@@ -205,7 +206,7 @@
 ;
 ;
 ;
-(def symmetries
+(def ^:const symmetries
   {
   ;:identity      -
 
@@ -237,7 +238,7 @@
    }
 )
 
-(def symmetries-flattened
+(def ^:const symmetries-flattened
  [[0 [1 0 0]]
   [90 [0 0 1]]
   [90 [-1 0 0]]
@@ -264,7 +265,7 @@
   [180 [0.7071067811865475 0.0 -0.7071067811865475]]
   ])
 
-(def symmetry-face-idx-map [
+(def ^:const symmetry-face-idx-map [
   [ 0  1  2  3  4  5  6  7  8  9 10 11 ] ; 0 identity
   [ 8 10  0  1  5  9  2  4  6  7 11  3 ] ; 1
   [ 5  0  1 10  3  2 11  6  7  4  9  8 ] ; 2
@@ -292,7 +293,7 @@
   ])
 
 
-(defn get-code-symmetry [code sym-idx]
+(defn get-code-symmetry [^String code sym-idx]
   (apply str (map #(.charAt code ((symmetry-face-idx-map sym-idx) %))
                   (range (count code)))))
 
@@ -304,3 +305,17 @@
 
 
 
+(def ^:const bezier-anchor-offsets [
+  (vec (map vec3-normalize [(co-verts 8) (rd-verts 12) (co-verts 2) (rd-verts 8)])) ; ok
+  (vec (map vec3-normalize [(rd-verts 11) (co-verts 5) (rd-verts 13) (co-verts 11)])) ; ok
+  (vec (map vec3-normalize [(co-verts 0) (rd-verts 12) (co-verts 6) (rd-verts 8)])) ; ok
+  (vec (map vec3-normalize [(co-verts 10) (rd-verts 10) (co-verts 4) (rd-verts 9)])) ; ok
+  (vec (map vec3-normalize [(co-verts 9) (rd-verts 9) (co-verts 3) (rd-verts 10)])) ; ok
+  (vec (map vec3-normalize [(rd-verts 11) (co-verts 7) (rd-verts 13) (co-verts 1)])) ; ok
+  (vec (map vec3-normalize [(co-verts 8) (rd-verts 12) (co-verts 2) (rd-verts 8)])) ; ok
+  (vec (map vec3-normalize [(rd-verts 11) (co-verts 5) (rd-verts 13) (co-verts 11)])) ; ok
+  (vec (map vec3-normalize [(co-verts 0) (rd-verts 12) (co-verts 6) (rd-verts 8)])) ; ok
+  (vec (map vec3-normalize [(co-verts 10) (rd-verts 10) (co-verts 4) (rd-verts 9)])) ; ok
+  (vec (map vec3-normalize [(co-verts 9) (rd-verts 9) (co-verts 3) (rd-verts 10)])) ; ok
+  (vec (map vec3-normalize [(rd-verts 11) (co-verts 7) (rd-verts 13) (co-verts 1)])) ; ok
+])

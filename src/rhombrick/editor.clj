@@ -5,7 +5,8 @@
         [rhombrick.tiling-render]
         [rhombrick.button]
         [rhombrick.staticgeometry]
-        [rhombrick.tileset-library]))
+        [rhombrick.tileset-library]
+        [rhombrick.console :as console]))
 
 ;(def current-tileset-colors {})
 
@@ -18,20 +19,38 @@
                    :stroke-active [255 255 255 192]
                    })
 
+(def default-tileset ["A-A---------" "0-a---0-----" "4-d---D-3---" "3-------D---" "D-d---0-0---" "D-0---6-a---" "A-----6-----" "a-----d-0---" "A-----a-----" "6-----a-----"])
+
 (def default-editor-state {:level 0
                            :selected [0 0 0]
                            :selected-tilecode-digit []
-                           :tileset (atom ["--1--1--1--1"])
+                           :tileset (atom default-tileset)
                          })
 
 (def editor-state (atom default-editor-state))
 (def library-tilesets (atom []))
 (def library-tileset-index (atom 0))
 
-(def next-digit {\- \1
-                 \1 \a
+(def next-digit {\- \0
+                 \0 \1
+                 \1 \2
+                 \2 \3
+                 \3 \4
+                 \4 \5
+                 \5 \6
+                 \6 \a
                  \a \A
-                 \A \-})
+                 \A \b
+                 \b \B
+                 \B \c
+                 \c \C
+                 \C \d
+                 \d \D
+                 \D \e
+                 \e \E
+                 \E \f
+                 \f \F
+                 \F \-})
 
 (def symmetry-display-index (atom 0))
 
@@ -59,11 +78,13 @@
 
 
 (defn set-tileset [tileset]
-  (println "set-tileset: " tileset)
+  (console/writeline (str "tileset:" tileset))
+  ;(println "set-tileset: " tileset)
 ;  (let [;tileset-set (distinct tileset)
 ;        num-uniq (count tileset)]
   (reset! (@editor-state :tileset) [])
   (reset! current-tileset-colors {})
+  (bezier-box-cache-reset)
   (let [col-offset (rand-int 12)]
     (doseq [i (range (count tileset))]
       (let [code (tileset i)
@@ -72,13 +93,13 @@
         ;(when-not (set-contains-rotations? (set tileset) code)
         (add-to-tileset code)
         (doseq [rc (get-code-symmetries code)]
-          (swap! current-tileset-colors assoc rc col))))
-    (update-tileset-expanded (get-tileset))
-    )
+          (swap! current-tileset-colors assoc rc col)))))
   (if (> ((@editor-state :selected) 1) (dec (count (get-tileset))))
     (set-selected (dec (count (get-tileset))) 1))
+  ;(reset! adhd 2.0)
+  ;(reset! autism 1.0)
+  (reset! adapt-last-tilecount 0)
   ;(init-dead-loci)
-  ;(update-tileset-expanded tileset)
   ; (soft-init-tiler)
   )
 
@@ -142,7 +163,7 @@
       (set-current-tileset-digit selected-tile-idx
                                  selected-digit-idx
                                  new-digit)
-      (soft-init-tiler (get-tileset-as-set)))))
+      (start-tiler (get-tileset-as-set) false))))
 
 
 (defn level-up []
@@ -171,7 +192,7 @@
 (defn load-library-tileset [idx]
   (when (< idx (count @library-tilesets))
     (set-tileset (@library-tilesets idx))
-    (soft-init-tiler (get-tileset-as-set))))
+    ))
 
 
 (defn load-next-library-tileset []
@@ -318,7 +339,7 @@
 (defn draw-tile-editor [[x y] code bscale parent-idx]
   (let [bx (+ x (/ bscale 2))
         by (+ y (/ bscale 2))
-        col [64 64 64 190]
+        col (get-tile-color code)
         ang ((symmetries-flattened @symmetry-display-index) 0)
         rads (* (/ ang 180) Math/PI)
         [dx dy dz] ((symmetries-flattened @symmetry-display-index) 1)
@@ -329,19 +350,27 @@
         (println "button pressed:" code)))
     (draw-facecode-buttons [x (+ y bscale 5)] bscale code parent-idx)
     (with-translation [bx by]
-        (text (str "symmetry idx:"  @symmetry-display-index), bx ,bx)
-        (scale (/ bscale 6))
+        ;(text (str "symmetry idx:"  @symmetry-display-index), x ,y)
+        (text (apply str "symmetries:" (interpose ", " (distinct (get-tilecode-angle-ids code))))
+              (- bx bscale) (- by bscale))
+        (scale (/ bscale 5))
         (rotate-y (* (frame-count) 0.0051471))
         (no-fill)
         (stroke-weight 1)
-        (draw-faces-with-info rd-verts rd-faces col)
+        (hint :enable-depth-test)
+        (draw-faces rd-verts rd-faces [128 128 128 192])
         (no-fill)
-        (draw-facecode code)
+        ;(draw-facecode code)
+        ;(draw-facecode-color code [128 128 128 255])
+        (draw-facecode-bezier-boxes code col 8)
+        (draw-facecode-bezier-box-lines code col 8)
         (scale 2)
         (draw-face-boundaries [0 0 0] code)
+        (no-fill)
         (draw-face-idx-numbers [0 0 0] false)
-        (rotate rads dx dy dz)
-        (draw-face-idx-numbers [0 0 0] true)
+        ;(rotate rads dx dy dz)
+        ;(draw-face-idx-numbers [0 0 0] true)
+        (draw-bezier-anchor-test [0 0 0])
                       )))
 
 
@@ -350,7 +379,7 @@
   (let [level (get-level)
         selected (get-selected 1)
         preview-pos [x (+ y bscale 10)]
-        preview-scale 320 
+        preview-scale 640
         rotations-pos [(+ preview-scale (preview-pos 0)) (preview-pos 1)  ]
         rotations-scale 180]
     (doseq [i (range (count tileset))]
