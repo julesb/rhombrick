@@ -825,63 +825,31 @@
 
 
 (defn draw-gliders [frame]
-  (do
-    ;(fill 255 0 0 128)
-    ;(sphere 0.25)
+  ;(do
     (push-style)
     (stroke-weight 4)
     (stroke 255 255 192 192)
     (doseq [glider @gliders]
       (let [pos (get-glider-pos (glider :id))
-            col (glider :color)
-            tile (glider :current-tile)]
-        (if (contains? @tiles tile)
-          (with-translation pos
-            (fill (col 0) (col 1) (col 2) 128)
-            ;(apply fill (glider :color))
-            ;(scale 0.5)
-            ;(sphere 0.2)
-            ;(if (= (glider :id) 1) 
-            ;   (point-light (tile-color 0) (tile-color 1) (tile-color 2)
-            ;                ;0 0 0))
-            ;                (pos 0) (pos 1) (pos 2)))
-
-              ;(point-light 255 255 255 ;(col 0) (col 1) (col 2)
-              ;           (pos 0) (pos 1) (- (pos 2) 0)))
-              ;(push-matrix)
-              (scale 0.01)
-              (rotate-x (* frame (+ (glider :id) 20) 0.00351471))
-              (rotate-y (* frame (+ (glider :id) 20) 0.00352363))
-              ;(rotate-z (* frame (glider :id) 0.0035123))
-              (draw-faces rd-verts rd-faces [(col 0) (col 1) (col 2) 192 ])
-              ;(box 0.01 0.01 0.01)
-              ;(pop-matrix)
-                            ))))
-    (pop-style)
-    ))
-     
-
-(defn draw-gliders2 [frame]
-  (do
-    (push-style)
-    (stroke-weight 4)
-    (stroke 255 255 192 192)
-    (doseq [glider @gliders]
-      (let [pos (get-glider-pos (glider :id))
+            pos2 (get-glider-nextpos (glider :id))
+            [dx dy dz] (vec3-normalize (vec3-sub pos pos2))
+            az (Math/atan2 dy dx)
+            el (- (Math/asin dz))
             col (glider :color)
             tile (glider :current-tile)
-            fidx-1 (glider :entry-face-idx)
-            fidx-2 (glider :exit-face-idx)]
+            ]
         (if (contains? @tiles tile)
           (with-translation pos
             (fill (col 0) (col 1) (col 2) 128)
-              (scale 0.01)
-              (rotate-x (* frame (+ (glider :id) 20) 0.00351471))
-              (rotate-y (* frame (+ (glider :id) 20) 0.00352363))
-              (draw-faces rd-verts rd-faces [(col 0) (col 1) (col 2) 192 ])
+              (scale 0.02)
+              (rotate az 0 0 1)
+              (rotate el 0 1 0)
+              (box 4 1 1)
+              (box 1 3 1)
                             ))))
     (pop-style)
-    ))
+    )
+  ;)
 
 
 (defn draw-facecode [code]
@@ -1100,7 +1068,7 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 255)
+          col (conj (get-tile-color code) 192)
           ;line-col [(col 0) (col 1) (col 2) 255]
           line-col [255 255 255 128]
           bezier-steps @bezier-box-resolution]
