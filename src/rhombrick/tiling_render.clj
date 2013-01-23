@@ -6,6 +6,7 @@
         [rhombrick.tiling]
         [rhombrick.camera]
         [rhombrick.glider]
+        [rhombrick.obj-loader]
         [clojure.math.combinatorics]))
 
 
@@ -15,6 +16,8 @@
 (def bezier-box-resolution (atom 8))
 (def face-list (atom #{}))
 (def face-id-text (atom []))
+
+(def glider-model (load-obj "data/rhombic_dodecahedron.obj"))
 
 ; map facecode digit to bezier anchor scale
 (def bezier-box-thicknesses {\0 0.125
@@ -156,6 +159,29 @@
 ;        (vertex (v3 0) (v3 1) (v3 2))
 ;        (end-shape)))))
 ;
+
+(defn draw-obj [verts faces col]
+  (doseq [i (range (count faces))]
+      (let [vert-idx (faces i)
+            v0 (verts (vert-idx 0))
+            v1 (verts (vert-idx 1))
+            v2 (verts (vert-idx 2))
+            v3 (if (= (count vert-idx) 4)
+                 (verts (vert-idx 3))
+                 nil)
+            [r g b a] col]
+        (stroke r g b a)
+        ;  (fill (/ (col 0) 3.0) (/ (col 1) 3.0) (/ (col 2) 3.0) 255 ))
+        (if (= (count vert-idx) 3)
+          (begin-shape :triangles)
+          (begin-shape :quads))
+        (vertex (v0 0) (v0 1) (v0 2))
+        (vertex (v1 0) (v1 1) (v1 2))
+        (vertex (v2 0) (v2 1) (v2 2))
+        (when (= (count vert-idx) 3)
+          (vertex (v3 0) (v3 1) (v3 2)))
+        (end-shape))))
+
 
 (defn draw-faces [verts faces colors]
   (doseq [i (range (count faces))]
@@ -825,31 +851,30 @@
 
 
 (defn draw-gliders [frame]
-  ;(do
-    (push-style)
-    (stroke-weight 4)
-    (stroke 255 255 192 192)
-    (doseq [glider @gliders]
-      (let [pos (get-glider-pos (glider :id))
-            pos2 (get-glider-nextpos (glider :id))
-            [dx dy dz] (vec3-normalize (vec3-sub pos pos2))
-            az (Math/atan2 dy dx)
-            el (- (Math/asin dz))
-            col (glider :color)
-            tile (glider :current-tile)
-            ]
-        (if (contains? @tiles tile)
-          (with-translation pos
-            (fill (col 0) (col 1) (col 2) 128)
-              (scale 0.02)
-              (rotate az 0 0 1)
-              (rotate el 0 1 0)
-              (box 4 1 1)
-              (box 1 3 1)
-                            ))))
-    (pop-style)
-    )
-  ;)
+  (push-style)
+  (stroke-weight 4)
+  (stroke 255 255 192 192)
+  (doseq [glider @gliders]
+    (let [pos (get-glider-pos (glider :id))
+          pos2 (get-glider-nextpos (glider :id))
+          [dx dy dz] (vec3-normalize (vec3-sub pos pos2))
+          az (Math/atan2 dy dx)
+          el (- (Math/asin dz))
+          col (glider :color)
+          tile (glider :current-tile)
+          ]
+      (if (contains? @tiles tile)
+        (with-translation pos
+          (fill (col 0) (col 1) (col 2) 128)
+            (scale 0.02)
+            (rotate az 0 0 1)
+            (rotate el 0 1 0)
+            (box 4 1 1)
+            (box 1 3 1)
+            ;(draw-obj (glider-model :vertex) (glider-model :face) [128 128 255 255])
+                          ))))
+  (pop-style)
+  )
 
 
 (defn draw-facecode [code]
