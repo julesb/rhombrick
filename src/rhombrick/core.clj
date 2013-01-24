@@ -41,7 +41,6 @@
 (def draw-facelist? (atom false))
 (def draw-editor? (atom false))
 (def draw-gliders? (atom false))
-(def draw-boundaries? (atom true))
 (def draw-bezier-box-lines? (atom false))
 (def draw-bezier-box-faces? (atom true))
 (def draw-tilecode-lines? (atom false))
@@ -260,8 +259,6 @@
     \# #(do
           (save-frame))
     \b #(do
-          (swap! draw-boundaries? not))
-    \B #(do
           (reset! boundary-mode-idx (mod (inc @boundary-mode-idx)
                                          (count boundary-modes)))
           (reset! current-boundary-mode (boundary-modes @boundary-mode-idx))
@@ -492,7 +489,7 @@
     ;  (draw-face-list))
       ;(draw-face-list-textured))
 
-    (draw-tiling @draw-boundaries?
+    (draw-tiling true ;(not= @current-boundary-mode :none)
                  @draw-tilecode-lines?
                  @draw-bezier-box-faces?
                  @draw-bezier-box-lines?
