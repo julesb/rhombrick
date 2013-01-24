@@ -12,7 +12,7 @@
 ;(def current-tileset-colors {})
 
 (def button-color {
-                   :fill [0 0 0 235]
+                   :fill [8 0 128 235]
                    :stroke [0 0 0 0]
                    :fill-hot [128 128 255 192]
                    :stroke-hot [0 0 192 192]
