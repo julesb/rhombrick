@@ -42,32 +42,6 @@
                              })
 
 
-;(defn draw-rhomb-verts []
-;  (stroke 0 0 255 255)
-;  (doseq [v rd-verts]
-;    (point (v 0) (v 1) (v 2))
-;    ))
-; _______________________________________________________________________
-;
-;
-;(defn draw-verts [vert-array]
-;  (doseq [v vert-array]
-;    (point (v 0) (v 1) (v 2))
-;    ))
-;
-; _______________________________________________________________________
-
-
-
-
-;(defn compute-tile-color-1 [code]
-;  (if (not= nil code)
-;    (let [n (hash (apply str (set (rotations code))))
-;          c (int (mod n 12))]
-;      (rd-face-colors c))
-;    [255 0 0]))
-
-
 (defn draw-graph [[x y] w h title data-range data]
   (stroke-weight 1)
   (stroke 128 128 128 255)
@@ -117,7 +91,6 @@
                     (graph :data))))))
 
 
-
 (defn facecode-to-hex [code]
   (apply str "0x" (map #(if (= \- %) \0 %) code)))
 
@@ -137,28 +110,6 @@
       (swap! current-tileset-colors assoc code (compute-tile-color code))
       (@current-tileset-colors code))))
 
-
-;(defn get-group-color [code]
-;  (rd-face-colors (mod (count (get-connected-idxs code))
-;                       12)))
-
-
-;(defn draw-connected-faces [code]
-;  (let [col (get-tile-color code)]
-;    (fill (col 0) (col 1) (col 2) 128)
-;    (doseq [idx (get-connected-idxs code)]
-;      (let [vert-idx (rd-faces idx)
-;            v0 (rd-verts (vert-idx 0))
-;            v1 (rd-verts (vert-idx 1))
-;            v2 (rd-verts (vert-idx 2))
-;            v3 (rd-verts (vert-idx 3))]
-;        (begin-shape :quads)
-;        (vertex (v0 0) (v0 1) (v0 2))
-;        (vertex (v1 0) (v1 1) (v1 2))
-;        (vertex (v2 0) (v2 1) (v2 2))
-;        (vertex (v3 0) (v3 1) (v3 2))
-;        (end-shape)))))
-;
 
 (defn draw-obj [verts faces col]
   (doseq [i (range (count faces))]
@@ -219,35 +170,6 @@
       (vertex (v3 0) (v3 1) (v3 2))
       (end-shape))))
 
-
-;(defn draw-faces-with-info [verts faces col]
-;  (reset! face-id-text [])
-;  (apply stroke col)
-;  (doseq [i (range (count faces))]
-;    (let [vert-idx (faces i)
-;          v0 (verts (vert-idx 0))
-;          v1 (verts (vert-idx 1))
-;          v2 (verts (vert-idx 2))
-;          v3 (verts (vert-idx 3))
-;          sx (screen-x (v0 0) (v0 1) (v0 2))
-;          sy (screen-y (v0 0) (v0 1) (v0 2))
-;          sz (screen-z (v0 0) (v0 1) (v0 2))
-;          v0-sc (vec3-scale v0 50)]
-;      ;(println "screen-z:" sz)
-;      (no-fill)
-;      (begin-shape :quads)
-;      (vertex (v0 0) (v0 1) (v0 2))
-;      (vertex (v1 0) (v1 1) (v1 2))
-;      (vertex (v2 0) (v2 1) (v2 2))
-;      (vertex (v3 0) (v3 1) (v3 2))
-;      (end-shape)
-;      (swap! face-id-text conj [i v0-sc])
-;      ;(hint :disable-depth-test)
-;      ;(fill 255 255 255 255)
-;      ;(text (str i) sx sy)
-;      ;(hint :enable-depth-test)
-;      )))
-; _______________________________________________________________________
 
 (defn face-idxs-to-verts [face-idxs]
   (vec (map #(rd-verts %) face-idxs)))
@@ -327,7 +249,6 @@
           v2 (face-verts 2)
           v3 (face-verts 3)
           tex-coord-inset (/ 1.0 7.0)]
-       
       (begin-shape :quads)
       (texture @rhomb-tex)
       (vertex (v0 0) (v0 1) (v0 2) tex-coord-inset 0.5)
@@ -344,10 +265,8 @@
 
 (defn draw-selected-tile [pos]
   (let [code (@tiles pos)
-        ;num-connected (count (filter #(= \1 %) code))
         col (get-tile-color code)]
     (no-fill)
-    ;(fill (col 0) (col 1) (col 2) 64)
     (stroke (col 0) (col 1) (col 2) 16)
     (stroke-weight 8)
     (with-translation pos
@@ -359,7 +278,6 @@
   (no-fill)
   (stroke 64 64 64 64)
   (stroke-weight 1)
-
   (let [ipos (vec (map int pos))]
     (doseq [n (get-neighbours ipos)]
       (with-translation n
@@ -367,26 +285,6 @@
         (draw-faces rd-verts rd-faces nil)
         ))))
 
-; _______________________________________________________________________
-
-
-;(defn draw-curve-boundary-points [pos]
-;  (when (contains? @tiles pos)
-;    (let [code (@tiles pos)
-;          num-connected (get-num-connected code)
-;          col (get-tile-color code)] ;(rd-face-colors (mod num-connected 12))]
-;      (no-stroke)
-;      (fill (col 0) (col 1) (col 2) 240)
-;      (with-translation pos
-;        (scale 0.5)
-;        (doseq [i (range 12)]
-;          (if (not= (.charAt code i) \-)
-;           (with-translation (co-verts i)
-;            (scale 0.02)
-;            ;(sphere 0.05)
-;            (draw-faces rd-verts rd-faces nil)
-;                             )))))))
-;  
 
 (defn draw-face-boundaries-basic [pos]
   (when (contains? @tiles pos)
@@ -434,60 +332,7 @@
               (with-translation (vec3-scale (co-verts i) 0.91)
                 (rotate az 0 0 1)
                 (rotate el 0 1 0)
-                ;(rotate (/ Math/PI 4.0) 1 0 0)
                 (box 0.25 thickness thickness)))))))))
-
-
-(defn draw-color-markers [pos]
-  (no-lights)
-  (doseq [i (range 12)]
-    (let [[r g b] (rd-face-colors i)]
-      (with-translation pos
-        (scale 0.5)
-        (stroke-weight 1)
-        (stroke 255 255 255 128)
-        ;(stroke (- 255 r) (- 255 g) (- 255 b) 255)
-        (fill r g b 255)
-        (let [dir (co-verts i)
-             [dx dy dz] (vec3-normalize dir)
-             az (Math/atan2 dy dx)
-             el (- (Math/asin dz))]
-          (with-translation (vec3-scale (co-verts i) 0.975)
-            (rotate az 0 0 1)
-            (rotate el 0 1 0)
-            (box 0.05 0.5 0.5)
-                            ))))))
-
-
-(defn draw-face-idx-numbers [pos use-face-color?]
-  (no-lights)
-  (doseq [i (range 12)]
-    (let [[r g b] (rd-face-colors i)]
-      (with-translation pos
-        (scale 0.5)
-        (stroke-weight 1)
-        (stroke 255 255 255 128)
-        ;(stroke (- 255 r) (- 255 g) (- 255 b) 255)
-        ;(fill r g b 255)
-        (fill 255 255 255 255)                
-        (let [dir (co-verts i)
-             [dx dy dz] (vec3-normalize dir)
-             az (Math/atan2 dy dx)
-             el (- (Math/asin dz))
-             tw (text-width (str i))]
-          (if use-face-color?
-            (fill r g b 192)
-            (fill 255 255 255 192))
-          (with-translation (vec3-scale (co-verts i) 1.01) ;0.975)
-            (rotate az 0 0 1)
-            (rotate el 0 1 0)
-            (scale 0.025)
-            (rotate-y (* Math/PI 0.5))
-            (if use-face-color?
-              (translate -10 0 0)
-              (translate 10 0 0))
-            (text (str i) (- tw) 0 0)                
-                            ))))))
 
 
 (defn get-bezier-anchor-offsets-rotated [f-idx]
@@ -549,27 +394,6 @@
         ]
     [f1-offsets-swapped-2 f2-offsets-swapped-2]
   ))
-
-
-(defn draw-bezier-anchor-test [pos]
-  (doseq [f-idx (range 12)]
-    (when (= (count (bezier-anchor-offsets f-idx)) 4)
-      (let [offsets [((get-bezier-anchor-offsets-rotated f-idx) 0)
-                     ((get-bezier-anchor-offsets-rotated f-idx) 1)
-                     ((get-bezier-anchor-offsets-rotated f-idx) 2)
-                     ((get-bezier-anchor-offsets-rotated f-idx) 3)]
-            colors [[255 0 0] [255 128 0] [255 255 0] [0 255 0]] ]
-        ; draw anchors
-        (stroke-weight 4)
-        (doseq [i (range 4)] 
-          (let [off-vec (vec3-scale (offsets i) 0.5)
-                [x1 y1 z1] (co-verts f-idx)
-                [x2 y2 z2] (vec3-add (co-verts f-idx) off-vec)]
-            (apply stroke (colors i))
-            (with-translation pos
-              (scale 0.5)
-              (line x1 y1 z1 x2 y2 z2))))
-        ))))
 
 
 (defn draw-empty []
@@ -761,15 +585,6 @@
          (range (count controls)))))
 
 
-(defn draw-bezier-box2 [f1-idx f2-idx f1-scale f2-scale steps]
-  (let [strips (make-bezier-box-triangles f1-idx f2-idx f1-scale f2-scale steps)]
-    (doseq [strip strips]
-      (begin-shape :triangle-strip)
-      (doseq [[vx vy vz] strip]
-        (vertex vx vy vz))
-      (end-shape))))
-
-
 (defn make-facecode-bezier-box-triangles [^String code steps]
   (let [num-connected (get-num-connected code)
         endpoint-pairs (if (< num-connected 4)
@@ -877,12 +692,12 @@
   )
 
 
-(defn draw-facecode [code]
+(defn draw-facecode-lines [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (get-num-connected code)
         col (get-tile-color code); (rd-face-colors (mod num-connected 12))
-        fill-col (rd-face-colors 
-                   (connecting-faces (mod num-connected 12)))
+;        fill-col (rd-face-colors 
+;                   (connecting-faces (mod num-connected 12)))
         ]
     (push-style)
 
@@ -900,25 +715,17 @@
 
     (stroke-weight 4) 
     (stroke (col 0) (col 1) (col 2) 192) 
-    ;(stroke 192 192 255 192)
-    ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
-    ;(stroke 150 150 255 128)
     
     (if (= num-connected 1)
       (let [p (co-verts (first (get-connected-idxs code)))]
         (line 0 0 0 (p 0) (p 1) (p 2))
-        
         (fill 255 128 128 128)
         (box 0.05125 0.05125 0.05125)
         (no-fill))
         )
 
     (stroke-weight 6)
-    ;(fill (col2 0) (col2 1) (col2 2) 32)
-    ;(stroke (col2 0) (col2 1) (col2 2) 32)
-
     (stroke (col 0) (col 1) (col 2) 192)
-    ;(stroke 192 192 255 192)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))
     
@@ -928,10 +735,6 @@
     ;(doseq [endpoints endpoint-pairs]
     ;  (draw-curve-tangents (endpoints 0) (endpoints 1) 3))
 
-    ;(stroke-weight 2)
-    ;(stroke (col2 0) (col2 1) (col2 2) 255)
-    ;(doseq [endpoints endpoint-pairs]
-    ;  (draw-curve (endpoints 0) (endpoints 1)))
     (pop-style)
       ))
 
@@ -961,134 +764,6 @@
       (end-shape))))
 
 
-(defn draw-facecode-color [^String code col]
-  (let [num-connected (get-num-connected code)
-        endpoint-pairs (if (< num-connected 4)
-                         (vec (make-curve-endpoints (get-connected-idxs code)))
-                         (vec (filter #(not= 6 (abs (- (% 1) (% 0))))
-                                      (make-curve-endpoints (get-connected-idxs code)))))
-        weight (- 9 (* (/ num-connected 12) 8))]
-    (push-style)
-
-    (if (= code nil)
-      (do 
-        (fill 255 32 32 128)
-        (stroke 255 0 0 192)
-        (push-matrix)
-        (scale 0.05)
-        (box 1 1 1)
-        (pop-matrix)
-        (no-fill)))
-
-    (stroke-weight 2)
-
-    (stroke (col 0) (col 1) (col 2) (col 3)) 
-    
-    (if (= num-connected 1)
-      (let [p (co-verts (first (get-connected-idxs code)))]
-        (line 0 0 0 (p 0) (p 1) (p 2))
-        
-        (fill 255 128 128 128)
-        (box 0.05125 0.05125 0.05125)
-        (no-fill))
-        )
-
-    ;(stroke-weight weight)
-    ;(stroke (col 0) (col 1) (col 2) (col 3))
-    ;(doseq [endpoints endpoint-pairs]
-    ;  (draw-curve (endpoints 0) (endpoints 1)))
- 
-    (no-stroke)
-    ;(stroke-weight 1)
-    (fill (col 0) (col 1) (col 2) 255)
-    ;(stroke (col 0) (col 1) (col 2) 255)
-    ;(no-fill)
-    (doseq [endpoints endpoint-pairs]
-      (let [f1-thickness (bezier-box-thicknesses (.charAt code (endpoints 0)))
-            f2-thickness (bezier-box-thicknesses (.charAt code (endpoints 1)))
-            ]
-        (no-stroke)
-        ;(stroke 0 0 0 255)
-        ;(fill (- 255 (col 0)) (- 255 (col 1)) (- 255 (col 2)) 255)
-        ;(draw-curve-solid (endpoints 0) (endpoints 1) 8)
-
-        (no-stroke)
-        (fill (col 0) (col 1) (col 2) 255)
-        (draw-bezier-box2 (endpoints 0) (endpoints 1)
-                          f1-thickness f2-thickness
-                          @bezier-box-resolution)
-        ;(make-bezier-box-triangles 1 2 0.5 0.5 8)
-        
-        ;(stroke (col 0) (col 1) (col 2) 255)
-        (stroke 128 128 128 255)
-        (no-fill)
-        (draw-bezier-box-lines (endpoints 0) (endpoints 1)
-                               f1-thickness f2-thickness
-                               @bezier-box-resolution)
-        ))
-    
-    ;draw tangent vectors
-    ;(stroke-weight 1)
-    ;(stroke 255 120 120 128)
-    ;(doseq [endpoints endpoint-pairs]
-    ;  (draw-curve-tangents (endpoints 0) (endpoints 1) 3))
-
-    (pop-style)
-      ))
-
-
-;(defn draw-facecode-lite [code]
-;  (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
-;        num-connected (count (filter #(= \1 %) code))
-;        ;col (get-tile-color code) ; (rd-face-colors (mod num-connected 12))
-;        col (get-group-color code) ;(rd-face-colors (mod num-connected 12))
-;        col (compute-tile-color code)
-;        ;col2 (get-group-color code)
-;        ;fill-col (rd-face-colors 
-;        ;           (connecting-faces (mod num-connected 12)))
-;        ;col-idx (mod (Integer/parseInt code 2) 12)
-;        ]
-;    (push-style)
-;    (if (= code nil)
-;      (do 
-;        (fill 255 32 32 128)
-;        ;(no-fill)
-;        (stroke 255 0 0 192)
-;        (push-matrix)
-;        (scale 0.05)
-;        (box 1 1 1)
-;        (pop-matrix)
-;        (no-fill)))
-;     
-;    (stroke (col 0) (col 1) (col 2) 128)
-;    ;(fill (fill-col 0) (fill-col 1) (fill-col 2) 255)
-;    ;(stroke 150 150 255 128)
-;    
-;    (if (= num-connected 1)
-;      (let [p (co-verts (first (get-connected-idxs code)))]
-;        (line 0 0 0 (p 0) (p 1) (p 2))
-;        (fill 255 128 128 128)
-;        (box 0.05125 0.05125 0.05125)
-;        (no-fill))
-;        )
-;
-;    (stroke-weight 4)
-;    (stroke (col 0) (col 1) (col 2) 192)
-;    (doseq [endpoints endpoint-pairs]
-;      (draw-curve (endpoints 0) (endpoints 1)))
-;    
-;;    (stroke-weight 2)
-;;    (stroke (col 0) (col 1) (col 2) 192)
-;;    (doseq [endpoints endpoint-pairs]
-;;      (draw-curve (endpoints 0) (endpoints 1)))
-;    (pop-style)
-;      ))
-
-; _______________________________________________________________________
-
-
-
-
 (defn draw-tiling [with-boundaries? with-lines? with-bb-faces? with-bb-lines?]
   (doseq [tile (keys @tiles)]
     (let [pos tile
@@ -1103,12 +778,11 @@
         ;(stroke 0 0 0 64)
         (when with-lines?
           (no-fill)
-          (draw-facecode code))
+          (draw-facecode-lines code))
         (when with-bb-faces?
           (draw-facecode-bezier-boxes (@tiles pos) col bezier-steps))
         (when with-bb-lines?
           (draw-facecode-bezier-box-lines (@tiles pos) line-col bezier-steps))
-        ;(draw-facecode-color (@tiles pos) col)
         )
       (when with-boundaries?
         (draw-face-boundaries pos code))
