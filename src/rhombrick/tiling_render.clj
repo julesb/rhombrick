@@ -25,8 +25,8 @@
                              \2 0.5
                              \3 1.0
                              \4 1.4142135623730951
-                             \5 2.0
-                             \6 2.8284271247461903
+                             \5 1.5 
+                             \6 2.0
                              \a 0.125
                              \A 0.125
                              \b 0.25
@@ -35,10 +35,10 @@
                              \C 0.5
                              \d 1.0
                              \D 1.0
-                             \e 2.0
-                             \E 2.0
-                             \f 2.8284271247461903
-                             \F 2.8284271247461903
+                             \e 1.5
+                             \E 1.5
+                             \f 2.0
+                             \F 2.0
                              })
 
 
@@ -325,17 +325,19 @@
                   az (Math/atan2 dy dx)
                   el (- (Math/asin dz))
                   thickness (* 1.3 (bezier-box-thicknesses (.charAt code i)))
-                  alpha 192]
+                  alpha 240]
               (if (face-digit-like-compatible? d)
                 (do (fill 160 160 220 alpha))
                 (do
                   (if (>= (int d) 97)
                     (fill 255 255 255 alpha)
                     (fill 0 0 0 alpha))))
-              (with-translation (vec3-scale (co-verts i) 0.91)
+              (with-translation (vec3-scale (co-verts i) 0.959)
                 (rotate az 0 0 1)
                 (rotate el 0 1 0)
-                (box 0.25 thickness thickness)))))))))
+                (box 0.125 thickness thickness)))))))
+    )
+  )
 
 
 (defn get-bezier-anchor-offsets-rotated [f-idx]
@@ -773,7 +775,7 @@
           code (@tiles pos)
           col (conj (get-tile-color code) 192)
           ;line-col [(col 0) (col 1) (col 2) 255]
-          line-col [255 255 255 128]
+          line-col [0 0 0 128]
           bezier-steps @bezier-box-resolution]
       (with-translation pos 
         (scale 0.5)
