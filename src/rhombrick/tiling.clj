@@ -402,37 +402,25 @@
 
 (defn tiler-can-iterate? []
   (and (= @tiler-state :running)
-       (> (count @tiles) 0)
        (< (count @tiles) @max-tiles)
-       (> (count (get-empty-positions @tiles)) 0)
-       ))
+       (> (count (get-empty-positions @tiles)) 0)))
 
 
 (defn run-backtracking-tiling-thread [tileset]
   (println "tiler thread starting")
   (let [tileset-expanded (expand-tiles-preserving-symmetry tileset)]
-    ;(while tiler-can-iterate? 
-    (while (and (= @tiler-state :running)
-                ;(> (count @tiles) 0)
-                (< (count @tiles) @max-tiles)
-                (> (count (get-empty-positions @tiles)) 0)
-                )
+    (while (tiler-can-iterate?)
       (let [iter-start-time (System/nanoTime)]
         (dosync
-
-          (reset! tiles (ordered-map (make-backtracking-tiling-iteration3 @tiles tileset-expanded)))
+          (swap! tiles #(ordered-map (make-backtracking-tiling-iteration3 % tileset-expanded)))
           (swap! tiler-iterations inc)
           (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
-          
+
           (when (= (mod @tiler-iterations adapt-backtrack-window) 0)
-            (adapt-backtrack-params)
-          )
- 
+            (adapt-backtrack-params))
           (append-stats-buffer! stats-tile-count (count @tiles))
           (append-stats-buffer! stats-dead-count (count @dead-loci))
-          (append-stats-buffer! stats-iter-time @last-iteration-time)
-          ))
-        ))
+          (append-stats-buffer! stats-iter-time @last-iteration-time)))))
   (halt-tiler))
 
 
