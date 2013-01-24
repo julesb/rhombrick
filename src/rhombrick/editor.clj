@@ -306,7 +306,7 @@
           (draw-faces-lite rd-verts rd-faces face-col)
           (draw-facecode-bezier-boxes code col 8)
           (scale 2)
-          (draw-face-boundaries [0 0 0] code))))
+          (draw-face-boundaries [0 0 0] code :all))))
 
 
 (defn draw-tile-editor [[x y] code bscale parent-idx]
@@ -335,7 +335,7 @@
         (draw-facecode-bezier-boxes code col 8)
         (draw-facecode-bezier-box-lines code col 8)
         (scale 2)
-        (draw-face-boundaries [0 0 0] code)
+        (draw-face-boundaries [0 0 0] code :all)
         (no-fill)
         (draw-face-idx-numbers [0 0 0] false)
                       )))

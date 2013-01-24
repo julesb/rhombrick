@@ -304,7 +304,7 @@
             (box 0.2)))))))
 
 
-(defn draw-face-boundaries [pos ^String code]
+(defn draw-face-boundaries [pos ^String code boundary-mode]
   (when (contains? @tiles pos)
     (let [[r g b] (get-tile-color code)]
       (with-translation pos
@@ -313,9 +313,12 @@
         (no-stroke)
         ;(stroke r g b 255)
         (doseq [^long i (range 12)]
-          (when (and (not= (.charAt code i) \-)
-                     (is-empty? @tiles (get-neighbour-pos pos i))
-                     )
+          (when (or
+                  (and (= boundary-mode :only-empty)
+                       (not= (.charAt code i) \-)
+                       (is-empty? @tiles (get-neighbour-pos pos i)))
+                  (and (= boundary-mode :all)
+                       (not= (.charAt code i) \-)))
             (let [d (.charAt code i)
                   dir (co-verts i)
                   [dx dy dz] (vec3-normalize dir)
@@ -764,7 +767,7 @@
       (end-shape))))
 
 
-(defn draw-tiling [with-boundaries? with-lines? with-bb-faces? with-bb-lines?]
+(defn draw-tiling [with-boundaries? with-lines? with-bb-faces? with-bb-lines? boundary-mode]
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
@@ -785,7 +788,7 @@
           (draw-facecode-bezier-box-lines (@tiles pos) line-col bezier-steps))
         )
       (when with-boundaries?
-        (draw-face-boundaries pos code))
+        (draw-face-boundaries pos code boundary-mode))
       
       )))
 

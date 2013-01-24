@@ -49,6 +49,11 @@
 (def draw-graphs? (atom false))
 (def tiler-auto-seed? (atom false))
 
+(def boundary-mode-idx (atom 0))
+(def boundary-modes [:only-empty :all :none])
+(def current-boundary-mode (atom (boundary-modes @boundary-mode-idx)))
+
+
 (def ^:dynamic editor-font)
 (def ^:dynamic console-font)
 
@@ -112,7 +117,7 @@
       (reify Thread$UncaughtExceptionHandler
         (uncaughtException [this thread throwable]
           ;; do something with the exception here.. log it, for example.
-          (println this thread throwable)
+          (println "blah:" this thread throwable)
      )))
 
     (println "setup done")
@@ -256,6 +261,11 @@
           (save-frame))
     \b #(do
           (swap! draw-boundaries? not))
+    \B #(do
+          (reset! boundary-mode-idx (mod (inc @boundary-mode-idx)
+                                         (count boundary-modes)))
+          (reset! current-boundary-mode (boundary-modes @boundary-mode-idx))
+          (println "boundary mode: " @current-boundary-mode))
     \l #(do
           (swap! draw-bezier-box-lines? not))
     \L #(do
@@ -485,7 +495,8 @@
     (draw-tiling @draw-boundaries?
                  @draw-tilecode-lines?
                  @draw-bezier-box-faces?
-                 @draw-bezier-box-lines?)
+                 @draw-bezier-box-lines?
+                 @current-boundary-mode)
     
     ;(draw-assemblage-center)
 
