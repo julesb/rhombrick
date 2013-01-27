@@ -8,7 +8,7 @@
     ))
 
 (def gliders (atom []))
-(def num-gliders 50)
+(def num-gliders 2)
 (def max-glider-id (atom 0))
 
 (def OSCPORT 4242)

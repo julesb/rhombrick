@@ -35,6 +35,7 @@
   (->> (split tok #"/")
        (map #(if (= "" %) "-1" %))
        (map read-string)
+       (map dec) ; obj format seems to use 1-based index for face verts?
        (vec)))
 
 
