@@ -17,8 +17,6 @@
 (def face-list (atom #{}))
 (def face-id-text (atom []))
 
-;(def glider-model (load-obj "data/rhombic_dodecahedron.obj"))
-(def glider-model (load-obj "data/low_poly_express_ship.obj"))
 
 ; map facecode digit to bezier anchor scale
 (def bezier-box-thicknesses {\0 0.125
@@ -112,18 +110,33 @@
       (@current-tileset-colors code))))
 
 
-(defn draw-obj [verts faces col]
-  (doseq [i (range (count faces))]
-      (let [vert-idx (faces i)
-            vs (vec (map #(verts %) (faces i)))
-            [r g b a] col]
-        (stroke r g b a)
-        (if (= (count vs) 3)
+(defn get-verts [verts face]
+  (vec (map #(verts %) face)))
+
+(defn get-obj-face-verts [obj]
+  (->> (obj :face)
+       (map #(get-verts (obj :vertex) %))
+       (vec)))
+
+
+;(def glider-model (load-obj "data/rhombic_dodecahedron.obj"))
+(def glider-model (get-obj-face-verts (load-obj "data/smooth_spaceship.obj")))
+
+
+(defn draw-obj [faces col]
+;          [r g b a] col]
+  (doseq [face faces]
+    (let [nvs (count face)]
+      (cond
+        (= nvs 3)
           (begin-shape :triangles)
-          (begin-shape :quads))
-        (doseq [v vs]
-          (vertex (v 0) (v 1) (v 2)))
-        (end-shape))))
+        (= nvs 4)
+          (begin-shape :quads)
+        :else
+          (begin-shape))
+      (doseq [v face]
+        (vertex (v 0) (v 1) (v 2)))
+      (end-shape))))
 
 
 (defn draw-faces [verts faces colors]
@@ -664,8 +677,9 @@
 
 (defn draw-gliders [frame]
   (push-style)
-  (stroke-weight 1)
-  (stroke 255 255 192 192)
+  (no-stroke)
+  ;(stroke-weight 1)
+  ;(stroke 255 255 192 192)
   (doseq [glider @gliders]
     (let [pos (get-glider-pos (glider :id))
           pos2 (get-glider-nextpos (glider :id))
@@ -678,12 +692,13 @@
       (if (contains? @tiles tile)
         (with-translation pos
           (fill (col 0) (col 1) (col 2) 255)
-            (scale 0.02)
+            (scale 0.0025)
             (rotate az 0 0 1)
             (rotate el 0 1 0)
             ;(box 4 1 1)
             ;(box 1 3 1)
-            (draw-obj (glider-model :vertex) (glider-model :face) [128 128 255 255])
+            (draw-obj glider-model [128 128 255 255])
+            ;(draw-obj (glider-model :vertex) (glider-model :face) [128 128 255 255])
                           ))))
   (pop-style)
   )
