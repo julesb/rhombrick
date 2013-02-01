@@ -634,3 +634,30 @@
 
 ; _______________________________________________________________________
 
+
+; Idea: when selecting a tile for a position, if there is more than one
+; candidate then sum the number of candidates for each neighbour as if the tile
+; was chosen. The tile with the greatest number of neighbour candidates
+; (divided by the number of connection sites?) is chosen.
+
+
+(defn compute-compatibility-score [_tiles candidate pos tileset]
+  (let [test-tiles (assoc _tiles pos candidate)
+        neighbours-pos (get-empty-connected-neighbours test-tiles pos)
+        num-connectable (count neighbours-pos)
+        nb-candidates (map #(find-candidates2 (get-neighbourhood test-tiles %) tileset)
+                           neighbours-pos)
+        num-nb-candidates (reduce + (map count nb-candidates))]
+    (if (and (> num-connectable 0)
+             (> num-nb-candidates 0))
+      (/ (double num-nb-candidates) num-connectable)
+      0.0)))
+
+
+(defn find-most-compatible [_tiles pos tileset candidates best]
+  (->> (map #(vec [% (compute-compatibility-score _tiles % pos tileset)])
+                    candidates)
+       (into {})
+       (sort-by val >)
+       #(key (first %))))
+
