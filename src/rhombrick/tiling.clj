@@ -639,7 +639,9 @@
 ; candidate then sum the number of candidates for each neighbour as if the tile
 ; was chosen. The tile with the greatest number of neighbour candidates
 ; (divided by the number of connection sites?) is chosen.
-
+; The reason for trying this is that I think it may cause the tiler to be less
+; likely to generate repetitive tilings and may alse help somewhat to avoid
+; dead ends.
 
 (defn compute-compatibility-score [_tiles candidate pos tileset]
   (let [test-tiles (assoc _tiles pos candidate)
@@ -654,7 +656,7 @@
       0.0)))
 
 
-(defn find-most-compatible [_tiles pos tileset candidates best]
+(defn find-most-compatible [_tiles pos tileset candidates]
   (->> (map #(vec [% (compute-compatibility-score _tiles % pos tileset)])
                     candidates)
        (into {})
