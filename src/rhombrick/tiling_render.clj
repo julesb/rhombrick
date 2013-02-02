@@ -310,7 +310,9 @@
 
 
 (defn draw-face-boundaries [pos ^String code boundary-mode]
-  (when (contains? @tiles pos)
+  (when (or (contains? @tiles pos)
+            (and (= boundary-mode :all)
+                 (= (count code) 12)))
     (let [[r g b] (get-tile-color code)]
       (with-translation pos
         (scale 0.5)
@@ -318,12 +320,15 @@
         (no-stroke)
         ;(stroke r g b 255)
         (doseq [^long i (range 12)]
-          (when (or
-                  (and (= boundary-mode :only-empty)
-                       (not= (.charAt code i) \-)
-                       (is-empty? @tiles (get-neighbour-pos pos i)))
-                  (and (= boundary-mode :all)
-                       (not= (.charAt code i) \-)))
+          (let [draw? (cond
+                        (= boundary-mode :only-empty)
+                          (and (is-empty? @tiles (get-neighbour-pos pos i))
+                               (not= (.charAt code i) \-))
+                        (= boundary-mode :all)
+                          (not= (.charAt code i) \-)
+                        :else
+                          false)]
+          (when draw?
             (let [d (.charAt code i)
                   dir (co-verts i)
                   [dx dy dz] (vec3-normalize dir)
@@ -340,9 +345,7 @@
               (with-translation (vec3-scale (co-verts i) 0.959)
                 (rotate az 0 0 1)
                 (rotate el 0 1 0)
-                (box 0.125 thickness thickness)))))))
-    )
-  )
+                (box 0.125 thickness thickness))))))))))
 
 
 (defn get-bezier-anchor-offsets-rotated [f-idx]
@@ -692,7 +695,7 @@
       (if (contains? @tiles tile)
         (with-translation pos
           (fill (col 0) (col 1) (col 2) 255)
-            (scale 0.0025)
+            (scale 0.005)
             (rotate az 0 0 1)
             (rotate el 0 1 0)
             ;(box 4 1 1)
@@ -753,7 +756,7 @@
 
 (defn draw-facecode-bezier-box-lines [code col steps]
   (apply stroke col)
-  (stroke-weight 2)
+  (stroke-weight 4)
   (no-fill)
   (doseq [line-verts (get-bezier-box-lines code steps)]
     (doseq [vert line-verts]
@@ -780,7 +783,7 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 192)
+          col (conj (get-tile-color code) 240)
           ;line-col [(col 0) (col 1) (col 2) 255]
           line-col [0 0 0 128]
           bezier-steps @bezier-box-resolution]
