@@ -320,15 +320,14 @@
         (no-stroke)
         ;(stroke r g b 255)
         (doseq [^long i (range 12)]
-          (let [draw? (cond
-                        (= boundary-mode :only-empty)
-                          (and (is-empty? @tiles (get-neighbour-pos pos i))
-                               (not= (.charAt code i) \-))
-                        (= boundary-mode :all)
-                          (not= (.charAt code i) \-)
-                        :else
-                          false)]
-          (when draw?
+          (when (cond
+                  (= boundary-mode :only-empty)
+                    (and (is-empty? @tiles (get-neighbour-pos pos i))
+                         (not= (.charAt code i) \-))
+                  (= boundary-mode :all)
+                    (not= (.charAt code i) \-)
+                  :else
+                    false)
             (let [d (.charAt code i)
                   dir (co-verts i)
                   [dx dy dz] (vec3-normalize dir)
@@ -345,7 +344,7 @@
               (with-translation (vec3-scale (co-verts i) 0.959)
                 (rotate az 0 0 1)
                 (rotate el 0 1 0)
-                (box 0.125 thickness thickness))))))))))
+                (box 0.125 thickness thickness)))))))))
 
 
 (defn get-bezier-anchor-offsets-rotated [f-idx]
