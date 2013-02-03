@@ -14,6 +14,7 @@
 (def current-tileset-colors (atom {}))
 (def model-scale (atom 50))
 (def bezier-box-resolution (atom 8))
+(def bezier-box-control-bias (atom 0.5))
 (def face-list (atom #{}))
 (def face-id-text (atom []))
 
@@ -438,9 +439,9 @@
 (defn get-bezier-controls [f1-idx f2-idx]
   "Given two face indices, returns a vec of four 3d bezier control points"
   (let [p1 (co-verts f1-idx)
-        p2 (vec3-scale p1 0.5)
+        p2 (vec3-scale p1 @bezier-box-control-bias)
         p4 (co-verts f2-idx)
-        p3 (vec3-scale p4 0.5)]
+        p3 (vec3-scale p4 @bezier-box-control-bias)]
     [p1 p2 p3 p4]))
 
 
@@ -448,9 +449,9 @@
   "Given two face indices, returns a vec of four 3d bezier control points"
   "offset is a vector to specify the offset for bezier boxes."
   (let [p1 (vec3-add (co-verts f1-idx) f1-offset)
-        p2 (vec3-sub p1 (vec3-scale (co-verts f1-idx) 0.5))
+        p2 (vec3-sub p1 (vec3-scale (co-verts f1-idx) @bezier-box-control-bias))
         p4 (vec3-add (co-verts f2-idx) f2-offset)
-        p3 (vec3-sub p4 (vec3-scale (co-verts f2-idx) 0.5))
+        p3 (vec3-sub p4 (vec3-scale (co-verts f2-idx) @bezier-box-control-bias))
         ]
     [p1 p2 p3 p4]))
 

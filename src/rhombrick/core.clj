@@ -31,8 +31,8 @@
 
 (def keys-down (atom #{}))
 
-;(def mousewarp-pos (atom [716 356])) ; 1440x800
-(def mousewarp-pos (atom [946 506])) ; 1900x1100
+(def mousewarp-pos (atom [716 356])) ; 1440x800
+;(def mousewarp-pos (atom [946 506])) ; 1900x1100
 (def last-mouse-delta (atom [0 0]))
 
 (def my-applet (atom nil))
@@ -277,6 +277,15 @@
           (when (< @bezier-box-resolution 32)
             (swap! bezier-box-resolution inc)
             (bezier-box-cache-reset)))
+    \; #(do
+          (swap! bezier-box-control-bias (fn [n] (- n 0.1)))
+          (bezier-box-cache-reset)
+          (println "bezierbox control bias:" @bezier-box-control-bias))
+    \' #(do
+          (swap! bezier-box-control-bias (fn [n] (+ n 0.1)))
+          (bezier-box-cache-reset)
+          (println "bezierbox control bias:" @bezier-box-control-bias))
+
        })
 
 (def key-editor-map
@@ -397,8 +406,8 @@
 
 ;  (when @tiler-auto-seed?
 ;    (auto-seed-tiler))
-  
-  (when @draw-gliders?   
+   
+  (when @draw-gliders?
     (update-gliders))
 
   (background 32 32 64)
@@ -470,11 +479,11 @@
     ;(no-fill)
     ;(box 10 10 10)
     
+    (lights)
     (when @draw-gliders?
       (draw-gliders (frame-count))
     )
     
-    (lights)
     ;(light-falloff 1.0 0.2 0.0)
     ;(ambient-light 64 64 64)
 
@@ -571,8 +580,8 @@
     :title "rhombrick"
     :setup setup 
     :draw draw
-    :size [1900 1100]
-    ;:size [1440 800]
+    ;:size [1900 1100]
+    :size [1440 800]
     :renderer :opengl 
     :key-typed key-typed
     :key-pressed key-pressed
