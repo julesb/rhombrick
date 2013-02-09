@@ -356,7 +356,7 @@
         (draw-tile-button [tx ty] code bscale i)
         (when (and (> level 0) (= i selected))
           (draw-selected [tx ty] bscale [255 255 255 255]))
-        (when (and (= level 2) (= i selected))
+        (when (and (> level 0) (= i selected))
           (draw-tile-editor preview-pos code preview-scale i)
           (draw-selected preview-pos preview-scale [255 255 255 255])
           ;(draw-rotational-symmetries rotations-pos code rotations-scale)
