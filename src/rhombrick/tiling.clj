@@ -74,10 +74,40 @@
       code)))
 
 
+; Builds a random tileset of specified length. As the set is built, a tile
+; must match at one least tilecode digit with existing tiles in the set.
+; This is to reduce the number of completely non-compatible tiles in a random
+; tileset.
+; Fix this: matching digits doesnt quite work - we are excluding
+; opposite-compatible codes, use face-digit-compatible? instead.
+
+(defn make-random-tileset [num-tiles acc]
+  (cond
+    (= (count acc) 0)
+      (recur num-tiles [(make-random-tilecode)])
+    (>= (count acc) num-tiles)
+      acc
+    :else
+      (let [new-tile (make-random-tilecode)
+            connectable-codes (into #{} (filter #(not= \- %) new-tile))
+            acc-connectable (into #{}
+                                  (filter #(not= \- %)
+                                          (apply str acc)))
+            compatible? (some connectable-codes acc-connectable) ]
+        (if compatible?
+          (recur num-tiles (conj acc new-tile))
+          (recur num-tiles acc)))))
+
+
 (defn get-random-tileset []
-  (let [num-tiles (+ 1 (rand-int 10))]
-    (vec (map (fn [_] (make-random-tilecode))
-         (range num-tiles)))))
+  (let [max-tiles 10]
+    (make-random-tileset (+ 1 (rand-int max-tiles)) [])))
+
+
+;(defn get-random-tileset []
+;  (let [num-tiles (+ 1 (rand-int 10))]
+;    (vec (map (fn [_] (make-random-tilecode))
+;         (range num-tiles)))))
 
 
 ;(defn update-assemblage-center [new-pos]
