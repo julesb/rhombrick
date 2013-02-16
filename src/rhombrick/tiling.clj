@@ -81,22 +81,21 @@
 ; Fix this: matching digits doesnt quite work - we are excluding
 ; opposite-compatible codes, use face-digit-compatible? instead.
 
-(defn make-random-tileset [num-tiles acc]
+(defn make-random-tileset [num-tiles tileset]
   (cond
-    (= (count acc) 0)
+    (= (count tileset) 0)
       (recur num-tiles [(make-random-tilecode)])
-    (>= (count acc) num-tiles)
-      acc
+    (>= (count tileset) num-tiles)
+      tileset
     :else
       (let [new-tile (make-random-tilecode)
-            connectable-codes (into #{} (filter #(not= \- %) new-tile))
-            acc-connectable (into #{}
-                                  (filter #(not= \- %)
-                                          (apply str acc)))
-            compatible? (some connectable-codes acc-connectable) ]
+            new-tile-sites (into #{} (filter #(not= \- %) new-tile))
+            tileset-sites (into #{} (filter #(not= \- %)
+                                            (apply str tileset)))
+            compatible? (some new-tile-sites tileset-sites) ]
         (if compatible?
-          (recur num-tiles (conj acc new-tile))
-          (recur num-tiles acc)))))
+          (recur num-tiles (conj tileset new-tile))
+          (recur num-tiles tileset)))))
 
 
 (defn get-random-tileset []
