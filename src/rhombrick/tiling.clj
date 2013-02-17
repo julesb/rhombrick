@@ -36,6 +36,27 @@
   [\e \E]
   [\f \F] })
 
+(def facecode-compatible-map {
+                              \- \-
+                              \0 \0
+                              \1 \1
+                              \2 \2
+                              \3 \3
+                              \4 \4
+                              \5 \5
+                              \6 \6
+                              \7 \7
+                              \8 \8
+                              \9 \9
+                              \a \A \A \a
+                              \b \B \B \b
+                              \c \C \C \c
+                              \d \D \D \d
+                              \e \E \E \e
+                              \f \F \F \f })
+
+
+
 
 ; NOTE: the tile renderer currently expects face digits no higher than 6 or D 
 ; for simplicity, even though the tiler will handle any hex digit.
@@ -75,12 +96,9 @@
 
 
 ; Builds a random tileset of specified length. As the set is built, a tile
-; must match at one least tilecode digit with existing tiles in the set.
-; This is to reduce the number of completely non-compatible tiles in a random
-; tileset.
-; Fix this: matching digits doesnt quite work - we are excluding
-; opposite-compatible codes, use face-digit-compatible? instead.
-
+; must must have least one tilecode digit compatible with existing digits in
+; the set. This ensures that each tile added to the set is compatible with at
+; least one other tile.
 (defn make-random-tileset [num-tiles tileset]
   (cond
     (= (count tileset) 0)
@@ -89,7 +107,8 @@
       tileset
     :else
       (let [new-tile (make-random-tilecode)
-            new-tile-sites (into #{} (filter #(not= \- %) new-tile))
+            new-tile-sites (into #{} (map facecode-compatible-map
+                                          (filter #(not= \- %) new-tile)))
             tileset-sites (into #{} (filter #(not= \- %)
                                             (apply str tileset)))
             compatible? (some new-tile-sites tileset-sites) ]
@@ -99,10 +118,12 @@
 
 
 (defn get-random-tileset []
-  (let [max-tiles 10]
+  (let [max-tiles 6]
     (make-random-tileset (+ 1 (rand-int max-tiles)) [])))
 
 
+; Tilesets generated using this will likely have some tiles in the set which
+; are not compatible with any other. Dont use it.
 ;(defn get-random-tileset []
 ;  (let [num-tiles (+ 1 (rand-int 10))]
 ;    (vec (map (fn [_] (make-random-tilecode))
