@@ -278,11 +278,11 @@
             (swap! bezier-box-resolution inc)
             (bezier-box-cache-reset)))
     \; #(do
-          (swap! bezier-box-control-bias (fn [n] (- n 0.1)))
+          (swap! bezier-box-control-bias (fn [n] (- n 0.01)))
           (bezier-box-cache-reset)
           (println "bezierbox control bias:" @bezier-box-control-bias))
     \' #(do
-          (swap! bezier-box-control-bias (fn [n] (+ n 0.1)))
+          (swap! bezier-box-control-bias (fn [n] (+ n 0.01)))
           (bezier-box-cache-reset)
           (println "bezierbox control bias:" @bezier-box-control-bias))
 
