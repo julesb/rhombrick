@@ -269,6 +269,17 @@
          (set))))
 
 
+; this version does not force connectivity
+;(defn get-empty-positions [_tiles]
+;  (if (= (count _tiles) 0)
+;    #{[0 0 0]}
+;    (->> (keys _tiles)
+;         (map get-neighbours)
+;         (apply concat)
+;         (filter #(is-empty? _tiles %))
+;         (filter #(< (vec3-length %) @assemblage-max-radius))
+;         (set))))
+
 (defn init-dead-loci! []
   (reset! dead-loci #{}))
 
@@ -292,6 +303,16 @@
                                               (get-outer-facecode2 (get-neighbourhood _tiles %)))
                                    (= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 0))))))
      0))
+
+
+; this version does not force connectivity
+;(defn creates-untileable-region? [_tiles tileset pos]
+;  (> (count (->> (get-neighbours pos)
+;                 (filter #(and (is-empty? _tiles %)
+;                               (or (contains? @dead-loci
+;                                              (get-outer-facecode2 (get-neighbourhood _tiles %)))
+;                                   (= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 0))))))
+;     0))
 
 
 ; returns a list of todo locations with 0 or 1 matching tiles
