@@ -220,7 +220,9 @@
 
 
 (defn draw-face-list []
-  (fill 32 32 32 128)
+  (fill 32 32 32 192)
+  ;(fill 32 32 32 128)
+
   ;(no-fill)
   ;(stroke 0 0 0 192)
   (stroke 40 40 40 190)
@@ -240,7 +242,7 @@
       (vertex (v3 0) (v3 1) (v3 2))
       (end-shape)
       (stroke 40 40 40 128)
-      (line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
+      ;(line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
       )))
 
 
@@ -274,7 +276,7 @@
         col (get-tile-color code)]
     (no-fill)
     (stroke (col 0) (col 1) (col 2) 16)
-    (stroke-weight 8)
+    (stroke-weight 1)
     (with-translation pos
       (scale 0.5)
       (draw-faces rd-verts rd-faces [(col 0) (col 1) (col 2) 128]))))
@@ -756,7 +758,7 @@
 
 (defn draw-facecode-bezier-box-lines [code col steps]
   (apply stroke col)
-  (stroke-weight 4)
+  (stroke-weight 2)
   (no-fill)
   (doseq [line-verts (get-bezier-box-lines code steps)]
     (doseq [vert line-verts]
@@ -783,9 +785,9 @@
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
-          col (conj (get-tile-color code) 240)
+          col (conj (get-tile-color code) 255)
           ;line-col [(col 0) (col 1) (col 2) 255]
-          line-col [0 0 0 128]
+          line-col  [192 192 255 192]
           bezier-steps @bezier-box-resolution]
       (with-translation pos 
         (scale 0.5)
