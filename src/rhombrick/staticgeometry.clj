@@ -54,20 +54,38 @@
 ;                  [128 128   0] ;  8 dark yellow
 ;                  ])
 
-(def ^:const rd-face-colors [
-                  [255   0   0] ;  0 red
-                  [255 128   0] ;  1 orange
-                  [255 255   0] ;  2 yellow
-                  [128 255   0] ;  3 light green 
-                  [  0 255   0] ;  4 green
-                  [  0 255 128] ;  5 purple
-                  [  0 255 255] ;  9 cyan
-                  [  0 128 255] ; 10 light-blue
-                  [  0   0 255] ; 11 blue
-                  [128   0 255] ;  6 red-blue 
-                  [255   0 255] ;  7 magenta
-                  [255   0 128] ;  8 pink
-                  ])
+;(def ^:const rd-face-colors [
+;                  [255   0   0] ;  0 red
+;                  [255 128   0] ;  1 orange
+;                  [255 255   0] ;  2 yellow
+;                  [128 255   0] ;  3 light green 
+;                  [  0 255   0] ;  4 green
+;                  [  0 255 128] ;  5 purple
+;                  [  0 255 255] ;  9 cyan
+;                  [  0 128 255] ; 10 light-blue
+;                  [  0   0 255] ; 11 blue
+;                  [128   0 255] ;  6 red-blue 
+;                  [255   0 255] ;  7 magenta
+;                  [255   0 128] ;  8 pink
+;                  ])
+
+(def ^:const rd-face-colors
+[[96,134,68],
+[180,91,202],
+[192,70,57],
+[87,53,85],
+[197,175,172],
+[117,213,82],
+[91,137,229],
+[199,82,132],
+[119,204,180],
+[207,205,88],
+[74,70,51],
+[191,131,64]]
+
+  
+)
+
 
 (def ^:const rd-neighbour-offsets-orig [
                        [ 1 -1  0]
