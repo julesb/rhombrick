@@ -299,14 +299,14 @@
     (when (button x y bscale bscale button-color code)
       (do
         (println "button pressed:" code)))
-        (with-translation [bx by]
-          (scale (/ bscale 6))
-          (no-fill)
-          (stroke-weight 1)
-          (draw-faces-lite rd-verts rd-faces face-col)
-          (draw-facecode-bezier-boxes code col 8)
-          (scale 2)
-          (draw-face-boundaries [0 0 0] code :all))))
+    (with-translation [bx by]
+      (scale (/ bscale 6))
+      (no-fill)
+      (stroke-weight 1)
+      (draw-faces-lite rd-verts rd-faces face-col)
+      (draw-facecode-bezier-boxes code col 8)
+      (scale 2)
+      (draw-face-boundaries [0 0 0] code :all))))
 
 
 (defn draw-tile-editor [[x y] code bscale parent-idx]

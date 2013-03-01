@@ -6,23 +6,25 @@
         [ordered.map]))
 
 (defn new-population [size]
-  (map (fn [_] (get-random-tileset)) (range size)))
+  (take size (repeatedly get-random-tileset)))
 
 
 (defn evaluate-tileset [tileset max-iters max-radius]
-  (reset! assemblage-max-radius 4)
+  (println "tileset:" tileset)
   (init-tiler tileset)
-  (init-dead-loci)
-  (reset! tiler-state :running)
-  (run-backtracking-tiling-thread tileset)
+  ;(init-dead-loci)
+  ;(reset! tiler-state :running)
+  ;(run-backtracking-tiling-thread tileset)
 )
+
 
 (defn -main [& args]
   (let [population (new-population 5)
         max-iters 100
         max-radius 4]
-    (doseq [tileset population max-iters max-radius]
-      (evaluate-tileset tileset)
+    (reset! assemblage-max-radius max-radius)
+    (doseq [tileset population]
+      (evaluate-tileset tileset max-iters max-radius)
   )))
 
 
@@ -30,9 +32,9 @@
 ; iterate much faster. We can run batch tests and assign scores to things such
 ; as tilesets, tiler parameters (autism, adhd), and the tiler algorithm
 ; performance. 
-; It will be interesting to consider the tileset as a genome and try and 
+; It will be interesting to consider the tileset string as a genome and try to
 ; evolve tilesets with desirable properties.
-; 
+;
 ;
 ; Metrics for evaluating a tileset
 ; These metrics are dependent on tiler parameters and the specifics of the
@@ -48,10 +50,11 @@
 ;   close enough to it to consider them useless.
 ;
 ; - Complexity: the number of tiles which are actually able to be used in a
-;   tiling, in proportion to the total number of tiles in the set:
-;   
-;     num-tiles-used / num-tiles-in-tileset.
-;   
+;   tiling, in proportion to the total number of tiles in the set. A score of 1
+;   means that all tiles were used, 0 means none were used:
+;
+;     num-tiles-used / num-tiles-in-tileset
+;
 ;   Some tileset are k-morphic, meaning they have a number of distinct modes,
 ;   as opposed to others which have a single mode only. This presents a
 ;   difficulty because each mode of a k-morphic tileset will most likely
@@ -59,4 +62,10 @@
 ;   tileset and put the generated metrics for each run into bins. This may
 ;   allow programmatically determining the number of modes for a tileset.
 ;   
-;   
+; - Density: The number of tiles layed divided by the total number of cells
+;   within assemblage-max-radius:
+;
+;   num-tiles / num-cells
+;
+;
+;
