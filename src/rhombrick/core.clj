@@ -483,7 +483,14 @@
     (when @draw-gliders?
       (draw-gliders (frame-count))
     )
-    
+
+    (let [n (vec3-normalize [-0.5 0.5 -0.5])]
+      (directional-light 64 64 255 (n 0) (n 1) (n 2)))
+    (let [n (vec3-normalize [-0.5 0.5 0.5])]
+      (directional-light 64 255 64 (n 0) (n 1) (n 2)))
+    (let [n (vec3-normalize [-0.5 0.5 0.0])]
+      (directional-light 255 64 64 (n 0) (n 1) (n 2)))
+
     ;(light-falloff 1.0 0.2 0.0)
     ;(ambient-light 64 64 64)
 
