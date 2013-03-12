@@ -542,10 +542,15 @@
 
 
 (def bezier-box-tristrip-cache (atom {}))
+(def bezier-box-tristrip-normals-cache (atom {}))
 (def bezier-box-line-cache (atom {}))
 
 (defn bezier-box-tristrip-cache-reset []
   (reset! bezier-box-tristrip-cache {}))
+
+
+(defn bezier-box-tristrip-normals-cache-reset []
+  (reset! bezier-box-tristrip-normals-cache {}))
 
 
 (defn bezier-box-line-cache-reset []
@@ -554,6 +559,7 @@
 
 (defn bezier-box-cache-reset []
   (bezier-box-tristrip-cache-reset)
+  (bezier-box-tristrip-normals-cache-reset)
   (bezier-box-line-cache-reset))
 
 
@@ -566,6 +572,29 @@
          [(get-bezier-point c1 t)
           (get-bezier-point c2 t)])
        (range (inc steps))))
+
+
+(defn make-strip-partition-normals [part]
+  (if (not= (count part) 4)
+    []
+    (let [v0 (vec3-sub (part 0) (part 1))
+          v1 (vec3-sub (part 1) (part 2))
+          v2 (vec3-sub (part 1) (part 2))
+          v3 (vec3-sub (part 2) (part 3))
+          n0 (vec3-normalize (vec3-cross v0 v1))
+          n3 (vec3-normalize (vec3-cross v2 v3))
+          ; n1 and n2 are set to the normalised average of n0 and n3
+          n1 (vec3-normalize (vec3-scale (vec3-add n0 n3) 0.5))
+          n2 n1]
+      (vec [n0 n1 n2 n3]))))
+
+
+(defn make-strip-normals [strip]
+  (->> strip
+       (partition 4 2)
+       (map vec)
+       (map make-strip-partition-normals)
+       (apply concat)))
 
 
 (defn get-bezier-points [c1 steps]
@@ -741,7 +770,7 @@
         (no-fill))
         )
 
-    (stroke-weight 6)
+    (stroke-weight 1)
     (stroke (col 0) (col 1) (col 2) 192)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))
