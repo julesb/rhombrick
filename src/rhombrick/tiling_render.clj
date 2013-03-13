@@ -574,28 +574,47 @@
        (range (inc steps))))
 
 
-(defn make-strip-partition-normals [part]
-  (if (not= (count part) 4)
-    []
-    (let [v0 (vec3-sub (part 0) (part 1))
-          v1 (vec3-sub (part 1) (part 2))
-          v2 (vec3-sub (part 1) (part 2))
-          v3 (vec3-sub (part 2) (part 3))
-          n0 (vec3-normalize (vec3-cross v0 v1))
-          n3 (vec3-normalize (vec3-cross v2 v3))
-          ; n1 and n2 are set to the normalised average of n0 and n3
-          n1 (vec3-normalize (vec3-scale (vec3-add n0 n3) 0.5))
-          n2 n1]
-      (vec [n0 n1 n2 n3]))))
+(defn get-face-normal [[v0 v1 v2]]
+ (vec3-normalize (vec3-cross (vec3-sub v1 v0) (vec3-sub v2 v1))))
 
 
-(defn make-strip-normals [strip]
+(defn get-strip-face-normals [strip]
   (->> strip
-       (partition 4 2)
-       (map vec)
-       (map make-strip-partition-normals)
-       (apply concat)))
+       (partition 3 1)
+       (map get-face-normal)
+       vec))
 
+
+; Calculate the vertex normals, where each normal is the average of the normals
+; of all triangles that the vertex is a part of.
+(defn get-strip-vertex-normals [strip]
+  (let [face-normals (get-strip-face-normals strip)
+        n-faces (count face-normals)
+        n-vnorms (+ n-faces 2)
+        ; the first, second, second-last and last normals are special cases
+        ; so calculate them separately
+        vn0 (face-normals 0)
+        vn1 (vec3-normalize (vec3-scale
+                              (vec3-add (face-normals 0)
+                                        (face-normals 1))
+                              0.5))
+        vnN-2 (vec3-normalize (vec3-scale
+                                (vec3-add (face-normals (- n-faces 2))
+                                          (face-normals (- n-faces 1)))
+                                0.5))
+        vnN-1 (face-normals (- n-faces 1))
+        ; calculate all the rest of the normals
+        vnorms (->> (range 2 (- n-vnorms 2))
+                    (map #(vec3-scale
+                            (vec3-add (vec3-add (face-normals (- % 2))
+                                                (face-normals (- % 1)))
+                                      (face-normals %))
+                            0.33333333333))
+                    (map vec3-normalize)
+                    vec)]
+    ; and concatenate them all into a single vector
+    (vec (concat [vn0 vn1] vnorms [vnN-2 vnN-1]))))
+    ;(vec (concat [vn0 vn1] vnorms [vnN-2 vnN-1]))))
 
 (defn get-bezier-points [c1 steps]
   (map #(let [t (* % (/ 1 steps))]
@@ -810,6 +829,22 @@
       (end-shape))))
 
 
+(defn draw-facecode-bezier-boxes-n [code col steps]
+  (when (contains? #{3 4} (count col)) (apply fill col))
+  ;(stroke 0 0 0 192)
+  (no-stroke)
+  (doseq [bbox (get-bezier-box-triangles code steps)]
+    (doseq [strip bbox]
+      (let [verts (vec strip)
+            normals (get-strip-vertex-normals verts)]
+        (begin-shape :triangle-strip)
+        (doseq [i (range (count verts))]
+          (let [[vx vy vz] (verts i)
+                [nx ny nz] (normals i)]
+            (normal nx ny nz)
+            (vertex vx vy vz)))
+        (end-shape)))))
+
 (defn draw-tiling [with-boundaries? with-lines? with-bb-faces? with-bb-lines? boundary-mode]
   (doseq [tile (keys @tiles)]
     (let [pos tile
@@ -826,7 +861,7 @@
           (no-fill)
           (draw-facecode-lines code))
         (when with-bb-faces?
-          (draw-facecode-bezier-boxes (@tiles pos) col bezier-steps))
+          (draw-facecode-bezier-boxes-n (@tiles pos) col bezier-steps))
         (when with-bb-lines?
           (draw-facecode-bezier-box-lines (@tiles pos) line-col bezier-steps))
         )
