@@ -578,9 +578,16 @@
  (vec3-normalize (vec3-cross (vec3-sub v1 v0) (vec3-sub v2 v1))))
 
 
+(defn alternate-winding [v idx]
+  (if (= (mod idx 2) 1)
+    [(v 1) (v 0) (v 2)]
+    v))
+
+
 (defn get-strip-face-normals [strip]
   (->> strip
        (partition 3 1)
+       (map-indexed #(alternate-winding (vec %2) %1))
        (map get-face-normal)
        vec))
 
@@ -614,7 +621,7 @@
                     vec)]
     ; and concatenate them all into a single vector
     (vec (concat [vn0 vn1] vnorms [vnN-2 vnN-1]))))
-    ;(vec (concat [vn0 vn1] vnorms [vnN-2 vnN-1]))))
+
 
 (defn get-bezier-points [c1 steps]
   (map #(let [t (* % (/ 1 steps))]
