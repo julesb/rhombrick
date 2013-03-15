@@ -484,12 +484,35 @@
       (draw-gliders (frame-count))
     )
 
-    (let [n (vec3-normalize [-0.5 0.5 -0.5])]
-      (directional-light 64 64 255 (n 0) (n 1) (n 2)))
-    (let [n (vec3-normalize [-0.5 0.5 0.5])]
-      (directional-light 64 128 64 (n 0) (n 1) (n 2)))
-    (let [n (vec3-normalize [-0.5 0.5 0.0])]
-      (directional-light 255 64 64 (n 0) (n 1) (n 2)))
+;    (push-matrix)
+;    (rotate-x (/ (frame-count) 200.1))
+;    (rotate-y (/ (frame-count) 180.73))
+;    (let [n (vec3-normalize [-0.5 0.5 -0.5])]
+;      (directional-light 64 64 255 (n 0) (n 1) (n 2)))
+;    (let [n (vec3-normalize [-0.5 0.5 0.5])]
+;      (directional-light 64 128 64 (n 0) (n 1) (n 2)))
+;    (let [n (vec3-normalize [-0.5 0.5 0.0])]
+;      (directional-light 255 64 64 (n 0) (n 1) (n 2)))
+;    (pop-matrix)
+   
+    (push-matrix)
+    (rotate-z (/ (frame-count) 20.1))
+    (rotate-x (/ (frame-count) 21.231))
+    (rotate-y (/ (frame-count) 18.73))
+
+    (let [r (/ @assemblage-max-radius 2)
+          mr (/ (- @assemblage-max-radius) 2)]
+      (fill 0 255 0)
+      (with-translation [mr  r  r] (box 0.1))
+      (fill 255 0 0)
+      (with-translation [ r mr  r] (box 0.1))
+      (fill 0 0 255)
+      (with-translation [ r  r mr] (box 0.1))
+
+      (spot-light 255 255 255 mr  r  r 1  -1  -1 (/ Math/PI 2) 2)
+      (spot-light 255 255 255  r mr  r  -1 1  -1 (/ Math/PI 2) 2)
+      (spot-light 255 255 255  r  r mr  -1  -1 1 (/ Math/PI 2) 2))
+    (pop-matrix)
 
     ;(light-falloff 1.0 0.2 0.0)
     ;(ambient-light 64 64 64)
