@@ -1,5 +1,5 @@
 # rhombrick
-<img src="http://xanthus.zapto.org/rhomb-screen-tmp.jpg" title="rhombrick work in progress screenshots" />
+<img src="http://xanthus.zapto.org/rhombrick-screens.jpg" title="rhombrick work in progress screenshots" />
 
 ## Intro
 This is a hobby project written in Clojure using the [Quil](https://github.com/quil/quil) library. It was inspired by Paul Harrison's [Ghost Diagrams](http://www.logarithmic.net/pfh/ghost-diagrams). The tile assembler algorithm on which the current algorithm is loosely based is described in detail in Chapter 7 of [Paul Harrison's thesis](http://www.logarithmic.net/pfh/thesis). I had contemplated the idea of extending the Ghost Diagrams concept to three dimensions for a while, and finally decided to try and implement it. I've ended spending more time on it than I thought I would. Ghost Diagrams creates planar tilings using either a square or hexagonal grid. The rhombrick program works in a similar way, but creates three dimensional structures using rhombic dodecahedral "tiles" on a rhombick dodecahedral "grid" (see [Rhombic dodecahedral honeycomb](http://en.wikipedia.org/wiki/Rhombic_dodecahedral_honeycomb)).
