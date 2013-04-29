@@ -15,6 +15,8 @@
 (def model-scale (atom 50))
 (def bezier-box-resolution (atom 8))
 (def bezier-box-control-bias (atom 0.5))
+(def bezier-box-smooth-shading? (atom true))
+(def bezier-box-line-weight (atom 2))
 (def face-list (atom #{}))
 (def face-id-text (atom []))
 
@@ -220,7 +222,7 @@
 
 
 (defn draw-face-list []
-  (fill 32 32 32 192)
+  (fill 32 32 32 128)
   ;(fill 32 32 32 128)
 
   ;(no-fill)
@@ -538,7 +540,9 @@
 ;    [[(nth connected-idxs 0) (nth connected-idxs 0)]]))
 
 (defn make-curve-endpoints [connected-idxs]
-  (map vec (vec (combinations connected-idxs 2))))
+  (if (= (count connected-idxs) 1)
+    (list [(first connected-idxs) (first connected-idxs)])
+    (map vec (vec (combinations connected-idxs 2)))))
 
 
 (def bezier-box-tristrip-cache (atom {}))
@@ -594,7 +598,7 @@
 
 ; Calculate the vertex normals, where each normal is the average of the normals
 ; of all triangles that the vertex is a part of.
-(defn get-strip-vertex-normals [strip]
+(defn make-strip-vertex-normals [strip]
   (let [face-normals (get-strip-face-normals strip)
         n-faces (count face-normals)
         n-vnorms (+ n-faces 2)
@@ -687,6 +691,15 @@
       (swap! bezier-box-tristrip-cache assoc code strips)))
   (@bezier-box-tristrip-cache code))
 
+
+(defn get-bezier-box-normals [code steps]
+  (when (not (contains? @bezier-box-tristrip-cache code))
+    (let [strips (make-facecode-bezier-box-triangles code steps)
+          normals (map make-strip-vertex-normals strips)]
+      (swap! bezier-box-tristrip-cache assoc code strips)
+      (swap! bezier-box-tristrip-normals-cache assoc code normals)))
+  (@bezier-box-tristrip-normals-cache code))
+  
 
 (defn get-bezier-box-lines [code steps]
   "Gets bezier box outline verts from cache if present, otherwise computes "
@@ -792,7 +805,8 @@
       (let [p (co-verts (first (get-connected-idxs code)))]
         (line 0 0 0 (p 0) (p 1) (p 2))
         (fill 255 128 128 128)
-        (box 0.05125 0.05125 0.05125)
+        ;(box 0.05125 0.05125 0.05125)
+        (box 0.25 0.25 0.25)
         (no-fill))
         )
 
@@ -812,8 +826,8 @@
 
 
 (defn draw-facecode-bezier-box-lines [code col steps]
-  (apply stroke col)
-  (stroke-weight 2)
+  (when (contains? #{3 4} (count col)) (apply stroke col))
+  (stroke-weight @bezier-box-line-weight)
   (no-fill)
   (doseq [line-verts (get-bezier-box-lines code steps)]
     (doseq [vert line-verts]
@@ -843,7 +857,7 @@
   (doseq [bbox (get-bezier-box-triangles code steps)]
     (doseq [strip bbox]
       (let [verts (vec strip)
-            normals (get-strip-vertex-normals verts)]
+            normals (make-strip-vertex-normals verts)]
         (begin-shape :triangle-strip)
         (doseq [i (range (count verts))]
           (let [[vx vy vz] (verts i)
@@ -852,13 +866,35 @@
             (vertex vx vy vz)))
         (end-shape)))))
 
+
+(defn draw-facecode-bezier-boxes-n2 [code col steps]
+  (when (contains? #{3 4} (count col)) (apply fill col))
+  ;(stroke 0 0 0 192)
+  (no-stroke)
+  (doseq [bbox (vec (get-bezier-box-triangles code steps))]
+    (let [normals1 (vec (get-bezier-box-normals code steps))]
+      (doseq [b (range (count bbox))]
+         (let [strip (bbox b)
+               verts (vec strip)
+               normals (vec (normals1 b))]
+          (begin-shape :triangle-strip)
+          (doseq [i (range (count verts))]
+            (let [[vx vy vz] (verts i)
+                  [nx ny nz] (normals i)]
+              (normal nx ny nz)
+              (vertex vx vy vz)))
+          (end-shape))))))
+
+
 (defn draw-tiling [with-boundaries? with-lines? with-bb-faces? with-bb-lines? boundary-mode]
   (doseq [tile (keys @tiles)]
     (let [pos tile
           code (@tiles pos)
+          ;col [255 255 255 255]
           col (conj (get-tile-color code) 255)
           ;line-col [(col 0) (col 1) (col 2) 255]
-          line-col  [192 192 255 192]
+          line-col col
+          ;line-col  [0 0 0 192] ;[192 192 255 192]
           bezier-steps @bezier-box-resolution]
       (with-translation pos 
         (scale 0.5)
@@ -868,7 +904,9 @@
           (no-fill)
           (draw-facecode-lines code))
         (when with-bb-faces?
-          (draw-facecode-bezier-boxes-n (@tiles pos) col bezier-steps))
+          (if @bezier-box-smooth-shading?
+            (draw-facecode-bezier-boxes-n (@tiles pos) col bezier-steps)
+            (draw-facecode-bezier-boxes (@tiles pos) col bezier-steps)))
         (when with-bb-lines?
           (draw-facecode-bezier-box-lines (@tiles pos) line-col bezier-steps))
         )

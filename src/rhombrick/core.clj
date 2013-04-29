@@ -31,8 +31,8 @@
 
 (def keys-down (atom #{}))
 
-(def mousewarp-pos (atom [716 356])) ; 1440x800
-;(def mousewarp-pos (atom [946 506])) ; 1900x1100
+;(def mousewarp-pos (atom [716 356])) ; 1440x800
+(def mousewarp-pos (atom [946 506])) ; 1900x1100
 (def last-mouse-delta (atom [0 0]))
 
 (def my-applet (atom nil))
@@ -104,7 +104,7 @@
     (editor/init-editor)
     (start-tiler (editor/get-tileset-as-set) false)
     ;(init-gliders num-gliders)
-    ;(println @gliders)
+    ;(println @gliders
 
 ;    (doseq [val (range 10)]
 ;      (osc-send client "/test" "i" (float val)))
@@ -116,7 +116,7 @@
       (reify Thread$UncaughtExceptionHandler
         (uncaughtException [this thread throwable]
           ;; do something with the exception here.. log it, for example.
-          (println "blah:" this thread throwable)
+          (println "UNCAUGHT EXCEPTION:" this thread throwable)
      )))
 
     (println "setup done")
@@ -285,7 +285,12 @@
           (swap! bezier-box-control-bias (fn [n] (+ n 0.01)))
           (bezier-box-cache-reset)
           (println "bezierbox control bias:" @bezier-box-control-bias))
-
+    \* #(do
+          (swap! bezier-box-line-weight inc))
+    \& #(do
+          (swap! bezier-box-line-weight dec))
+    \M #(do
+          (swap! bezier-box-smooth-shading? not))
        })
 
 (def key-editor-map
@@ -496,9 +501,9 @@
 ;    (pop-matrix)
    
     (push-matrix)
-    (rotate-z (/ (frame-count) 20.1))
-    (rotate-x (/ (frame-count) 21.231))
-    (rotate-y (/ (frame-count) 18.73))
+    (rotate-z (/ (frame-count) 40.1))
+    (rotate-x (/ (frame-count) 41.231))
+    (rotate-y (/ (frame-count) 38.73))
 
     (let [r (/ @assemblage-max-radius 2)
           mr (/ (- @assemblage-max-radius) 2)]
@@ -509,9 +514,14 @@
       (fill 0 0 255)
       (with-translation [ r  r mr] (box 0.1))
 
-      (spot-light 255 255 255 mr  r  r 1  -1  -1 (/ Math/PI 2) 2)
-      (spot-light 255 255 255  r mr  r  -1 1  -1 (/ Math/PI 2) 2)
-      (spot-light 255 255 255  r  r mr  -1  -1 1 (/ Math/PI 2) 2))
+      (light-falloff 1.1 0.0 0.0)
+
+      ;(spot-light 0 255 0 mr  r  r   1  -1  -1 (/ Math/PI 2) 2)
+      ;(spot-light 255 0 0  r mr  r  -1   1  -1 (/ Math/PI 2) 2)
+      ;(spot-light 0 0 255  r  r mr  -1  -1   1 (/ Math/PI 2) 2))
+      (spot-light 128 255 128 mr  r  r   1  -1  -1 (/ Math/PI 2) 2)
+      (spot-light 255 128 128  r mr  r  -1   1  -1 (/ Math/PI 2) 2)
+      (spot-light 128 128 255  r  r mr  -1  -1   1 (/ Math/PI 2) 2))
     (pop-matrix)
 
     ;(light-falloff 1.0 0.2 0.0)
@@ -610,8 +620,8 @@
     :title "rhombrick"
     :setup setup 
     :draw draw
-    ;:size [1900 1100]
-    :size [1440 800]
+    :size [1900 1100]
+    ;:size [1440 800]
     :renderer :opengl 
     :key-typed key-typed
     :key-pressed key-pressed
