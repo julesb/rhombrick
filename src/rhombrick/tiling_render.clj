@@ -331,6 +331,9 @@
                          (not= (.charAt code i) \-))
                   (= boundary-mode :all)
                     (not= (.charAt code i) \-)
+                  (= boundary-mode :type-change)
+                    (and (not= (.charAt code i) \-)
+                         (not= [r g b] (get-tile-color (@tiles (get-neighbour-pos pos i)))))
                   :else
                     false)
             (let [d (.charAt code i)

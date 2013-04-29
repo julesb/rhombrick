@@ -49,7 +49,7 @@
 (def tiler-auto-seed? (atom false))
 
 (def boundary-mode-idx (atom 0))
-(def boundary-modes [:only-empty :all :none])
+(def boundary-modes [:only-empty :type-change :all :none])
 (def current-boundary-mode (atom (boundary-modes @boundary-mode-idx)))
 
 
