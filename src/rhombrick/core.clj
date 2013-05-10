@@ -116,7 +116,13 @@
       (reify Thread$UncaughtExceptionHandler
         (uncaughtException [this thread throwable]
           ;; do something with the exception here.. log it, for example.
-          (println "UNCAUGHT EXCEPTION:" this thread throwable)
+          (do
+            (println "UNCAUGHT EXCEPTION:" this thread throwable)
+            (println "STACK TRACE:")
+            (clojure.stacktrace/print-stack-trace throwable)
+            (println "CAUSE TRACE:")
+            (clojure.stacktrace/print-cause-trace throwable)
+            )
      )))
 
     (println "setup done")
