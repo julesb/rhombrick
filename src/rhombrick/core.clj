@@ -5,6 +5,7 @@
         ;[rhombrick.staticgeometry :as geom]
         [rhombrick.tiling]
         [rhombrick.tiling-render]
+        [rhombrick.game :as game]
         [rhombrick.vector]
         [rhombrick.glider]
         [rhombrick.camera]
@@ -103,6 +104,7 @@
     (println "initialising tiler")
     (editor/init-editor)
     (start-tiler (editor/get-tileset-as-set) false)
+    (init-game)
     ;(init-gliders num-gliders)
     ;(println @gliders
 
@@ -474,6 +476,31 @@
               (do
                 (reset! last-mouse-delta (mouse-delta 0.0001))
                 (.mouseMove robot (/ (width) 2) (/ (height) 2))))))
+    (= @camera-mode 3)
+    ; game mode camera
+      (do
+        (let [g (vec3-scale (get-glider-pos 1) @model-scale)
+              d (dist (@camera-pos 0)
+                      (@camera-pos 1)
+                      (@camera-pos 2)
+                      (g 0) (g 1) (g 2))
+              dir (vec3-normalize (vec3-sub g @camera-pos))
+              newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.030)))
+              cl-d (dist (@camera-lookat 0)
+                         (@camera-lookat 1)
+                         (@camera-lookat 2)
+                       (g 0) (g 1) (g 2))
+              cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
+              new-camera-lookat (vec3-add @camera-lookat 
+                                          (vec3-scale cl-dir
+                                                      (* cl-d 0.15)))]
+          (reset! camera-lookat new-camera-lookat)    
+          (reset! camera-pos newpos)
+          (camera (newpos 0) (newpos 1) (+ (newpos 2) 10)
+                  (new-camera-lookat 0)
+                  (new-camera-lookat 1)
+                  (new-camera-lookat 2)
+                  0 0 -1)))
   )
 
   (perspective (radians @camera-fov) 
@@ -539,7 +566,7 @@
     (no-fill)
     (draw-horizon)
     (draw-assemblage-radius)
-
+    (game/draw-selected-pos)
     ;(when @draw-facelist?
     ;  (draw-face-list))
       ;(draw-face-list-textured))
