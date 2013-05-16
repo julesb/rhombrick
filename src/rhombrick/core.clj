@@ -103,8 +103,8 @@
 
     (println "initialising tiler")
     (editor/init-editor)
-    (start-tiler (editor/get-tileset-as-set) false)
     (init-game)
+    (start-tiler (editor/get-tileset-as-set) false)
     ;(init-gliders num-gliders)
     ;(println @gliders
 
@@ -479,7 +479,7 @@
     (= @camera-mode 3)
     ; game mode camera
       (do
-        (let [g (vec3-scale (get-glider-pos 1) @model-scale)
+        (let [g (vec3-scale @selected-pos @model-scale)
               d (dist (@camera-pos 0)
                       (@camera-pos 1)
                       (@camera-pos 2)
@@ -491,9 +491,11 @@
                          (@camera-lookat 2)
                        (g 0) (g 1) (g 2))
               cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
+              
               new-camera-lookat (vec3-add @camera-lookat 
                                           (vec3-scale cl-dir
-                                                      (* cl-d 0.15)))]
+                                                      (* cl-d 0.15)))
+              ]
           (reset! camera-lookat new-camera-lookat)    
           (reset! camera-pos newpos)
           (camera (newpos 0) (newpos 1) (+ (newpos 2) 10)
