@@ -416,14 +416,14 @@
   ))
 
 
-(defn draw-empty []
-  (fill 0 255 0 192)
-  (doseq [tile (get-empty-positions)]
+(defn draw-empty [_tiles]
+  (fill 0 255 0 16)
+  (doseq [tile (get-empty-positions _tiles)]
     (let [pos tile]
       (with-translation pos 
-        (scale 0.05)
-        (box 1 1 1)
-        ;(draw-faces rd-verts rd-faces nil)
+        (scale 0.5)
+        ;(box 1 1 1)
+        (draw-faces rd-verts rd-faces [0 255 0 8])
         ;(draw-faces rd-verts rd-faces rd-face-colors)
         ))))
 

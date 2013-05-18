@@ -72,6 +72,9 @@
 (defn get-tileset-as-set []
   (set (get-tileset)))
 
+(defn get-tileset-expanded []
+  (expand-tiles-preserving-symmetry (get-tileset)))
+  
 
 (defn add-to-tileset [tile]
   (let [idx (count (get-tileset))]

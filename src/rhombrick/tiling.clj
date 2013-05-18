@@ -340,13 +340,15 @@
 ; ie the vector with the shortest length. If there are more than one
 ; with length equal to the shortest length then return a random one.
 (defn find-closest-to-center [positions]
-  (let [sorted (->> (map #(vec [%1 (vec3-sum-of-squares %1)]) positions)
-                    (sort-by #(% 1)))
-        min-length ((first sorted) 1)
-        tie-winners (filter #(= min-length (% 1)) sorted)]
-    (if (= 1 (count tie-winners))
-      ((first tie-winners) 0)
-      ((rand-nth tie-winners) 0))))
+  (if (> (count positions) 0)
+    (let [sorted (->> (map #(vec [%1 (vec3-sum-of-squares %1)]) positions)
+                      (sort-by #(% 1)))
+          min-length ((first sorted) 1)
+          tie-winners (filter #(= min-length (% 1)) sorted)]
+      (if (= 1 (count tie-winners))
+        ((first tie-winners) 0)
+        ((rand-nth tie-winners) 0)))
+    [0 0 0]))
 
 
 (defn find-closest-to-point [positions point]
@@ -428,6 +430,18 @@
 (defn backtrack [_tiles]
   (let [num-tiles (count _tiles)
         n (compute-backtrack-amount num-tiles)
+        ni (- num-tiles n)]
+    (if (and (> num-tiles 0)
+             (<= n num-tiles))
+      (do
+        (append-stats-buffer! stats-backtrack n)
+        (take ni _tiles))
+      (do
+        (append-stats-buffer! stats-backtrack 0)
+        _tiles))))
+
+(defn backtrack-n [_tiles n]
+  (let [num-tiles (count _tiles)
         ni (- num-tiles n)]
     (if (and (> num-tiles 0)
              (<= n num-tiles))

@@ -3,7 +3,7 @@
         [quil.applet]
         [rhombrick.facecode]
         ;[rhombrick.staticgeometry :as geom]
-        [rhombrick.tiling]
+        [rhombrick.tiling :as tiling]
         [rhombrick.tiling-render]
         [rhombrick.game :as game]
         [rhombrick.vector]
@@ -53,6 +53,7 @@
 (def boundary-modes [:only-empty :type-change :all :none])
 (def current-boundary-mode (atom (boundary-modes @boundary-mode-idx)))
 
+(def game-mode? (atom true))
 
 (def ^:dynamic editor-font)
 (def ^:dynamic console-font)
@@ -103,8 +104,11 @@
 
     (println "initialising tiler")
     (editor/init-editor)
-    (init-game)
-    (start-tiler (editor/get-tileset-as-set) false)
+    (if @game-mode?
+      (reset! camera-mode 3)
+      (start-game (editor/get-tileset-expanded))
+      ;(start-tiler (editor/get-tileset-as-set) false)
+      )
     ;(init-gliders num-gliders)
     ;(println @gliders
 
@@ -137,7 +141,9 @@
     (reset! last-iteration-time 1))
   (text-font console-font)
   (let [line-space 22
-        lines [(str "state: " @tiler-state)
+        lines [(str "game mode:" @game-mode?)
+               (str "candidates:" @game/candidates)
+               (str "state: " @tiler-state)
                (str "iters: " @tiler-iterations)
                (str "tiles: " (count @tiles) "/" @max-tiles) 
                (str "ips: " (int (/ 1000 @last-iteration-time)))
@@ -299,6 +305,22 @@
           (swap! bezier-box-line-weight dec))
     \M #(do
           (swap! bezier-box-smooth-shading? not))
+    \Z #(do
+          (swap! game-mode? not))
+    \z #(do
+          (game/start-game (editor/get-tileset-expanded)))
+    \x #(do
+          (game/game-step (editor/get-tileset-expanded))
+          )
+    \v #(do
+          (game/do-backtrack)
+          (game/update-game-state (editor/get-tileset-expanded))
+          )
+    \1 #(do
+          (game/prev-candidate))
+    \2 #(do
+          (game/next-candidate))
+
        })
 
 (def key-editor-map
@@ -536,9 +558,9 @@
 ;    (pop-matrix)
    
     (push-matrix)
-    (rotate-z (/ (frame-count) 40.1))
-    (rotate-x (/ (frame-count) 41.231))
-    (rotate-y (/ (frame-count) 38.73))
+;    (rotate-z (/ (frame-count) 40.1))
+;    (rotate-x (/ (frame-count) 41.231))
+;    (rotate-y (/ (frame-count) 38.73))
 
     (let [r (/ @assemblage-max-radius 2)
           mr (/ (- @assemblage-max-radius) 2)]
@@ -568,7 +590,7 @@
     (no-fill)
     (draw-horizon)
     (draw-assemblage-radius)
-    (game/draw-selected-pos)
+
     ;(when @draw-facelist?
     ;  (draw-face-list))
       ;(draw-face-list-textured))
@@ -583,8 +605,17 @@
 
     (when @draw-facelist?
       (draw-face-list))
-    ;(when (seq @empty-positions)
-    ;  (draw-empty))
+
+
+    (when @game-mode?
+      (game/draw-selected-candidate)
+      (game/draw-selected-pos)
+      )
+
+
+    (when (seq (get-empty-positions @tiles))
+      (draw-empty @tiles))
+    
 
     ;(lights)
     (when @draw-gliders?
@@ -603,7 +634,7 @@
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info 10 (- (height) 210))
+  (draw-info 10 (- (height) 250))
   (camera)
 
   (when @draw-console?
