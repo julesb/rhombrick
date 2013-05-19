@@ -136,6 +136,7 @@
 ;    (reset! assemblage-center new-center)))
 
 
+
 (defn get-num-connected [code]
   (count (filter #(not= \- %) code)))
 
@@ -145,6 +146,10 @@
     (vec3-scale (reduce vec3-add (keys _tiles))
                 (/ 1 (count _tiles)))
     [0 0 0]))
+
+
+(defn update-assemblage-center [_tiles]
+  (reset! assemblage-center (find-assemblage-center _tiles)))
 
 
 (defn is-empty? [_tiles pos]

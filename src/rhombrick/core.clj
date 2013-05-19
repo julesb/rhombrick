@@ -13,7 +13,7 @@
         [rhombrick.editor :as editor]
         [rhombrick.console :as console]
         [clojure.math.combinatorics]
-        ;[overtone.osc]
+        [overtone.osc]
         )
   (:import java.awt.event.KeyEvent))
 
@@ -309,16 +309,20 @@
           (swap! game-mode? not))
     \z #(do
           (game/start-game (editor/get-tileset-expanded)))
-    \x #(do
+    \u #(do
+          (osc-send client "/test" "place-tile" @game/selected-candidate-idx)
           (game/game-step (editor/get-tileset-expanded))
           )
-    \v #(do
+    \j #(do
+          (osc-send client "/test" "backtrack" @game/selected-candidate-idx)
           (game/do-backtrack)
           (game/update-game-state (editor/get-tileset-expanded))
           )
-    \1 #(do
+    \h #(do
+          (osc-send client "/test" "change-candidate" @game/selected-candidate-idx)
           (game/prev-candidate))
-    \2 #(do
+    \k #(do
+          (osc-send client "/test" "change-candidate" @game/selected-candidate-idx)
           (game/next-candidate))
 
        })
@@ -502,12 +506,12 @@
     ; game mode camera
       (do
         (let [g (vec3-scale @selected-pos @model-scale)
-              d (dist (@camera-pos 0)
-                      (@camera-pos 1)
-                      (@camera-pos 2)
-                      (g 0) (g 1) (g 2))
-              dir (vec3-normalize (vec3-sub g @camera-pos))
-              newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.030)))
+              ndir (vec3-normalize (vec3-sub @assemblage-center @selected-pos))
+              target-pos (vec3-add g (vec3-scale ndir (* @model-scale -5.0 )))
+              dir-to-target (vec3-normalize (vec3-sub target-pos @camera-pos))
+              dist-to-target (dist (@camera-pos 0) (@camera-pos 1) (@camera-pos 2)
+                                   (target-pos 0) (target-pos 1) (target-pos 2))
+              newpos (vec3-add @camera-pos (vec3-scale dir-to-target (* dist-to-target 0.050)))
               cl-d (dist (@camera-lookat 0)
                          (@camera-lookat 1)
                          (@camera-lookat 2)
@@ -516,11 +520,11 @@
               
               new-camera-lookat (vec3-add @camera-lookat 
                                           (vec3-scale cl-dir
-                                                      (* cl-d 0.15)))
+                                                      (* cl-d 0.05)))
               ]
           (reset! camera-lookat new-camera-lookat)    
           (reset! camera-pos newpos)
-          (camera (newpos 0) (newpos 1) (+ (newpos 2) 10)
+          (camera (newpos 0) (newpos 1) (+ (newpos 2) 0)
                   (new-camera-lookat 0)
                   (new-camera-lookat 1)
                   (new-camera-lookat 2)
@@ -601,7 +605,7 @@
                  @draw-bezier-box-lines?
                  @current-boundary-mode)
     
-    ;(draw-assemblage-center)
+    (draw-assemblage-center)
 
     (when @draw-facelist?
       (draw-face-list))

@@ -30,9 +30,11 @@
 
 
 (defn place-selected-candidate []
-  (if (and (> (count @candidates) 0)
+  (when (and (> (count @candidates) 0)
            (< @selected-candidate-idx (count @candidates)))
-    (make-tile! @selected-pos (@candidates @selected-candidate-idx))))
+    (do
+      (make-tile! @selected-pos (@candidates @selected-candidate-idx))
+      (update-assemblage-center @tiling/tiles))))
 
 
 (defn set-selected-pos [pos]
@@ -67,7 +69,7 @@
 
 (defn draw-selected-candidate []
   (if (and (> (count @candidates) 0)
-           (> @selected-candidate-idx 0)
+           (>= @selected-candidate-idx 0)
            (< @selected-candidate-idx (count @candidates))) 
     (let [pos @selected-pos
           code (@candidates @selected-candidate-idx)
@@ -109,7 +111,8 @@
 
 
 (defn do-backtrack []
-  (reset! tiling/tiles (ordered-map (tiling/backtrack-n @tiles 1))))
+  (reset! tiling/tiles (ordered-map (tiling/backtrack-n @tiles 1)))
+  (update-assemblage-center @tiling/tiles))
 
 
 (defn game-step [tileset]

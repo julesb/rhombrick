@@ -429,12 +429,13 @@
 
 
 (defn draw-assemblage-center []
-  (let [[cx cy cz] @assemblage-center]
-    (stroke 255 0 0 192)
+  (let [c @assemblage-center]
+    (stroke 255 255 255 192)
     (stroke-weight 4)
     ;(fill 255 255 0 32)
     (no-fill)
-    (with-translation (find-assemblage-center @tiles)
+    ;(with-translation (find-assemblage-center @tiles)
+    (with-translation c
       (scale 0.5)
       (box 1 1 1)
       ;(draw-faces rd-verts rd-faces nil)
