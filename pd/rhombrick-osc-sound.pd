@@ -1,4 +1,4 @@
-#N canvas 2378 247 899 472 10;
+#N canvas 2325 299 899 472 10;
 #X declare -lib mrpeach;
 #X obj -105 54 unpackOSC;
 #X obj -105 81 pipelist;
@@ -8,7 +8,7 @@
 #X floatatom -61 317 0 0 0 0 - - -;
 #X floatatom -24 317 0 0 0 0 - - -;
 #X text -101 298 pitch;
-#X floatatom 275 86 5 0 0 0 - - -;
+#X floatatom 276 88 5 0 0 0 - - -;
 #X floatatom -97 318 5 0 0 0 - - -;
 #X obj -103 3 import mrpeach;
 #X obj 283 -12 loadbang;
@@ -49,7 +49,7 @@
 #X obj 223 295 r len;
 #X obj 151 228 + 30;
 #X floatatom 173 203 5 0 0 0 - - -;
-#X floatatom 306 199 5 0 0 0 - - -;
+#X floatatom 306 198 5 0 0 0 - - -;
 #X obj 285 221 + 10;
 #X obj 280 346 makenote;
 #X floatatom 313 316 0 0 0 0 - - -;
@@ -83,7 +83,7 @@
 -1 -1;
 #X floatatom 397 87 5 0 0 0 - - -;
 #X obj 401 119 pgmout 3;
-#X floatatom 461 87 5 0 0 0 - - -;
+#X floatatom 464 91 5 0 0 0 - - -;
 #X obj 465 119 pgmout 4;
 #X obj 619 368 noteout 6;
 #X floatatom 531 87 5 0 0 0 - - -;
@@ -91,6 +91,8 @@
 #X obj 273 203 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
 -1 -1;
 #X obj 382 200 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
+-1 -1;
+#X obj 469 146 bng 15 250 50 0 empty empty empty 17 7 0 10 -262144
 -1 -1;
 #X connect 0 0 1 0;
 #X connect 0 1 1 1;
@@ -171,4 +173,6 @@
 #X connect 75 0 71 0;
 #X connect 80 0 81 0;
 #X connect 82 0 83 0;
+#X connect 82 0 89 0;
 #X connect 85 0 86 0;
+#X connect 89 0 55 0;
