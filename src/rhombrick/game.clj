@@ -90,7 +90,7 @@
             (draw-facecode-bezier-boxes-n code col-pulse bezier-steps)
             (draw-facecode-bezier-boxes code col-pulse bezier-steps)))
         (when true ;with-bb-lines?
-          (draw-facecode-bezier-box-lines code line-col bezier-steps))
+          (draw-facecode-bezier-box-lines code col-pulse bezier-steps))
         )
       (when true ; with-boundaries?
         (draw-face-boundaries pos code :all))
