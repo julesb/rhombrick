@@ -599,6 +599,8 @@
     ;  (draw-face-list))
       ;(draw-face-list-textured))
 
+    (update-selected-pos-screen)
+
     (draw-tiling true ;(not= @current-boundary-mode :none)
                  @draw-tilecode-lines?
                  @draw-bezier-box-faces?
@@ -610,12 +612,8 @@
     (when @draw-facelist?
       (draw-face-list))
 
-
     (when @game-mode?
-      (game/draw-selected-candidate)
-      (game/draw-selected-pos)
-      )
-
+      (game/render))
 
     (when (seq (get-empty-positions @tiles))
       (draw-empty @tiles))
@@ -656,7 +654,10 @@
     ;  (fill 255 255 255 255)
     ;  (text t x y)))
     )
-    
+
+  (when @game-mode?
+    (game/render-2d))
+
     ; bottom of screen
     ;(draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))
     ;(draw-tileset-editor [1285 20] @current-tileset 140))
@@ -671,12 +672,6 @@
                        frame-start-time)
                     1000000.0)))
 
-;  (if (and (= @tiler-state :running)
-;           (= (mod (frame-count) 150) 0))
-;   (println "frame-time: " @last-render-time
-;            "tiles:" (count @tiles)
-;            "adhd:" @adhd "auti:" @autism
-;            ))
   ))
 
 
