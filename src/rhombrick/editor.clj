@@ -12,7 +12,7 @@
 ;(def current-tileset-colors {})
 
 (def button-color {
-                   :fill [8 0 128 235]
+                   :fill [8 0 128 96]
                    :stroke [0 0 0 0]
                    :fill-hot [128 128 255 192]
                    :stroke-hot [0 0 192 192]
@@ -303,7 +303,7 @@
       (do
         (println "button pressed:" code)))
     (with-translation [bx by]
-      (scale (/ bscale 6))
+      (scale (/ bscale 5))
       (no-fill)
       (stroke-weight 1)
       (draw-faces-lite rd-verts rd-faces face-col)
