@@ -310,21 +310,27 @@
     \z #(do
           (game/start-game (editor/get-tileset-expanded)))
     \u #(do
-          (osc-send client "/test" "place-tile" @game/selected-candidate-idx)
+          (osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
           (game/game-step (editor/get-tileset-expanded))
           )
     \j #(do
-          (osc-send client "/test" "backtrack" @game/selected-candidate-idx)
+          (osc-send client "/rhombrick.game" "backtrack" @game/selected-candidate-idx)
           (game/do-backtrack)
           (game/update-game-state (editor/get-tileset-expanded))
           )
     \h #(do
-          (osc-send client "/test" "change-candidate" @game/selected-candidate-idx)
-          (game/prev-candidate))
+          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
+          (game/prev-candidate)
+          (update-neighbour-candidates @tiling/tiles (editor/get-tileset-expanded)))
     \k #(do
-          (osc-send client "/test" "change-candidate" @game/selected-candidate-idx)
-          (game/next-candidate))
-
+          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
+          (game/next-candidate)
+          (update-neighbour-candidates @tiling/tiles (editor/get-tileset-expanded)))
+    \D #(do
+          (osc-send client "/rhombrick.game" "destroy-neighbourhood" @game/selected-candidate-idx)
+          (game/destroy-neighbourhood)
+          (game/update-game-state (editor/get-tileset-expanded))
+          )
        })
 
 (def key-editor-map
@@ -511,17 +517,15 @@
               dir-to-target (vec3-normalize (vec3-sub target-pos @camera-pos))
               dist-to-target (dist (@camera-pos 0) (@camera-pos 1) (@camera-pos 2)
                                    (target-pos 0) (target-pos 1) (target-pos 2))
-              newpos (vec3-add @camera-pos (vec3-scale dir-to-target (* dist-to-target 0.050)))
+              newpos (vec3-add @camera-pos (vec3-scale dir-to-target (* dist-to-target 0.250)))
               cl-d (dist (@camera-lookat 0)
                          (@camera-lookat 1)
                          (@camera-lookat 2)
                        (g 0) (g 1) (g 2))
               cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
-              
               new-camera-lookat (vec3-add @camera-lookat 
                                           (vec3-scale cl-dir
-                                                      (* cl-d 0.05)))
-              ]
+                                                      (* cl-d 0.25))) ]
           (reset! camera-lookat new-camera-lookat)    
           (reset! camera-pos newpos)
           (camera (newpos 0) (newpos 1) (+ (newpos 2) 0)
@@ -600,6 +604,7 @@
       ;(draw-face-list-textured))
 
     (update-selected-pos-screen)
+    (update-neighbour-candidates-screen)
 
     (draw-tiling true ;(not= @current-boundary-mode :none)
                  @draw-tilecode-lines?

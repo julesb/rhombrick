@@ -16,7 +16,7 @@
 (def camera-modes [:follow-glider :follow-paths :free :game])
 (def camera-mode (atom 0))
 (def camera-num-modes 4)
-
+(def camera-up (atom [0 0 1]))
 
 
 (def x-rot (atom 0.0))
@@ -62,6 +62,7 @@
         (camera (@camera-pos 0) (@camera-pos 1) (@camera-pos 2)
                 (lookat 0) (lookat 1) (lookat 2)
                 (.x y) (.y y) (.z y))
+        (reset! camera-up [(.x y) (.y y) (.z y)])
         (reset! cam cam-new)
         ))))
 
