@@ -51,17 +51,13 @@
         updir @camera-up 
         crossdir (vec3-cross cdir updir)
         offpos (vec3-add @selected-pos crossdir)
-        offpos-screen [(screen-x (offpos 0) (offpos 1) (offpos 2))
-                       (screen-y (offpos 0) (offpos 1) (offpos 2))
-                       0]
+        offpos-screen (world-to-screen offpos)
         sc (* (vec3-length (vec3-sub offpos-screen @selected-pos-screen)) 0.5)]
     (reset! selected-scale-screen sc)))
 
 
 (defn update-selected-pos-screen []
-  (let [sel-pos [(screen-x (@selected-pos 0) (@selected-pos 1) (@selected-pos 2))
-                 (screen-y (@selected-pos 0) (@selected-pos 1) (@selected-pos 2))
-                 0]]
+  (let [sel-pos (world-to-screen @selected-pos)]
     (reset! selected-pos-screen sel-pos)
     (update-selected-scale-screen)))
 
@@ -70,8 +66,6 @@
   (if (> (count @candidates) 0)
     (let [tmp-tiles (make-tile _tiles @selected-pos (@candidates @selected-candidate-idx))
           con-nbs (get-empty-connected-neighbours tmp-tiles @selected-pos)
-          ;nb-candidates (map #(vec (find-candidates2 (get-neighbourhood tmp-tiles %) tileset))
-          ;                   con-nbs) ]
           nb-candidates (into {} (map #(vec [% (vec (find-candidates2 (get-neighbourhood tmp-tiles %) tileset))])
                              con-nbs)) ]
       (reset! neighbour-candidates nb-candidates))
