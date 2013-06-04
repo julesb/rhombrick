@@ -36,7 +36,7 @@
   [\e \E]
   [\f \F] })
 
-(def facecode-compatible-map {
+(def facecode-compatible-map {\. \-
                               \- \-
                               \0 \0
                               \1 \1
@@ -284,6 +284,11 @@
 ;         (filter #(is-empty? _tiles %))
 ;         (filter #(< (vec3-length %) @assemblage-max-radius))
 ;         (set))))
+
+
+(defn make-tilecode-to-fit [outercode]
+  (apply str (map facecode-compatible-map outercode)))
+
 
 (defn init-dead-loci! []
   (reset! dead-loci #{}))

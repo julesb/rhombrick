@@ -219,7 +219,14 @@
            (no-cursor)
            (cursor))))
    \C #(do
-         (swap! draw-console? not))
+         ;(swap! draw-console? not)
+          (let [outercode (get-outer-facecode2 (get-neighbourhood @tiles @game/selected-pos))
+                new-code (make-tilecode-to-fit outercode)]
+            (editor/add-to-tileset new-code)
+            (make-tile! @selected-pos new-code)
+            (osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
+            (game/game-step (editor/get-tileset-expanded))
+         ))
     \F #(do
          (swap! draw-facelist? not)
          (when @draw-facelist?
