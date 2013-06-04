@@ -320,6 +320,10 @@
           (osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
           (game/game-step (editor/get-tileset-expanded))
           )
+    \U #(do
+          (reset! selected-candidate-idx (int (rand (count @candidates))))
+          (game/game-step (editor/get-tileset-expanded))
+        )
     \j #(do
           (osc-send client "/rhombrick.game" "backtrack" @game/selected-candidate-idx)
           (game/do-backtrack)
