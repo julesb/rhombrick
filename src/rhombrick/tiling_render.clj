@@ -463,20 +463,41 @@
         ]
     [p1 p2 p3 p4]))
 
+;
+; From Processing source code:
+;  public float bezierPoint(float a, float b, float c, float d, float t) {
+;    float t1 = 1.0f - t;
+;    return a*t1*t1*t1 + 3*b*t*t1*t1 + 3*c*t*t*t1 + d*t*t*t;
+;  }
+;
+;  public float bezierTangent(float a, float b, float c, float d, float t) {
+;    return (3*t*t * (-a+3*b-3*c+d) +
+;            6*t * (a-2*b+c) +
+;            3 * (-a+b));
+;  }
+;
+
+(defn bezier-point2 [a b c d t]
+  (let [t1 (- 1.0 t)]
+    (+ (* a t1 t1 t1)
+       (* 3 b t t1 t1)
+       (* 3 c t t t1)
+       (* d t t t))))
+
 
 (defn get-bezier-point-3d [f1-idx f2-idx t]
   (when (not= f1-idx f2-idx)
     (let [[p1 p2 p3 p4] (get-bezier-controls f1-idx f2-idx)
-          bx (bezier-point (p1 0) (p2 0) (p3 0) (p4 0) t)
-          by (bezier-point (p1 1) (p2 1) (p3 1) (p4 1) t)
-          bz (bezier-point (p1 2) (p2 2) (p3 2) (p4 2) t)]
+          bx (bezier-point2 (p1 0) (p2 0) (p3 0) (p4 0) t)
+          by (bezier-point2 (p1 1) (p2 1) (p3 1) (p4 1) t)
+          bz (bezier-point2 (p1 2) (p2 2) (p3 2) (p4 2) t)]
       [bx by bz])))
 
 
 (defn get-bezier-point [[p1 p2 p3 p4] t]
-  [ (bezier-point (p1 0) (p2 0) (p3 0) (p4 0) t)
-    (bezier-point (p1 1) (p2 1) (p3 1) (p4 1) t)
-    (bezier-point (p1 2) (p2 2) (p3 2) (p4 2) t)])
+  [ (bezier-point2 (p1 0) (p2 0) (p3 0) (p4 0) t)
+    (bezier-point2 (p1 1) (p2 1) (p3 1) (p4 1) t)
+    (bezier-point2 (p1 2) (p2 2) (p3 2) (p4 2) t)])
 
 
 (defn get-bezier-tangent-3d [f1-idx f2-idx t]
