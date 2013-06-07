@@ -286,9 +286,15 @@
 ;         (set))))
 
 
-(defn make-tilecode-to-fit [outercode]
+(defn make-minimal-tilecode-to-fit [outercode]
   (apply str (map facecode-compatible-map outercode)))
 
+
+(defn make-random-tilecode-to-fit [outercode]
+  (apply str (map #(if (not= % \.)
+                     (facecode-compatible-map %) 
+                     (rand-nth random-tilecode-distribution))
+                  outercode)))
 
 (defn init-dead-loci! []
   (reset! dead-loci #{}))

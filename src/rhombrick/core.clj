@@ -221,7 +221,9 @@
    \C #(do
          ;(swap! draw-console? not)
           (let [outercode (get-outer-facecode2 (get-neighbourhood @tiles @game/selected-pos))
-                new-code (make-tilecode-to-fit outercode)]
+                ;new-code (make-random-tilecode-to-fit outercode)
+                new-code (make-minimal-tilecode-to-fit outercode)
+                ]
             (editor/add-to-tileset new-code)
             (make-tile! @selected-pos new-code)
             (osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
@@ -321,7 +323,7 @@
           (game/game-step (editor/get-tileset-expanded))
           )
     \U #(do
-          (reset! selected-candidate-idx (int (rand (count @candidates))))
+          (reset! game/selected-candidate-idx (int (rand (count @game/candidates))))
           (game/game-step (editor/get-tileset-expanded))
         )
     \j #(do
