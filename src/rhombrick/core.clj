@@ -5,6 +5,7 @@
         ;[rhombrick.staticgeometry :as geom]
         [rhombrick.tiling :as tiling]
         [rhombrick.tiling-render]
+        [rhombrick.bezierbox :as bbox]
         [rhombrick.game :as game]
         [rhombrick.vector]
         [rhombrick.glider]
@@ -151,7 +152,7 @@
                (str "dead: " (count @dead-loci))
                (str "radius: " @assemblage-max-radius)
                ;(str "-------------")
-               (str "bbox detail: " @bezier-box-resolution)
+               (str "bbox detail: " @bbox/bezier-box-resolution)
                (str "scale: " @model-scale)
                (str "fps: " (int (current-frame-rate)))
                (str "tileset:" (get-tileset))

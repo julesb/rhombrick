@@ -4,6 +4,7 @@
         [rhombrick.facecode]
         [rhombrick.tiling]
         [rhombrick.tiling-render]
+        [rhombrick.bezierbox :as bbox]
         [rhombrick.button]
         [rhombrick.staticgeometry]
         [rhombrick.tileset-library]
@@ -88,7 +89,7 @@
 ;        num-uniq (count tileset)]
   (reset! (@editor-state :tileset) [])
   (reset! current-tileset-colors {})
-  (bezier-box-cache-reset)
+  (bbox/bezier-box-cache-reset)
   (let [col-offset (rand-int 12)]
     (doseq [i (range (count tileset))]
       (let [code (tileset i)

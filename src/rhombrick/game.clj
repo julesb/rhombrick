@@ -5,6 +5,7 @@
         [rhombrick.facecode]
         [rhombrick.tiling :as tiling]
         [rhombrick.tiling-render]
+        [rhombrick.bezierbox :as bbox]
         [rhombrick.camera]
         [rhombrick.editor]
         [rhombrick.button]
@@ -269,7 +270,7 @@
           ;line-col [(col 0) (col 1) (col 2) 255]
           line-col col
           ;line-col  [0 0 0 192] ;[192 192 255 192]
-          bezier-steps @bezier-box-resolution]
+          bezier-steps @bbox/bezier-box-resolution]
       (with-translation pos 
         (scale 0.5)
         (when true ; with-lines?
