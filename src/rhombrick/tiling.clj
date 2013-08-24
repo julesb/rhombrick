@@ -74,18 +74,18 @@
   \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0 \0
   \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1
   \2 \2 \2 \2 \2 \2 \2 \2
-  \3 \3 \3 \3 \3 \3 \3
-  \4 \4 \4 \4 \4 \4
-  \5 \5 \5 \5 \5
-  \6 \6 \6 \6
-  \a \a \a \a
-  \A \A \A \A 
+  \3 \3 \3 \3 \3 \3 \3 \3
+  \4 \4 \4 \4
+  \5 \5 
+  \6
+  \a \a \a \a \a \a \a \a
+  \A \A \A \A \A \A \A \A
   \b \b \b \b
   \B \B \B \B
-  \c \c \c \c
-  \C \C \C \C
-  \d \d \d \d
-  \D \D \D \D])
+  \c \c
+  \C \C
+  \d
+  \D])
 
 (defn make-random-tilecode []
   (let [code (apply str (map (fn [_] (rand-nth random-tilecode-distribution))
@@ -118,7 +118,7 @@
 
 
 (defn get-random-tileset []
-  (let [max-tiles 6]
+  (let [max-tiles 4]
     (make-random-tileset (+ 1 (rand-int max-tiles)) [])))
 
 
