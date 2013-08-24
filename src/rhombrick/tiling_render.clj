@@ -337,12 +337,13 @@
 
 (defn draw-empty [_tiles]
   (fill 0 255 0 16)
+  (stroke 0 255 0 32)
   (doseq [tile (get-empty-positions _tiles)]
     (let [pos tile]
       (with-translation pos 
         (scale 0.5)
-        ;(box 1 1 1)
-        (draw-faces rd-verts rd-faces [0 255 0 8])
+        (box 0.2 0.2 0.2)
+        ;(draw-faces rd-verts rd-faces [0 255 0 8])
         ;(draw-faces rd-verts rd-faces rd-face-colors)
         ))))
 
