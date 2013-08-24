@@ -138,7 +138,7 @@
 
 
 (defn get-num-connected [code]
-  (count (filter #(not= \- %) code)))
+  (count (filter #(and  (not= \- %) (not= \0 %) ) code) ))
 
 
 (defn find-assemblage-center [_tiles]

@@ -81,7 +81,7 @@
 
 (defn get-connected-idxs [facecode]
   (filter #(not= nil %)
-          (map #(if (not= %2 \-) %1 nil)
+          (map #(if (and (not= %2 \-) (not= %2 \0) ) %1 nil)
                (range 12) facecode)))
 
 

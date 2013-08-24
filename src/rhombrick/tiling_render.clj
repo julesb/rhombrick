@@ -307,11 +307,14 @@
           (when (cond
                   (= boundary-mode :only-empty)
                     (and (is-empty? @tiles (get-neighbour-pos pos i))
-                         (not= (.charAt code i) \-))
+                         (not= (.charAt code i) \-)
+                         (not= (.charAt code i) \0))
                   (= boundary-mode :all)
-                    (not= (.charAt code i) \-)
+                    (and (not= (.charAt code i) \-)
+                         (not= (.charAt code i) \0))
                   (= boundary-mode :type-change)
                     (and (not= (.charAt code i) \-)
+                         (not= (.charAt code i) \0)
                          (not= [r g b] (get-tile-color (@tiles (get-neighbour-pos pos i)))))
                   :else
                     false)
