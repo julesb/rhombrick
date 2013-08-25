@@ -90,18 +90,39 @@
     (apply str)
     java.math.BigInteger.))
 
-(def test-tiler-params {:tileset ["111111111111"]
-                        :iters 1000
-                        :radius 2
-                        :adhd 1.5
-                        :autism 1.5
-                        })
+(def default-params {
+  :tileset ["111111111111"]
+  :seed 0
+  :iters 1000
+  :radius 2
+  :adhd 1.5
+  :autism 1.5
+  })
 
+
+(defn make-params [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism]
+                      :or {tileset ["111111111111"] 
+                           seed 0
+                           max-iters 1000
+                           max-radius 3
+                           max-tiles 1000
+                           adhd 1.5
+                           autism 1.5} } ]
+  {
+  :tileset tileset
+  :seed seed
+  :max-iters max-iters
+  :max-radius max-radius
+  :max-tiles max-tiles
+  :adhd adhd
+  :autism autism
+  :tileset-number (tileset-to-number tileset) 
+  } )
 
 (defn iterate-tiler [_tiles tileset-expanded params]
   (if (and (= @tiler-state :running)
-           (< (count _tiles) @max-tiles)
-           (< @tiler-iterations (params :iters))
+           (< (count _tiles) (params :max-tiles))
+           (< @tiler-iterations (params :max-iters))
            (> (count (get-empty-positions _tiles)) 0))
     (do
       (swap! tiler-iterations inc)
@@ -112,28 +133,27 @@
 
 
 (defn evaluate-tileset [params ]
-  (reset! assemblage-max-radius (params :radius))
+  (reset! assemblage-max-radius (params :max-radius))
   (reset! adhd (params :adhd))
   (reset! autism (params :autism))
   (init-tiler (params :tileset))
   (init-dead-loci!)
   (let [tileset-expanded (expand-tiles-preserving-symmetry (params :tileset))
         seed-tile (ordered-map {[0 0 0] (first (params :tileset))})]
-    (println "tileset exp:" tileset-expanded)
     (reset! tiler-state :running)
     (let [tiling (iterate-tiler seed-tile tileset-expanded params)
           tileset (params :tileset)
           seed (first (params :tileset))
           tilecount (count tiling)
-          iters @tiler-iterations ]
-      {:tiling tiling
-       :tileset tileset
-       :seed seed
-       :tilecount tilecount
-       :iters iters
+          iters-done @tiler-iterations
+          tileset-number (tileset-to-number (params :tileset))
+          ]
+      {:params params
+       :result {:tiling tiling
+                :tilecount tilecount
+                :iters-done iters-done}
        }
-      )))
-
+       )))
 
 
 
