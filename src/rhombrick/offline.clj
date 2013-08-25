@@ -100,24 +100,31 @@
   })
 
 
-(defn make-params [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism]
+(defn make-params [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism best-of]
                       :or {tileset ["111111111111"] 
-                           seed 0
+                           seed ""
                            max-iters 1000
                            max-radius 3
                            max-tiles 1000
                            adhd 1.5
-                           autism 1.5} } ]
+                           autism 1.5
+                           best-of 1} } ]
   {
   :tileset tileset
-  :seed seed
+  :seed (if (< (count seed) 12) (first tileset) seed)
   :max-iters max-iters
   :max-radius max-radius
   :max-tiles max-tiles
   :adhd adhd
   :autism autism
+  :best-of best-of
   :tileset-number (tileset-to-number tileset) 
   } )
+
+
+(defn make-params-for-seeds [tileset]
+  (map #(make-params :tileset tileset :seed %) tileset))
+
 
 (defn iterate-tiler [_tiles tileset-expanded params]
   (if (and (= @tiler-state :running)
@@ -139,11 +146,11 @@
   (init-tiler (params :tileset))
   (init-dead-loci!)
   (let [tileset-expanded (expand-tiles-preserving-symmetry (params :tileset))
-        seed-tile (ordered-map {[0 0 0] (first (params :tileset))})]
+        seed-tile (ordered-map {[0 0 0] (params :seed)})]
     (reset! tiler-state :running)
     (let [tiling (iterate-tiler seed-tile tileset-expanded params)
           tileset (params :tileset)
-          seed (first (params :tileset))
+          seed (params :seed)
           tilecount (count tiling)
           iters-done @tiler-iterations
           tileset-number (tileset-to-number (params :tileset))
@@ -156,14 +163,24 @@
        )))
 
 
+(defn print-results [results]
+  (pp (map #(% :result) results)))
+
+(defn repeat-choose-best-of-n-runs [params n]
+  (->> (map (fn [_] (evaluate-tileset params)) (range n))
+       (sort-by #((% :result) :tilecount))
+       reverse
+       first
+    ))
 
 
-(defn evaluate-tileset-seeds [params]
-  ; for each tile in tileset:
-  ;   generate tiling using tile as initial seed
+(defn evaluate-tileset-all-seeds [params]
+  (->> (make-params-for-seeds (params :tileset))
+    ;(map evaluate-tileset)
+    (map #(repeat-choose-best-of-n-runs % (params :best-of)))
   ; write result to database
 
-  )
+  ))
 
 ;; A tiling run is the result of generating a tiling using each tile in the
 ;; tileset as the initial seed tile 
