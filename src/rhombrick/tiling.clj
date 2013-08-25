@@ -444,6 +444,18 @@
       n
       (recur (inc n)))))
 
+(defn backtrack-non-zero [_tiles]
+  (let [num-tiles (count _tiles)
+        n (compute-backtrack-amount num-tiles)
+        ni (- num-tiles n)]
+    (if (and (> num-tiles 1)
+             (< n num-tiles))
+      (do
+        (append-stats-buffer! stats-backtrack n)
+        (take ni _tiles))
+      (do
+        (append-stats-buffer! stats-backtrack 0)
+        _tiles))))
 
 (defn backtrack [_tiles]
   (let [num-tiles (count _tiles)
@@ -482,14 +494,18 @@
         (do ; no tile will fit 
           (add-to-dead-loci! (get-outer-facecode2 new-neighbourhood))
           (->> (delete-neighbours _tiles new-pos)
-               (backtrack)))
+               ;(backtrack)
+               (backtrack-non-zero)
+            ))
         (let [new-tiles (make-tile _tiles new-pos new-code)]
           (if (creates-untileable-region? new-tiles tileset new-pos)
             (do
               (let [untileable (get-untileable-neighbours new-tiles tileset new-pos)]
                 (doseq [t untileable]
                   (add-to-dead-loci! (get-outer-facecode2 (get-neighbourhood new-tiles t))))
-                (backtrack _tiles)))
+                ;(backtrack _tiles)
+                (backtrack-non-zero _tiles)
+                ))
             (do
               (append-stats-buffer! stats-backtrack 0)
               new-tiles)))))
