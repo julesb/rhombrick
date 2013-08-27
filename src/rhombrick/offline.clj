@@ -1,8 +1,9 @@
 (ns rhombrick.offline
   (:use [rhombrick.tiling]
-        [rhombrick.vector]
-        [rhombrick.staticgeometry :as geom]
-        [rhombrick.facecode]
+        ;[rhombrick.vector]
+        ;[rhombrick.staticgeometry :as geom]
+        ;[rhombrick.facecode]
+        [rhombrick.tilebase]
         [ordered.map]))
 
 
@@ -60,6 +61,11 @@
        (apply str "0x")
        hex-to-num))
 
+(defn tilecode-to-hex-number [code]
+  (->> code
+       (map tilecode-to-number-map)
+       (apply str)
+    ))
 
 (defn tilecode-to-hex-string [code]
   (apply str "0x" (map #(if (= \- %) \0 %) code)))
@@ -90,6 +96,15 @@
     (apply str)
     java.math.BigInteger.))
 
+
+(defn tileset-to-hex-number [tileset]
+  (->> tileset
+    normalize-tileset
+    (map tilecode-to-hex-number)
+    (apply str)
+    ))
+
+
 (def default-params {
   :tileset ["111111111111"]
   :seed 0
@@ -103,12 +118,12 @@
 (defn make-params [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism best-of]
                       :or {tileset ["111111111111"] 
                            seed ""
-                           max-iters 1000
-                           max-radius 3
+                           max-iters 200
+                           max-radius 4
                            max-tiles 1000
                            adhd 1.5
                            autism 1.5
-                           best-of 1} } ]
+                           best-of 4} } ]
   {
   :tileset tileset
   :seed (if (< (count seed) 12) (first tileset) seed)
@@ -163,11 +178,11 @@
        )))
 
 
-(defn print-results [results]
-  (pp (map #(% :result) results)))
+;(defn print-results [results]
+;  (pp (map #(% :result) results)))
 
-(defn repeat-choose-best-of-n-runs [params n]
-  (->> (map (fn [_] (evaluate-tileset params)) (range n))
+(defn evaluate-tileset-best-of [params]
+  (->> (map (fn [_] (evaluate-tileset params)) (range (params :best-of)))
        (sort-by #((% :result) :tilecount))
        reverse
        first
@@ -177,10 +192,41 @@
 (defn evaluate-tileset-all-seeds [params]
   (->> (make-params-for-seeds (params :tileset))
     ;(map evaluate-tileset)
-    (map #(repeat-choose-best-of-n-runs % (params :best-of)))
-  ; write result to database
-
+    (map #(evaluate-tileset-best-of %))
   ))
+
+
+
+(defn test-dbwrite []
+  (let [param (make-params :tileset (get-random-tileset))]
+    (print "evaluate-tileset:" (pr-str (param :tileset)) "x" (param :max-iters) "|")
+    (let [result (evaluate-tileset param)]
+      (println "result: tilecount:" ((result :result) :tilecount)
+               "iters-done:" ((result :result) :iters-done))
+      (save-tiling-result result)
+      ;result
+      )))
+
+
+(defn test-dbwrite2 []
+  (let [param (make-params :tileset (get-random-tileset))]
+    (println "evaluate-tileset:" (pr-str (param :tileset)) "x" (param :max-iters) "|")
+    (let [results (evaluate-tileset-all-seeds param)]
+      (doseq [result results]
+        (println "result: seed:" ((result :params) :seed) 
+                 "tilecount:" ((result :result) :tilecount)
+                 "iters-done:" ((result :result) :iters-done))
+        (save-tiling-result result))
+      ;result
+      )))
+
+
+
+
+
+
+; (pp (evaluate-tileset-all-seeds testparam))
+
 
 ;; A tiling run is the result of generating a tiling using each tile in the
 ;; tileset as the initial seed tile 
