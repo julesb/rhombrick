@@ -1,10 +1,9 @@
 (ns rhombrick.offline
   (:use [rhombrick.tiling]
-        ;[rhombrick.vector]
-        ;[rhombrick.staticgeometry :as geom]
-        ;[rhombrick.facecode]
         [rhombrick.tilebase]
+        [clojure.math.combinatorics] 
         [ordered.map]))
+
 
 
 (def tilecode-to-number-map
@@ -79,6 +78,12 @@
        first
        number-to-tilecode))
 
+(defn tilecode-is-normalized? [code]
+  (= (tilecode-to-number code)
+     (tilecode-to-number (normalize-tilecode code))
+  ))
+
+
 (defn normalize-tileset [tileset]
   (->> tileset
     (map normalize-tilecode)
@@ -104,26 +109,76 @@
     (apply str)
     ))
 
+; These functions are to do with being able to quickly ignore tiles and
+; tilesets which are not able to create any sort of tiling
+
+(defn is-digit-connectable? [d]
+  (contains? #{\1 \2 \3 \4 \5 \6 \7 \a \b \c \d \A \B \C \D} d)
+  )
+
+
+(defn get-self-compatible-digits [code]
+  (->> code
+       (filter is-digit-connectable?)
+       (filter #(some #{(facecode-compatible-map %)} code))))
+
+
+(defn is-tilecode-fully-self-compatible? [code]
+  (=
+    (count (filter is-digit-connectable? code))
+    (count (get-self-compatible-digits code))))
+
+
+(defn is-tilecode-partly-self-compatible? [code]
+  (> (count (get-self-compatible-digits code)) 0))
+
+
+(defn is-tilecode-fully-self-compatible-and-normalized? [code]
+  (and (tilecode-is-normalized? code) 
+    (is-tilecode-fully-self-compatible? code)))
+
+
+(defn get-tilecode-digit-permutations [conn-digits]
+  (let [ndigits (count conn-digits)
+        nzeros (- 12 ndigits)
+        zeros (repeat nzeros \0)
+        digits (concat zeros conn-digits)
+        perms (permutations digits) ]
+    perms))
+
+
+(defn generate-normalized-tilecode-permutations [ncons]
+  (->> (combinations #{\1 \2 \3 \4 \5 \6 \7 \a \b \c \d \A \B \C \D} ncons)
+       (mapcat get-tilecode-digit-permutations)
+       (map #(apply str %))
+       ;(filter tilecode-is-normalized?)
+       (filter is-tilecode-fully-self-compatible-and-normalized?)
+  ))
+
+
+; batch runs etc below here
 
 (def default-params {
   :tileset ["111111111111"]
-  :seed 0
-  :iters 1000
-  :radius 2
+  :seed "111111111111"
+  :max-iters 200
+  :max-radius 4
+  :max-tiles 1000
   :adhd 1.5
   :autism 1.5
+  :best-of 1
   })
 
 
 (defn make-params [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism best-of]
-                      :or {tileset ["111111111111"] 
-                           seed ""
-                           max-iters 200
-                           max-radius 4
-                           max-tiles 1000
-                           adhd 1.5
-                           autism 1.5
-                           best-of 4} } ]
+                      :or {tileset (default-params :tileset) 
+                           seed (default-params :seed)
+                           max-iters (default-params :max-iters)
+                           max-radius (default-params :max-radius)
+                           max-tiles (default-params :max-tiles)
+                           adhd (default-params :adhd)
+                           autism (default-params :autism)
+                           best-of (default-params :best-of)} } ]
   {
   :tileset tileset
   :seed (if (< (count seed) 12) (first tileset) seed)
@@ -263,4 +318,17 @@
 
 ; approximate num of RD volumes in radius r
 ; (- (/ (sphere_vol r) 2.0) 1)
+
+
+
+
+
+; => (time (count (filter is-tilecode-completely-compatible-and-normalized? 
+;                         (map number-to-tilecode  (range 1000000)))))
+;"Elapsed time: 259991.235 msecs"
+;49071
+;rhombrick.offline=> (* 0xffffffffffff (/ 49071 1000000))
+;2762451716433710301/200000
+;rhombrick.offline=> (long (* 0xffffffffffff (/ 49071 1000000)))
+;13812258582168
 
