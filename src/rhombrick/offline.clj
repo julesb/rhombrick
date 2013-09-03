@@ -60,15 +60,15 @@
        (apply str "0x")
        hex-to-num))
 
+
 (defn tilecode-to-hex-number [code]
   (->> code
        (map tilecode-to-number-map)
-       (apply str)
-    ))
+       (apply str)))
+
 
 (defn tilecode-to-hex-string [code]
   (apply str "0x" (map #(if (= \- %) \0 %) code)))
-
 
 
 (defn normalize-tilecode [code]
@@ -78,10 +78,10 @@
        first
        number-to-tilecode))
 
+
 (defn tilecode-is-normalized? [code]
   (= (tilecode-to-number code)
-     (tilecode-to-number (normalize-tilecode code))
-  ))
+     (tilecode-to-number (normalize-tilecode code))))
 
 
 (defn normalize-tileset [tileset]
@@ -106,15 +106,18 @@
   (->> tileset
     normalize-tileset
     (map tilecode-to-hex-number)
-    (apply str)
-    ))
+    (apply str)))
 
 ; These functions are to do with being able to quickly ignore tiles and
 ; tilesets which are not able to create any sort of tiling
 
 (defn is-digit-connectable? [d]
-  (contains? #{\1 \2 \3 \4 \5 \6 \7 \a \b \c \d \A \B \C \D} d)
-  )
+  (contains? #{\1 \2 \3 \4 \5 \6 \7 \a \b \c \d \A \B \C \D} d))
+
+
+(defn tilecode-to-binary-connection-number [code]
+  (let [bits (apply str (map #(if (is-digit-connectable? %) \1 \0 ) code))]
+    (Integer/parseInt bits 2)))
 
 
 (defn get-self-compatible-digits [code]
@@ -141,20 +144,40 @@
 (defn get-tilecode-digit-permutations [conn-digits]
   (let [ndigits (count conn-digits)
         nzeros (- 12 ndigits)
-        zeros (repeat nzeros \0)
-        digits (concat zeros conn-digits)
-        perms (permutations digits) ]
-    perms))
+        zeros (repeat nzeros \-)
+        digits (concat zeros conn-digits)]
+    (permutations digits)))
 
 
 (defn generate-normalized-tilecode-permutations [ncons]
-  (->> (combinations #{\1 \2 \3 \4 \5 \6 \7 \a \b \c \d \A \B \C \D} ncons)
+  (->> (selections #{\1 \2 \3 \4 \5 \6 \7 \a \b \c \d \A \B \C \D} ncons)
        (mapcat get-tilecode-digit-permutations)
        (map #(apply str %))
-       ;(filter tilecode-is-normalized?)
-       (filter is-tilecode-fully-self-compatible-and-normalized?)
+       (into #{})
+       (filter tilecode-is-normalized?)
+       ;(filter is-tilecode-fully-self-compatible-and-normalized?)
   ))
 
+(defn generate-normalized-tilecode-permutations2 [start end]
+  (->> (range start (+ start end 1))
+       (map number-to-tilecode)
+       (filter is-tilecode-fully-self-compatible-and-normalized?)))
+
+
+(defn generate-normalized-tilecode-set [start end]
+  (->> (range start (+ end 1))
+       (map number-to-tilecode)
+       (filter tilecode-is-normalized?)))
+
+
+(defn generate-normalized-tilecode-set2 [start end]
+  (doseq [n (range start (+ end 1))]
+    (let [code (number-to-tilecode n)]
+      (when (tilecode-is-normalized? code)
+        (println code))
+      (when (zero? (mod n 0x1000000))
+        (println "CP:" code ))
+    )))
 
 ; batch runs etc below here
 
@@ -166,19 +189,28 @@
   :max-tiles 1000
   :adhd 1.5
   :autism 1.5
-  :best-of 1
+  ;:best-of 1
   })
 
+(def default-state {
+  :params default-params
+  :tiles (ordered-map)
+  :dead #{}
+  :iters 0
+  :solved false
+  })
 
-(defn make-params [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism best-of]
-                      :or {tileset (default-params :tileset) 
-                           seed (default-params :seed)
-                           max-iters (default-params :max-iters)
-                           max-radius (default-params :max-radius)
-                           max-tiles (default-params :max-tiles)
-                           adhd (default-params :adhd)
-                           autism (default-params :autism)
-                           best-of (default-params :best-of)} } ]
+(defn make-params
+  [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism best-of]
+      :or {tileset (default-params :tileset) 
+           seed (default-params :seed)
+           max-iters (default-params :max-iters)
+           max-radius (default-params :max-radius)
+           max-tiles (default-params :max-tiles)
+           adhd (default-params :adhd)
+           autism (default-params :autism)
+           ;best-of (default-params :best-of)
+           } } ]
   {
   :tileset tileset
   :seed (if (< (count seed) 12) (first tileset) seed)
@@ -187,9 +219,14 @@
   :max-tiles max-tiles
   :adhd adhd
   :autism autism
-  :best-of best-of
+  ;:best-of best-of
   :tileset-number (tileset-to-number tileset) 
   } )
+
+(defn make-tiler-state
+  [& {:keys [params] :or {params default-params}}]
+  (assoc default-state :params params)
+)
 
 
 (defn make-params-for-seeds [tileset]
@@ -246,8 +283,8 @@
 
 (defn evaluate-tileset-all-seeds [params]
   (->> (make-params-for-seeds (params :tileset))
-    ;(map evaluate-tileset)
-    (map #(evaluate-tileset-best-of %))
+    (map evaluate-tileset)
+    ;(map #(evaluate-tileset-best-of %))
   ))
 
 
@@ -322,7 +359,6 @@
 
 
 
-
 ; => (time (count (filter is-tilecode-completely-compatible-and-normalized? 
 ;                         (map number-to-tilecode  (range 1000000)))))
 ;"Elapsed time: 259991.235 msecs"
@@ -332,3 +368,6 @@
 ;rhombrick.offline=> (long (* 0xffffffffffff (/ 49071 1000000)))
 ;13812258582168
 
+
+; (map tilecode-to-binary-connection-number (generate-normalized-tilecode-permutations 2))
+; 
