@@ -1,12 +1,9 @@
 (ns rhombrick.tilebase
-  (:use [rhombrick.tiling]
-        [rhombrick.vector]
-        [rhombrick.staticgeometry :as geom]
-        [rhombrick.facecode]
-        [ordered.map]
-        [clojure.java.jdbc :only [with-connection with-query-results insert-values]]
-        )
-  )
+  (:use
+    [clojure.java.jdbc :only [with-connection
+                              with-query-results
+                              insert-values]]
+  ))
   ;(require '[clojure.java.jdbc :as db])
 
 (def db-host "127.0.0.1")
