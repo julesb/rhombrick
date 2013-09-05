@@ -1,7 +1,7 @@
 (ns rhombrick.editor
   (:use [quil.core]
         [rhombrick.vector]        
-        [rhombrick.facecode]
+        ;[rhombrick.facecode]
         [rhombrick.tiling]
         [rhombrick.tiling-render]
         [rhombrick.bezierbox :as bbox]

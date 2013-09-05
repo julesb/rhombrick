@@ -1,7 +1,7 @@
 (ns rhombrick.core
   (:use [quil.core]
         [quil.applet]
-        [rhombrick.facecode]
+        ;[rhombrick.facecode]
         ;[rhombrick.staticgeometry :as geom]
         [rhombrick.tiling :as tiling]
         [rhombrick.tiling-render]
@@ -706,7 +706,7 @@
     :draw draw
     :size [1900 1100]
     ;:size [1440 800]
-    :renderer :opengl 
+    :renderer :p3d 
     :key-typed key-typed
     :key-pressed key-pressed
     :key-released key-released

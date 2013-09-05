@@ -1,12 +1,6 @@
 (ns rhombrick.bezierbox
-  (:use
-        [rhombrick.vector]
+  (:use [rhombrick.vector]
         [rhombrick.staticgeometry]
-        [rhombrick.facecode]
-        ;[rhombrick.tiling]
-        ;[rhombrick.camera]
-        ;[rhombrick.glider]
-        ;[rhombrick.obj-loader]
         [clojure.math.combinatorics]
     ))
 

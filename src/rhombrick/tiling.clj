@@ -1,7 +1,7 @@
 (ns rhombrick.tiling
   (:use [rhombrick.vector]
         [rhombrick.staticgeometry :as geom]
-        [rhombrick.facecode]
+        ;[rhombrick.facecode]
         [ordered.map]))
 
 
@@ -195,7 +195,7 @@
 
 
 (defn get-neighbour-abutting-face2 [neighbourhood face-idx]
-  (let [op-face-idx (connecting-faces face-idx)
+  (let [op-face-idx (geom/connecting-faces face-idx)
         nb-code (neighbourhood face-idx)]
     ;(println "nb-code:"nb-code "op-face-idx:" op-face-idx "neighbourhood:" neighbourhood)
     (if (nil? nb-code) \. (nth nb-code op-face-idx))))
@@ -514,6 +514,15 @@
     (do
       (reset! tiler-state :halted)
       _tiles)))
+
+
+(defn make-backtracking-tiling-iteration4 [tiler-state]
+  (let [{:keys [params tiles dead iters solved]} tiler-state]
+    (println "params:" params)
+
+
+  ))
+
 
 
 (defn halt-tiler []

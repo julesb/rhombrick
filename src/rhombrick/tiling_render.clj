@@ -2,7 +2,7 @@
   (:use [quil.core]
         [rhombrick.vector]
         [rhombrick.staticgeometry]
-        [rhombrick.facecode]
+        ;[rhombrick.facecode]
         [rhombrick.tiling]
         [rhombrick.camera]
         [rhombrick.glider]
@@ -160,6 +160,18 @@
 
 (defn face-idxs-to-verts [face-idxs]
   (vec (map #(rd-verts %) face-idxs)))
+
+
+(defn rotate-vec [v]
+  (vec (concat (rest v) [(first v)])))
+
+
+(defn rotations-vec [v]
+    (loop [n (count v)
+           accum [v]]
+      (if (> n 1)
+        (recur (dec n) (conj accum (rotate-vec (last accum))))
+        (vec accum))))
 
 
 (defn facelist-contains-rotations? [face-verts]
@@ -571,9 +583,14 @@
 
 
 (defn draw-facecode-bezier-boxes-n [code col steps]
-  (when (contains? #{3 4} (count col)) (apply fill col))
+  (when (contains? #{3 4} (count col))
+    (apply fill col)
+    (apply stroke col)
+    (stroke-weight 1)
+    )
   ;(stroke 0 0 0 192)
   (no-stroke)
+  (no-smooth)
   (doseq [bbox (bbox/get-bezier-box-triangles code steps)]
     (doseq [strip bbox]
       (let [verts (vec strip)
@@ -620,6 +637,7 @@
         (scale 0.5)
         ;(stroke-weight 8)
         ;(stroke 0 0 0 64)
+        (no-stroke)
         (when with-lines?
           (no-fill)
           (draw-facecode-lines code))

@@ -3,7 +3,7 @@
         [rhombrick.tiling]
         [rhombrick.vector]
         [rhombrick.staticgeometry]
-        [rhombrick.facecode]
+        ;[rhombrick.facecode]
         [overtone.osc]
     ))
 

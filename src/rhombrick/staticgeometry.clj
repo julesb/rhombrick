@@ -1,5 +1,6 @@
 (ns rhombrick.staticgeometry
-  (:use [rhombrick.vector]))
+  (:use [rhombrick.vector]
+        [clojure.math.combinatorics]))
 ; _______________________________________________________________________
 ;
 ; Rhombic dodecahedron
@@ -158,6 +159,9 @@
                        [-1  0  1]
 
                ])
+
+
+(def ^:const connecting-faces [6 7 8 9 10 11 0 1 2 3 4 5])
 
 
 ; edge-centered cubic lattice logic
@@ -321,6 +325,26 @@
                       (range (count symmetry-face-idx-map))))))
 
 
+(defn get-angle-for-face-idxs [[idx1 idx2]]
+  (vec3-angle-between (vec3-normalize (co-verts idx1))
+                      (vec3-normalize (co-verts idx2))))
+
+(defn get-connected-idxs [code]
+  (filter #(not= nil %)
+          (map #(if (and (not= %2 \-) (not= %2 \0) ) %1 nil)
+               (range 12) code)))
+
+(defn get-tilecode-angles [code]
+  (->> (map-indexed #(vec [%1 %2]) code)
+       (filter #(not= (%1 1) \-))
+       (map first)
+       ((fn [v] (vec (combinations v 2))))
+       (map get-angle-for-face-idxs)
+       (map int)))
+
+
+(defn get-tilecode-angle-ids [code]
+  (vec (sort (get-tilecode-angles code))))
 
 
 (def ^:const bezier-anchor-offsets [
