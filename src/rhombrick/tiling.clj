@@ -1,7 +1,6 @@
 (ns rhombrick.tiling
   (:use [rhombrick.vector]
         [rhombrick.staticgeometry :as geom]
-        ;[rhombrick.facecode]
         [ordered.map]))
 
 
@@ -183,6 +182,10 @@
   (assoc _tiles pos facecode))
 
 
+(defn make-tile-ts [tiler-state pos facecode]
+  (assoc tiler-state :tiles (make-tile (tiler-state :tiles) pos facecode)))
+
+
 (defn delete-tile [_tiles pos]
   (dissoc _tiles pos))
 
@@ -192,6 +195,10 @@
 ;       (filter #(not (contains? (get-neighbours pos) %)))
 ;       (filter #(not (contains? pos)))))
   (filter #(not (contains? (get-neighbours pos) %)) _tiles))
+
+
+(defn delete-neighbours-ts [tiler-state pos]
+  (assoc tiler-state :tiles (delete-neighbours (tiler-state :tiles) pos)))
 
 
 (defn get-neighbour-abutting-face2 [neighbourhood face-idx]
@@ -309,6 +316,14 @@
     (swap! dead-loci conj code)
     ;(println "dead-loci:" @dead-loci)
     ))
+
+(defn update-tiler-state [ts k v]
+  (assoc ts k v))
+
+
+
+(defn add-to-dead-loci [tiler-state code]
+  (assoc tiler-state :dead (conj (tiler-state :dead) code)))
 
 
 (defn get-untileable-neighbours [_tiles tileset pos]
@@ -459,6 +474,10 @@
         (append-stats-buffer! stats-backtrack 0)
         _tiles))))
 
+(defn backtrack-non-zero-ts [tiler-state]
+  (assoc tiler-state :tiles (backtrack-non-zero (tiler-state :tiles))))
+
+
 (defn backtrack [_tiles]
   (let [num-tiles (count _tiles)
         n (compute-backtrack-amount num-tiles)
@@ -516,12 +535,34 @@
       _tiles)))
 
 
+
+;(comment
+
 (defn make-backtracking-tiling-iteration4 [tiler-state]
-  (let [{:keys [params tiles dead iters solved]} tiler-state]
-    (println "params:" params)
+  (let [{:keys [params tiles dead iters solved]} tiler-state
+        tileset (params :tileset)]
+    (if-let [positions (choose-positions tiles tileset (get-empty-positions tiles))]
+      (let [new-pos (find-closest-to-center positions)
+            new-neighbourhood (get-neighbourhood tiles new-pos)
+            new-code (choose-tilecode2 new-neighbourhood tileset)]
+        (if (nil? new-code)
+          ; no tile will fit, return new state
 
+          (-> tiler-state
+              (delete-neighbours new-pos)
+              (backtrack-non-zero-ts))
 
-  ))
+          ; else
+          (let [new-state (make-tile-ts tiler-state new-pos new-code)]
+            ; removed aggressive dead caching here to simplify, put it back later
+            (if (creates-untileable-region? (new-state :tiles)
+                                            ((new-state :params) :tileset)
+                                            new-pos)
+              (backtrack-non-zero-ts new-state)
+              new-state ))))
+
+        (-> tiler-state
+            (assoc :run-status :halted)))))
 
 
 

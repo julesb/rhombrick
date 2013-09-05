@@ -198,12 +198,13 @@
   :dead #{}
   :iters 0
   :solved false
+  :run-status :init  ; :init :running :halted
   })
 
 (defn make-params
   [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism best-of]
       :or {tileset (default-params :tileset) 
-           seed (default-params :seed)
+           seed "" ;(default-params :seed)
            max-iters (default-params :max-iters)
            max-radius (default-params :max-radius)
            max-tiles (default-params :max-tiles)
@@ -224,8 +225,8 @@
   } )
 
 (defn make-tiler-state
-  [& {:keys [params] :or {params default-params}}]
-  (assoc default-state :params params)
+  ([] default-state)
+  ([params] (assoc default-state :params params))
 )
 
 
