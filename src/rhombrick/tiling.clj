@@ -183,7 +183,7 @@
 
 
 (defn make-tile-ts [tiler-state pos facecode]
-  (assoc tiler-state :tiles (make-tile (tiler-state :tiles) pos facecode)))
+  (assoc tiler-state :tiles (ordered-map (make-tile (tiler-state :tiles) pos facecode))))
 
 
 (defn delete-tile [_tiles pos]
@@ -198,7 +198,7 @@
 
 
 (defn delete-neighbours-ts [tiler-state pos]
-  (assoc tiler-state :tiles (delete-neighbours (tiler-state :tiles) pos)))
+  (assoc tiler-state :tiles (ordered-map (delete-neighbours (tiler-state :tiles) pos))))
 
 
 (defn get-neighbour-abutting-face2 [neighbourhood face-idx]
@@ -262,7 +262,8 @@
 (defn get-empty-connected-neighbours [_tiles pos]
   (->> (get-connected-neighbours _tiles pos)
        (filter #(is-empty? _tiles %))
-       (filter #(< (vec3-length %) @assemblage-max-radius))))
+       ;(filter #(< (vec3-length %) @assemblage-max-radius))
+    ))
 
 ;(defn get-empty-neighbours [_tiles pos]
 ;  (->> (get-connected-idxs (_tiles pos))
@@ -274,16 +275,26 @@
 
 
 ;(defn get-empty-positions [_tiles]
+
+
+(defn make-tile [_tiles pos facecode]
+  (assoc _tiles pos facecode))
 ;  (into #{} (apply concat (map #(get-empty-connected-neighbours _tiles %) (keys _tiles)))))
 
-(defn get-empty-positions [_tiles]
+(defn get-empty-positions [_tiles max-radius]
   (if (= (count _tiles) 0)
     #{[0 0 0]}
     (->> (keys _tiles)
          (map #(get-empty-connected-neighbours _tiles %))
          (apply concat)
-         (set))))
+         (filter #(< (vec3-length %) max-radius))
+         (set)
+      )))
 
+;; TODO  ** change get-empty-positions to accept radius param
+;(defn get-empty-positions-ts [tiler-state]
+;  (get-empty-positions (tiler-state :tiles)
+;  ))
 
 ; this version does not force connectivity
 ;(defn get-empty-positions [_tiles]
@@ -475,7 +486,7 @@
         _tiles))))
 
 (defn backtrack-non-zero-ts [tiler-state]
-  (assoc tiler-state :tiles (backtrack-non-zero (tiler-state :tiles))))
+  (assoc tiler-state :tiles (ordered-map (backtrack-non-zero (tiler-state :tiles)))))
 
 
 (defn backtrack [_tiles]
@@ -504,8 +515,14 @@
         _tiles))))
 
 
+(defn inc-iters-ts [tiler-state]
+  (assoc tiler-state :iters (inc (tiler-state :iters)))
+  )
+
 (defn make-backtracking-tiling-iteration3 [_tiles tileset]
-  (if-let [positions (choose-positions _tiles tileset (get-empty-positions _tiles))]
+  (if-let [positions (choose-positions _tiles tileset
+                                       (get-empty-positions _tiles
+                                                            @assemblage-max-radius))]
     (let [new-pos (find-closest-to-center positions)
           ;new-pos (find-closest-to-point positions [0 0 0])
           ;new-pos (find-closest-to-point positions (find-assemblage-center _tiles))
@@ -536,20 +553,25 @@
 
 
 
-;(comment
 
 (defn make-backtracking-tiling-iteration4 [tiler-state]
   (let [{:keys [params tiles dead iters solved]} tiler-state
         tileset (params :tileset)]
-    (if-let [positions (choose-positions tiles tileset (get-empty-positions tiles))]
+    ;(println "tilerstate:" tiler-state)
+    (if-let [positions (choose-positions tiles tileset
+                                         (get-empty-positions tiles
+                                                              (params :max-radius)))]
+      (do
+        ;(println "positions:" positions)
       (let [new-pos (find-closest-to-center positions)
             new-neighbourhood (get-neighbourhood tiles new-pos)
             new-code (choose-tilecode2 new-neighbourhood tileset)]
         (if (nil? new-code)
-          ; no tile will fit, return new state
+          ; no tile will fit, backtrack and return new state
 
           (-> tiler-state
-              (delete-neighbours new-pos)
+              (inc-iters-ts)
+              (delete-neighbours-ts new-pos)
               (backtrack-non-zero-ts))
 
           ; else
@@ -558,8 +580,13 @@
             (if (creates-untileable-region? (new-state :tiles)
                                             ((new-state :params) :tileset)
                                             new-pos)
-              (backtrack-non-zero-ts new-state)
-              new-state ))))
+              (-> new-state
+                  (backtrack-non-zero-ts)
+                  (inc-iters-ts))
+              (-> new-state
+                  (inc-iters-ts)))))
+        )
+        )
 
         (-> tiler-state
             (assoc :run-status :halted)))))
@@ -574,7 +601,7 @@
 (defn tiler-can-iterate? []
   (and (= @tiler-state :running)
        (< (count @tiles) @max-tiles)
-       (> (count (get-empty-positions @tiles)) 0)))
+       (> (count (get-empty-positions @tiles @assemblage-max-radius)) 0)))
 
 
 (defn run-backtracking-tiling-thread [tileset]

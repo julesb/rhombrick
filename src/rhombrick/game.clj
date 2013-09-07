@@ -87,7 +87,7 @@
 
 
 (defn update-game-state [tileset]
-  (if-let [positions (get-empty-positions @tiling/tiles)]
+  (if-let [positions (get-empty-positions @tiling/tiles @tiling/assemblage-max-radius)]
     (let [new-selected-pos (find-closest-to-center positions)]
       (set-selected-pos new-selected-pos)
       (let [neighbourhood (get-neighbourhood @tiling/tiles @selected-pos)

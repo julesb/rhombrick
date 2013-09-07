@@ -634,7 +634,7 @@
     (when @game-mode?
       (game/render))
 
-    (when (seq (get-empty-positions @tiles))
+    (when (seq (get-empty-positions @tiles @assemblage-max-radius))
       (draw-empty @tiles))
     
 

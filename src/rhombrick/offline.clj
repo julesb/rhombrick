@@ -195,10 +195,11 @@
 (def default-state {
   :params default-params
   :tiles (ordered-map)
+  :tileset-expanded #{}
   :dead #{}
   :iters 0
   :solved false
-  :run-status :init  ; :init :running :halted
+  :run-status :runnable  ; :runnable :halted
   })
 
 (defn make-params
@@ -225,20 +226,39 @@
   } )
 
 (defn make-tiler-state
-  ([] default-state)
-  ([params] (assoc default-state :params params))
-)
+  ([] (make-tiler-state default-params))
+  ([params]
+    (-> default-state
+        (assoc :tileset-expanded (expand-tiles-preserving-symmetry (params :tileset)))
+        (assoc :params params)
+      
+      )))
+;  ([params]
+;   (assoc default-state :params params
+;                        :tileset-expanded (expand-tiles-preserving-symmetry
+;                                            (params :tileset)))))
 
 
 (defn make-params-for-seeds [tileset]
   (map #(make-params :tileset tileset :seed %) tileset))
 
 
+(defn make-tiling [ts]
+  (if (and (= (ts :run-status) :runnable)
+           (< (ts :iters) ((ts :params) :max-iters )))
+    (do
+      ;(println "BEFORE ITER:" ts )
+      (recur (make-backtracking-tiling-iteration4 ts)))
+    ts
+  ))
+
+
+
 (defn iterate-tiler [_tiles tileset-expanded params]
   (if (and (= @tiler-state :running)
            (< (count _tiles) (params :max-tiles))
            (< @tiler-iterations (params :max-iters))
-           (> (count (get-empty-positions _tiles)) 0))
+           (> (count (get-empty-positions _tiles (params :max-radius))) 0))
     (do
       (swap! tiler-iterations inc)
       (recur (ordered-map (make-backtracking-tiling-iteration3 _tiles tileset-expanded))
