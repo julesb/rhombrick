@@ -7,12 +7,12 @@
 (def max-tiles (atom 1000))
 (def tiles (atom (ordered-map)))
 (def tiler-iterations (atom 0))
-(def tiler-state (atom :halted)) ; :halted :running :paused
+(def tiler-run-state (atom :halted)) ; :halted :running :paused
 (def assemblage-center (atom [0 0 0]))
 (def assemblage-max-radius (atom 20))
 (def dead-loci (atom #{}))
 (def tiler-thread (atom nil))
-(def tiler-thread-id (atom 0))
+;(def tiler-thread-id (atom 0))
 (def last-iteration-time (atom 0))
 
 
@@ -328,6 +328,10 @@
     ;(println "dead-loci:" @dead-loci)
     ))
 
+(defn add-to-dead-loci-ts [tiler-state code]
+  (assoc tiler-state :dead (conj (tiler-state :dead) code)))
+
+
 (defn update-tiler-state [ts k v]
   (assoc ts k v))
 
@@ -465,16 +469,17 @@
   ))
 
 
-(defn compute-backtrack-amount [num-tiles]
+(defn compute-backtrack-amount [num-tiles autism adhd]
   (loop [n 1]
     (if (or (>= n num-tiles)
-            (> (rand) (Math/pow (/ n (+ n @autism)) @adhd)))
+            (> (rand) (Math/pow (/ n (+ n autism)) adhd)))
       n
       (recur (inc n)))))
 
-(defn backtrack-non-zero [_tiles]
+
+(defn backtrack-non-zero [_tiles autism adhd]
   (let [num-tiles (count _tiles)
-        n (compute-backtrack-amount num-tiles)
+        n (compute-backtrack-amount num-tiles autism adhd)
         ni (- num-tiles n)]
     (if (and (> num-tiles 1)
              (< n num-tiles))
@@ -485,13 +490,18 @@
         (append-stats-buffer! stats-backtrack 0)
         _tiles))))
 
+
 (defn backtrack-non-zero-ts [tiler-state]
-  (assoc tiler-state :tiles (ordered-map (backtrack-non-zero (tiler-state :tiles)))))
+  (assoc tiler-state :tiles
+         (ordered-map (backtrack-non-zero (tiler-state :tiles)
+                                          ((tiler-state :params) :autism)
+                                          ((tiler-state :params) :adhd)
+                                             ))))
 
 
 (defn backtrack [_tiles]
   (let [num-tiles (count _tiles)
-        n (compute-backtrack-amount num-tiles)
+        n (compute-backtrack-amount num-tiles @autism @adhd)
         ni (- num-tiles n)]
     (if (and (> num-tiles 0)
              (<= n num-tiles))
@@ -531,9 +541,9 @@
       (if (nil? new-code)
         (do ; no tile will fit 
           (add-to-dead-loci! (get-outer-facecode2 new-neighbourhood))
-          (->> (delete-neighbours _tiles new-pos)
+          (-> (delete-neighbours _tiles new-pos)
                ;(backtrack)
-               (backtrack-non-zero)
+               (backtrack-non-zero @autism @adhd)
             ))
         (let [new-tiles (make-tile _tiles new-pos new-code)]
           (if (creates-untileable-region? new-tiles tileset new-pos)
@@ -542,13 +552,13 @@
                 (doseq [t untileable]
                   (add-to-dead-loci! (get-outer-facecode2 (get-neighbourhood new-tiles t))))
                 ;(backtrack _tiles)
-                (backtrack-non-zero _tiles)
+                (backtrack-non-zero _tiles @autism @adhd)
                 ))
             (do
               (append-stats-buffer! stats-backtrack 0)
               new-tiles)))))
     (do
-      (reset! tiler-state :halted)
+      (reset! tiler-run-state :halted)
       _tiles)))
 
 
@@ -556,36 +566,37 @@
 
 (defn make-backtracking-tiling-iteration4 [tiler-state]
   (let [{:keys [params tiles dead iters solved]} tiler-state
-        tileset (params :tileset)]
+        tileset (tiler-state :tileset-expanded)]
     ;(println "tilerstate:" tiler-state)
     (if-let [positions (choose-positions tiles tileset
                                          (get-empty-positions tiles
                                                               (params :max-radius)))]
       (do
         ;(println "positions:" positions)
-      (let [new-pos (find-closest-to-center positions)
-            new-neighbourhood (get-neighbourhood tiles new-pos)
-            new-code (choose-tilecode2 new-neighbourhood tileset)]
-        (if (nil? new-code)
-          ; no tile will fit, backtrack and return new state
+        (let [new-pos (find-closest-to-center positions)
+              new-neighbourhood (get-neighbourhood tiles new-pos)
+              new-code (choose-tilecode2 new-neighbourhood tileset)]
+          (if (nil? new-code)
+            ; no tile will fit, backtrack and return new state
 
-          (-> tiler-state
-              (inc-iters-ts)
-              (delete-neighbours-ts new-pos)
-              (backtrack-non-zero-ts))
+            (-> tiler-state
+                (inc-iters-ts)
+                (add-to-dead-loci-ts (get-outer-facecode2 new-neighbourhood))
+                (delete-neighbours-ts new-pos)
+                (backtrack-non-zero-ts))
 
-          ; else
-          (let [new-state (make-tile-ts tiler-state new-pos new-code)]
-            ; removed aggressive dead caching here to simplify, put it back later
-            (if (creates-untileable-region? (new-state :tiles)
-                                            ((new-state :params) :tileset)
-                                            new-pos)
-              (-> new-state
-                  (backtrack-non-zero-ts)
-                  (inc-iters-ts))
-              (-> new-state
-                  (inc-iters-ts)))))
-        )
+            ; else
+            (let [new-state (make-tile-ts tiler-state new-pos new-code)]
+              ; removed aggressive dead caching here to simplify, put it back later
+              (if (creates-untileable-region? (new-state :tiles)
+                                              ((new-state :params) :tileset)
+                                              new-pos)
+                (-> new-state
+                    (backtrack-non-zero-ts)
+                    (inc-iters-ts))
+                (-> new-state
+                    (inc-iters-ts)))))
+          )
         )
 
         (-> tiler-state
@@ -594,12 +605,12 @@
 
 
 (defn halt-tiler []
-  (reset! tiler-state :halted)
+  (reset! tiler-run-state :halted)
   (println "tiler-state -> halted"))
 
 
 (defn tiler-can-iterate? []
-  (and (= @tiler-state :running)
+  (and (= @tiler-run-state :running)
        (< (count @tiles) @max-tiles)
        (> (count (get-empty-positions @tiles @assemblage-max-radius)) 0)))
 
@@ -653,7 +664,7 @@
   (when-not soft-start?
     (init-dead-loci!))
   ;(init-stats-buffers)
-  (reset! tiler-state :running)
+  (reset! tiler-run-state :running)
   (reset! tiler-thread (future (run-backtracking-tiling-thread tileset))))
 
 

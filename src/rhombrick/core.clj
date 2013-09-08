@@ -144,7 +144,7 @@
   (let [line-space 22
         lines [(str "game mode:" @game-mode?)
                (str "candidates:" @game/candidates)
-               (str "state: " @tiler-state)
+               (str "run state: " @tiler-run-state)
                (str "iters: " @tiler-iterations)
                (str "tiles: " (count @tiles) "/" @max-tiles) 
                (str "ips: " (int (/ 1000 @last-iteration-time)))
@@ -261,8 +261,8 @@
           (println "adhd:" @adhd "auti:" @autism))
     \p #(do
           (cond 
-            (= @tiler-state :running) (reset! tiler-state :paused)
-            (= @tiler-state :paused)  (reset! tiler-state :running)))
+            (= @tiler-run-state :running) (reset! tiler-run-state :paused)
+            (= @tiler-run-state :paused)  (reset! tiler-run-state :running)))
     \( #(do
           (swap! assemblage-max-radius dec))
     \) #(do
@@ -447,7 +447,7 @@
 (defn auto-seed-tiler []
   (when (or (and (> @tiler-iterations 100)
                  (< (count @tiles) 5))
-            (= @tiler-state :halted))
+            (= @tiler-run-state :halted))
       (editor/set-tileset (get-random-tileset))
       (init-tiler (editor/get-tileset-as-set))
       (println "random tileset:" (editor/get-tileset-as-set)) 
@@ -706,7 +706,7 @@
     :draw draw
     :size [1900 1100]
     ;:size [1440 800]
-    :renderer :p3d 
+    :renderer :opengl
     :key-typed key-typed
     :key-pressed key-pressed
     :key-released key-released

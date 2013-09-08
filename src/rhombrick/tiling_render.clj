@@ -306,15 +306,19 @@
 
 
 (defn draw-face-boundaries [pos ^String code boundary-mode]
-  (when (or (contains? @tiles pos)
-            (and (= boundary-mode :all)
-                 (= (count code) 12)))
+  (when (and (not (nil? code))
+             (= 12 (count code))
+             (or (contains? @tiles pos)
+                 (and (= boundary-mode :all)
+                      (= (count code) 12))))
     (let [[r g b] (get-tile-color code)]
       (with-translation pos
         (scale 0.5)
         ;(stroke-weight 1)
         (no-stroke)
         ;(stroke r g b 255)
+        (assert (and (not (nil? code)) (= 12 (count code))))
+
         (doseq [^long i (range 12)]
           (when (cond
                   (= boundary-mode :only-empty)
@@ -336,7 +340,7 @@
                   az (Math/atan2 dy dx)
                   el (- (Math/asin dz))
                   thickness (* 1.3 (bezier-box-thicknesses (.charAt code i)))
-                  alpha 240]
+                  alpha 255]
               (if (face-digit-like-compatible? d)
                 (do (fill 160 160 220 alpha))
                 (do

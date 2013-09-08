@@ -255,7 +255,7 @@
 
 
 (defn iterate-tiler [_tiles tileset-expanded params]
-  (if (and (= @tiler-state :running)
+  (if (and (= @tiler-run-state :running)
            (< (count _tiles) (params :max-tiles))
            (< @tiler-iterations (params :max-iters))
            (> (count (get-empty-positions _tiles (params :max-radius))) 0))
@@ -275,7 +275,7 @@
   (init-dead-loci!)
   (let [tileset-expanded (expand-tiles-preserving-symmetry (params :tileset))
         seed-tile (ordered-map {[0 0 0] (params :seed)})]
-    (reset! tiler-state :running)
+    (reset! tiler-run-state :running)
     (let [tiling (iterate-tiler seed-tile tileset-expanded params)
           tileset (params :tileset)
           seed (params :seed)
