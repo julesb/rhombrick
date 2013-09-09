@@ -182,13 +182,15 @@
 ; batch runs etc below here
 
 (def default-params {
-  :tileset ["111111111111"]
-  :seed "111111111111"
-  :max-iters 200
+  ;:tileset ["111111111111"]
+  :tileset ["----1A---a--"]
+  ;:tileset  ["1-1-----1---" "-1---1------"]
+  :seed ""
+  :max-iters 1000
   :max-radius 4
-  :max-tiles 1000
-  :adhd 1.5
-  :autism 1.5
+  :max-tiles 200
+  :adhd 2.0
+  :autism 1.0
   ;:best-of 1
   })
 
@@ -205,7 +207,7 @@
 (defn make-params
   [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism best-of]
       :or {tileset (default-params :tileset) 
-           seed "" ;(default-params :seed)
+           seed (default-params :seed)
            max-iters (default-params :max-iters)
            max-radius (default-params :max-radius)
            max-tiles (default-params :max-tiles)
@@ -226,17 +228,13 @@
   } )
 
 (defn make-tiler-state
-  ([] (make-tiler-state default-params))
+  ([] (make-tiler-state (make-params)))
   ([params]
     (-> default-state
         (assoc :tileset-expanded (expand-tiles-preserving-symmetry (params :tileset)))
         (assoc :params params)
       
       )))
-;  ([params]
-;   (assoc default-state :params params
-;                        :tileset-expanded (expand-tiles-preserving-symmetry
-;                                            (params :tileset)))))
 
 
 (defn make-params-for-seeds [tileset]

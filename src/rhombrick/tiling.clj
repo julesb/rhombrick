@@ -328,8 +328,8 @@
     ;(println "dead-loci:" @dead-loci)
     ))
 
-(defn add-to-dead-loci-ts [tiler-state code]
-  (assoc tiler-state :dead (conj (tiler-state :dead) code)))
+(defn add-to-dead-loci-ts [ts code]
+  (assoc ts :dead (conj (ts :dead) code)))
 
 
 (defn update-tiler-state [ts k v]
@@ -337,8 +337,9 @@
 
 
 
-(defn add-to-dead-loci [tiler-state code]
-  (assoc tiler-state :dead (conj (tiler-state :dead) code)))
+(defn add-to-dead-loci [ts code]
+  (println "add to dead:" code)
+  (assoc ts :dead (conj (ts :dead) code)))
 
 
 (defn get-untileable-neighbours [_tiles tileset pos]
@@ -354,6 +355,16 @@
                                    (= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 0))))))
      0))
 
+
+(defn creates-untileable-region-ts? [ts pos]
+  (let [tiles (ts :tiles)
+        tileset (ts :tileset-expanded)
+        dead (ts :dead)]
+    (> (count (->> (get-connected-neighbours tiles pos)
+                   (filter #(and (is-empty? tiles %)
+                               (or (contains? dead (get-outer-facecode2 (get-neighbourhood tiles %)))
+                                   (= (count (find-candidates2 (get-neighbourhood tiles %) tileset)) 0))))))
+     0)))
 
 ; this version does not force connectivity
 ;(defn creates-untileable-region? [_tiles tileset pos]
@@ -491,12 +502,11 @@
         _tiles))))
 
 
-(defn backtrack-non-zero-ts [tiler-state]
-  (assoc tiler-state :tiles
-         (ordered-map (backtrack-non-zero (tiler-state :tiles)
-                                          ((tiler-state :params) :autism)
-                                          ((tiler-state :params) :adhd)
-                                             ))))
+(defn backtrack-non-zero-ts [ts]
+  (assoc ts :tiles
+         (ordered-map (backtrack-non-zero (ts :tiles)
+                                          ((ts :params) :autism)
+                                          ((ts :params) :adhd)))))
 
 
 (defn backtrack [_tiles]
@@ -562,45 +572,76 @@
       _tiles)))
 
 
+(comment
+
+(defn get-next-tile [tiler-state]
+  (let [tiles (tiler-state :tiles)
+        tileset ((tiler-state :params) :tileset)
+        max-radius ((tiler-state :params) :max-radius)
+        empty-positions (get-empty-positions tiles max-radius)
+        ]
+    (if-let [chosen-positions (choose-positions tiles tileset empty-positions)
+        new-pos (find-closest-to-center chosen-positions)
+        new-neighbourhood (get-neighbourhood tiles new-pos)
+        new-code (choose-tilecode2 new-neighbourhood tileset)
+        ]
+    )
+    ; ...
+  ))
+
+)
 
 
-(defn make-backtracking-tiling-iteration4 [tiler-state]
-  (let [{:keys [params tiles dead iters solved]} tiler-state
-        tileset (tiler-state :tileset-expanded)]
+(defn cache-dead-nbhood [ts pos]
+  (let [tiles (ts :tiles)
+        tileset (ts :tileset-expanded)
+        untileable (get-untileable-neighbours tiles tileset pos)
+        outercodes (into #{} (map #(get-outer-facecode2 (get-neighbourhood tiles %)) untileable))
+        new-dead (apply conj (ts :dead) outercodes)
+        ]
+    (assoc ts :dead new-dead)))
+
+
+(defn make-backtracking-tiling-iteration4 [ts]
+  (let [{:keys [params tiles dead iters solved]} ts
+        tileset (ts :tileset-expanded)
+        empty-positions (get-empty-positions tiles (params :max-radius))]
     ;(println "tilerstate:" tiler-state)
-    (if-let [positions (choose-positions tiles tileset
-                                         (get-empty-positions tiles
-                                                              (params :max-radius)))]
-      (do
-        ;(println "positions:" positions)
-        (let [new-pos (find-closest-to-center positions)
-              new-neighbourhood (get-neighbourhood tiles new-pos)
-              new-code (choose-tilecode2 new-neighbourhood tileset)]
-          (if (nil? new-code)
-            ; no tile will fit, backtrack and return new state
+    (if (zero? (count empty-positions))
+      (-> ts
+          (assoc :run-status :halted)
+          (assoc :solved true))
 
-            (-> tiler-state
-                (inc-iters-ts)
-                (add-to-dead-loci-ts (get-outer-facecode2 new-neighbourhood))
-                (delete-neighbours-ts new-pos)
-                (backtrack-non-zero-ts))
+      (if-let [positions (choose-positions tiles tileset empty-positions)]
+        (do
+          ;(println "positions:" positions)
+          (let [new-pos (find-closest-to-center positions)
+                new-neighbourhood (get-neighbourhood tiles new-pos)
+                new-code (choose-tilecode2 new-neighbourhood tileset)]
+            (if (nil? new-code)
+              ; no tile will fit, backtrack and return new state
 
-            ; else
-            (let [new-state (make-tile-ts tiler-state new-pos new-code)]
-              ; removed aggressive dead caching here to simplify, put it back later
-              (if (creates-untileable-region? (new-state :tiles)
-                                              ((new-state :params) :tileset)
-                                              new-pos)
-                (-> new-state
-                    (backtrack-non-zero-ts)
-                    (inc-iters-ts))
-                (-> new-state
-                    (inc-iters-ts)))))
+              (-> ts
+                  (inc-iters-ts)
+                  (add-to-dead-loci-ts (get-outer-facecode2 new-neighbourhood))
+                  (delete-neighbours-ts new-pos)
+                  (backtrack-non-zero-ts))
+
+              ; else
+              (let [new-state (make-tile-ts ts new-pos new-code)]
+                ; removed aggressive dead caching here to simplify, put it back later
+                (if (creates-untileable-region-ts? new-state new-pos)
+                  (-> ts
+                      ;(cache-dead-nbhood new-pos)
+                      (backtrack-non-zero-ts)
+                      (inc-iters-ts))
+                  (-> new-state
+                      (inc-iters-ts)))))
+            )
           )
-        )
 
-        (-> tiler-state
-            (assoc :run-status :halted)))))
+        (-> ts
+            (assoc :run-status :halted))))))
 
 
 
