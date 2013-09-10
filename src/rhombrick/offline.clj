@@ -181,61 +181,6 @@
 
 ; batch runs etc below here
 
-(def default-params {
-  ;:tileset ["111111111111"]
-  :tileset ["----1A---a--"]
-  ;:tileset  ["1-1-----1---" "-1---1------"]
-  :seed ""
-  :max-iters 1000
-  :max-radius 4
-  :max-tiles 200
-  :adhd 2.0
-  :autism 1.0
-  ;:best-of 1
-  })
-
-(def default-state {
-  :params default-params
-  :tiles (ordered-map)
-  :tileset-expanded #{}
-  :dead #{}
-  :iters 0
-  :solved false
-  :run-status :runnable  ; :runnable :halted
-  })
-
-(defn make-params
-  [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism best-of]
-      :or {tileset (default-params :tileset) 
-           seed (default-params :seed)
-           max-iters (default-params :max-iters)
-           max-radius (default-params :max-radius)
-           max-tiles (default-params :max-tiles)
-           adhd (default-params :adhd)
-           autism (default-params :autism)
-           ;best-of (default-params :best-of)
-           } } ]
-  {
-  :tileset tileset
-  :seed (if (< (count seed) 12) (first tileset) seed)
-  :max-iters max-iters
-  :max-radius max-radius
-  :max-tiles max-tiles
-  :adhd adhd
-  :autism autism
-  ;:best-of best-of
-  :tileset-number (tileset-to-number tileset) 
-  } )
-
-(defn make-tiler-state
-  ([] (make-tiler-state (make-params)))
-  ([params]
-    (-> default-state
-        (assoc :tileset-expanded (expand-tiles-preserving-symmetry (params :tileset)))
-        (assoc :params params)
-      
-      )))
-
 
 (defn make-params-for-seeds [tileset]
   (map #(make-params :tileset tileset :seed %) tileset))

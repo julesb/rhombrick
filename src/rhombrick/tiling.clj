@@ -4,6 +4,9 @@
         [ordered.map]))
 
 
+
+(def tiler-state (atom {}))
+
 (def max-tiles (atom 1000))
 (def tiles (atom (ordered-map)))
 (def tiler-iterations (atom 0))
@@ -14,6 +17,8 @@
 (def tiler-thread (atom nil))
 ;(def tiler-thread-id (atom 0))
 (def last-iteration-time (atom 0))
+
+
 
 
 (def facecode-compatible #{
@@ -456,6 +461,66 @@
 (def adapt-last-tilecount (atom 0))
 (def adapt-backtrack-window 1)
 
+
+(def default-params {
+  ;:tileset ["111111111111"]
+  :tileset ["----1A---a--"]
+  ;:tileset  ["1-1-----1---" "-1---1------"]
+  :seed ""
+  :max-iters 1000
+  :max-radius 4
+  :max-tiles 200
+  :adhd 2.0
+  :autism 1.0
+  ;:best-of 1
+  })
+
+
+(def default-state {
+  :params default-params
+  :tiles (ordered-map)
+  :tileset-expanded #{}
+  :dead #{}
+  :iters 0
+  :solved false
+  :run-status :runnable  ; :runnable :halted
+  })
+
+
+(defn make-params
+  [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism best-of]
+      :or {tileset (default-params :tileset) 
+           seed (default-params :seed)
+           max-iters (default-params :max-iters)
+           max-radius (default-params :max-radius)
+           max-tiles (default-params :max-tiles)
+           adhd (default-params :adhd)
+           autism (default-params :autism)
+           ;best-of (default-params :best-of)
+           } } ]
+  {
+  :tileset tileset
+  :seed (if (< (count seed) 12) (first tileset) seed)
+  :max-iters max-iters
+  :max-radius max-radius
+  :max-tiles max-tiles
+  :adhd adhd
+  :autism autism
+  ;:best-of best-of
+  :tileset-number 0 ; (tileset-to-number tileset) 
+  } )
+
+
+(defn make-state
+  ([] (make-state (make-params)))
+  ([params]
+    (-> default-state
+        (assoc :tileset-expanded (expand-tiles-preserving-symmetry (params :tileset)))
+        (assoc :params params)
+      
+      )))
+
+
 (defn adapt-backtrack-params []
   (let [current-tilecount (count @tiles)
         tilecount-delta (- current-tilecount @adapt-last-tilecount)
@@ -653,6 +718,26 @@
        (> (count (get-empty-positions @tiles @assemblage-max-radius)) 0)))
 
 
+(defn run-backtracking-tiling-thread-ts [ts]
+  (println "tiler thread starting with state:" ts)
+  (let [tileset-expanded (ts :tileset-expanded)]
+        ;tileset-expanded (expand-tiles-preserving-symmetry tileset)]
+    (while (and (= (@tiler-state :run-status) :runnable)
+                (< (@tiler-state :iters) ((@tiler-state :params) :max-iters)))
+      (let [iter-start-time (System/nanoTime)]
+        (dosync
+          (swap! tiler-state make-backtracking-tiling-iteration4)
+
+          ; legacy support - to be removed:
+          (reset! tiles (@tiler-state :tiles))
+          (reset! dead-loci (@tiler-state :dead))
+          (reset! tiler-iterations (@tiler-state :iters))
+          (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
+
+          ))))
+  (halt-tiler))
+
+
 (defn run-backtracking-tiling-thread [tileset]
   (println "tiler thread starting")
   (let [tileset-expanded (expand-tiles-preserving-symmetry tileset)]
@@ -692,6 +777,21 @@
   (reset! tiles (ordered-map))
   (reset! tiler-iterations 0)
   )
+
+
+(defn start-tiler-ts [tileset soft-start?]
+  (cancel-tiler-thread)
+  (Thread/sleep 100)
+  ;(init-tiler tileset)
+  ;(seed-tiler tileset)
+  ;(when-not soft-start?
+  ;  (init-dead-loci!))
+  (let [ts (make-state (make-params :tileset tileset
+                                    :max-radius @assemblage-max-radius
+                                    :adhd @adhd
+                                    :autism @autism)) ]
+    (reset! tiler-state ts)
+    (reset! tiler-thread (future (run-backtracking-tiling-thread-ts ts)))))
 
 
 (defn start-tiler [tileset soft-start?]
