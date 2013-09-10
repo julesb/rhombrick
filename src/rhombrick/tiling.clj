@@ -596,10 +596,11 @@
   (let [tiles (ts :tiles)
         tileset (ts :tileset-expanded)
         untileable (get-untileable-neighbours tiles tileset pos)
-        outercodes (into #{} (map #(get-outer-facecode2 (get-neighbourhood tiles %)) untileable))
-        new-dead (apply conj (ts :dead) outercodes)
-        ]
-    (assoc ts :dead new-dead)))
+        outercodes (into #{} (map #(get-outer-facecode2 (get-neighbourhood tiles %)) untileable)) ]
+    (if (> (count outercodes) 0)
+      (let [dead (apply conj (ts :dead) outercodes) ]
+        (assoc ts :dead dead))
+      ts)))
 
 
 (defn make-backtracking-tiling-iteration4 [ts]
@@ -613,35 +614,31 @@
           (assoc :solved true))
 
       (if-let [positions (choose-positions tiles tileset empty-positions)]
-        (do
-          ;(println "positions:" positions)
-          (let [new-pos (find-closest-to-center positions)
-                new-neighbourhood (get-neighbourhood tiles new-pos)
-                new-code (choose-tilecode2 new-neighbourhood tileset)]
-            (if (nil? new-code)
-              ; no tile will fit, backtrack and return new state
+        (let [new-pos (find-closest-to-center positions)
+              new-neighbourhood (get-neighbourhood tiles new-pos)
+              new-code (choose-tilecode2 new-neighbourhood tileset)]
+          (if (nil? new-code)
+            ; no tile will fit, backtrack and return new state
 
-              (-> ts
-                  (inc-iters-ts)
-                  (add-to-dead-loci-ts (get-outer-facecode2 new-neighbourhood))
-                  (delete-neighbours-ts new-pos)
-                  (backtrack-non-zero-ts))
+            (-> ts
+                (inc-iters-ts)
+                (add-to-dead-loci-ts (get-outer-facecode2 new-neighbourhood))
+                (delete-neighbours-ts new-pos)
+                (backtrack-non-zero-ts))
 
-              ; else
-              (let [new-state (make-tile-ts ts new-pos new-code)]
-                ; removed aggressive dead caching here to simplify, put it back later
-                (if (creates-untileable-region-ts? new-state new-pos)
-                  (-> ts
-                      ;(cache-dead-nbhood new-pos)
-                      (backtrack-non-zero-ts)
-                      (inc-iters-ts))
-                  (-> new-state
-                      (inc-iters-ts)))))
-            )
-          )
+            ; else add tile (unless adding it create an untileable region)
+            (let [new-ts (make-tile-ts ts new-pos new-code)]
+              (if (creates-untileable-region-ts? new-ts new-pos)
+                (-> new-ts
+                    (cache-dead-nbhood new-pos)
+                    (backtrack-non-zero-ts)
+                    (inc-iters-ts))
+
+                (-> new-ts
+                    (inc-iters-ts))))))
 
         (-> ts
-            (assoc :run-status :halted))))))
+          (assoc :run-status :halted))))))
 
 
 
