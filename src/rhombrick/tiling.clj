@@ -381,10 +381,16 @@
 ;     0))
 
 
-; returns a list of todo locations with 0 or 1 matching tiles
+; returns a list of todo locations with 0 (?) or 1 matching tiles
 (defn find-best-positions2 [_tiles tileset empty-positions]
-  ;(filter #(< (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 2)
-  (filter #(= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 1)
+
+  ; this line implements choosing as specified in the paper, but I don't quite 
+  ; understand why we would want positions with zero matching tiles:
+  (filter #(< (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 2)
+  
+  ; this line make more sense to me and seems to work fine. Once we have the
+  ; offline stuff setup, do a test and prove which way is more effective:
+  ;(filter #(= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 1)
           empty-positions))
 
 
@@ -604,6 +610,8 @@
   (assoc tiler-state :iters (inc (tiler-state :iters)))
   )
 
+
+(comment
 (defn make-backtracking-tiling-iteration3 [_tiles tileset]
   (if-let [positions (choose-positions _tiles tileset
                                        (get-empty-positions _tiles
@@ -635,6 +643,7 @@
     (do
       (reset! tiler-run-state :halted)
       _tiles)))
+)
 
 
 (comment
@@ -712,32 +721,30 @@
   (println "tiler-state -> halted"))
 
 
-(defn tiler-can-iterate? []
-  (and (= @tiler-run-state :running)
-       (< (count @tiles) @max-tiles)
-       (> (count (get-empty-positions @tiles @assemblage-max-radius)) 0)))
+;(defn tiler-can-iterate? []
+;  (and (= @tiler-run-state :running)
+;       (< (count @tiles) @max-tiles)
+;       (> (count (get-empty-positions @tiles @assemblage-max-radius)) 0)))
 
 
 (defn run-backtracking-tiling-thread-ts [ts]
   (println "tiler thread starting with state:" ts)
-  (let [tileset-expanded (ts :tileset-expanded)]
-        ;tileset-expanded (expand-tiles-preserving-symmetry tileset)]
-    (while (and (= (@tiler-state :run-status) :runnable)
-                (< (@tiler-state :iters) ((@tiler-state :params) :max-iters)))
-      (let [iter-start-time (System/nanoTime)]
-        (dosync
-          (swap! tiler-state make-backtracking-tiling-iteration4)
+  (while (and (= (@tiler-state :run-status) :runnable)
+              (< (@tiler-state :iters) ((@tiler-state :params) :max-iters)))
+    (let [iter-start-time (System/nanoTime)]
+      (dosync
+        (swap! tiler-state make-backtracking-tiling-iteration4)
 
-          ; legacy support - to be removed:
-          (reset! tiles (@tiler-state :tiles))
-          (reset! dead-loci (@tiler-state :dead))
-          (reset! tiler-iterations (@tiler-state :iters))
-          (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
-
-          ))))
+        ; legacy support - to be removed:
+        (reset! tiles (@tiler-state :tiles))
+        (reset! dead-loci (@tiler-state :dead))
+        (reset! tiler-iterations (@tiler-state :iters))
+        (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
+        )))
   (halt-tiler))
 
 
+(comment
 (defn run-backtracking-tiling-thread [tileset]
   (println "tiler thread starting")
   (let [tileset-expanded (expand-tiles-preserving-symmetry tileset)]
@@ -754,6 +761,7 @@
           (append-stats-buffer! stats-dead-count (count @dead-loci))
           (append-stats-buffer! stats-iter-time @last-iteration-time)))))
   (halt-tiler))
+)
 
 
 (defn seed-tiler [tileset]
@@ -782,8 +790,6 @@
 (defn start-tiler-ts [tileset soft-start?]
   (cancel-tiler-thread)
   (Thread/sleep 100)
-  ;(init-tiler tileset)
-  ;(seed-tiler tileset)
   ;(when-not soft-start?
   ;  (init-dead-loci!))
   (let [ts (make-state (make-params :tileset tileset
@@ -794,6 +800,7 @@
     (reset! tiler-thread (future (run-backtracking-tiling-thread-ts ts)))))
 
 
+(comment
 (defn start-tiler [tileset soft-start?]
   (cancel-tiler-thread)
   (Thread/sleep 100)
@@ -804,7 +811,7 @@
   ;(init-stats-buffers)
   (reset! tiler-run-state :running)
   (reset! tiler-thread (future (run-backtracking-tiling-thread tileset))))
-
+)
 
 
 ; _______________________________________________________________________

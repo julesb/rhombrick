@@ -168,7 +168,7 @@
       (set-current-tileset-digit selected-tile-idx
                                  selected-digit-idx
                                  new-digit)
-      (start-tiler (get-tileset-as-set) false))))
+      (start-tiler-ts (get-tileset-as-set) false))))
 
 
 (defn level-up []
