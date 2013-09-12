@@ -115,7 +115,7 @@
   (cancel-tiler-thread)
   (Thread/sleep 100)
   (init-tiler tileset)
-  (init-dead-loci!)
+  ;(init-dead-loci!)
   (set-selected-pos [0 0 0])
   (seed-tiler tileset)
   (update-game-state tileset))

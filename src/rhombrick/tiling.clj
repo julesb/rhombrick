@@ -5,15 +5,14 @@
 
 
 
-(def tiler-state (atom {}))
 
 (def max-tiles (atom 1000))
 (def tiles (atom (ordered-map)))
 (def tiler-iterations (atom 0))
 (def tiler-run-state (atom :halted)) ; :halted :running :paused
 (def assemblage-center (atom [0 0 0]))
-(def assemblage-max-radius (atom 20))
-(def dead-loci (atom #{}))
+(def assemblage-max-radius (atom 8))
+;(def dead-loci (atom #{}))
 (def tiler-thread (atom nil))
 ;(def tiler-thread-id (atom 0))
 (def last-iteration-time (atom 0))
@@ -187,8 +186,9 @@
   (assoc _tiles pos facecode))
 
 
-(defn make-tile-ts [tiler-state pos facecode]
-  (assoc tiler-state :tiles (ordered-map (make-tile (tiler-state :tiles) pos facecode))))
+(defn make-tile-ts [ts pos facecode]
+  (assoc ts
+         :tiles (ordered-map (make-tile (ts :tiles) pos facecode))))
 
 
 (defn delete-tile [_tiles pos]
@@ -242,20 +242,37 @@
                          innercode outercode)))))
 
 
-(defn find-candidates2 [neighbourhood tileset]
+; obsolete but some things still depend on it:
+;(defn find-candidates2 [neighbourhood tileset]
+;  (let [outercode (get-outer-facecode2 neighbourhood)]
+;    (if (contains? @dead-loci outercode)
+;      ()
+;      (filter #(facecodes-directly-compatible? outercode %)
+;              tileset))))
+
+
+(defn find-candidates-ts [neighbourhood tileset dead]
   (let [outercode (get-outer-facecode2 neighbourhood)]
-    (if (contains? @dead-loci outercode)
+    (if (contains? dead outercode)
       ()
       (filter #(facecodes-directly-compatible? outercode %)
               tileset))))
 
 
-; neighbourhood looks like ["000000001001" "000000001000" etc ]
-(defn choose-tilecode2 [neighbourhood tileset]
-  (let [candidates (find-candidates2 neighbourhood tileset)]  
+(defn choose-tilecode-ts [neighbourhood tileset dead]
+  (let [candidates (find-candidates-ts neighbourhood tileset dead)]  
     (if (seq candidates)
       (nth candidates (rand-int (count candidates)))
       nil)))
+
+
+
+;; neighbourhood looks like ["000000001001" "000000001000" etc ]
+;(defn choose-tilecode2 [neighbourhood tileset]
+;  (let [candidates (find-candidates2 neighbourhood tileset)]  
+;    (if (seq candidates)
+;      (nth candidates (rand-int (count candidates)))
+;      nil)))
 
 
 (defn get-connected-neighbours [_tiles pos]
@@ -285,6 +302,7 @@
 (defn make-tile [_tiles pos facecode]
   (assoc _tiles pos facecode))
 ;  (into #{} (apply concat (map #(get-empty-connected-neighbours _tiles %) (keys _tiles)))))
+
 
 (defn get-empty-positions [_tiles max-radius]
   (if (= (count _tiles) 0)
@@ -323,42 +341,43 @@
                      (rand-nth random-tilecode-distribution))
                   outercode)))
 
-(defn init-dead-loci! []
-  (reset! dead-loci #{}))
+
+;(defn init-dead-loci! []
+;  (reset! dead-loci #{}))
 
 
-(defn add-to-dead-loci! [code]
-  (do
-    (swap! dead-loci conj code)
-    ;(println "dead-loci:" @dead-loci)
-    ))
+;(defn add-to-dead-loci! [code]
+;  (do
+;    (swap! dead-loci conj code)
+;    ;(println "dead-loci:" @dead-loci)
+;    ))
 
 (defn add-to-dead-loci-ts [ts code]
   (assoc ts :dead (conj (ts :dead) code)))
 
 
-(defn update-tiler-state [ts k v]
-  (assoc ts k v))
+;(defn update-tiler-state [ts k v]
+;  (assoc ts k v))
 
 
 
-(defn add-to-dead-loci [ts code]
-  (println "add to dead:" code)
-  (assoc ts :dead (conj (ts :dead) code)))
+;(defn add-to-dead-loci [ts code]
+;  (println "add to dead:" code)
+;  (assoc ts :dead (conj (ts :dead) code)))
 
 
-(defn get-untileable-neighbours [_tiles tileset pos]
+(defn get-untileable-neighbours [_tiles tileset pos dead]
   (->> (get-neighbours pos)
-       (filter #(= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 0))))
+       (filter #(= (count (find-candidates-ts (get-neighbourhood _tiles %) tileset dead)) 0))))
 
 
-(defn creates-untileable-region? [_tiles tileset pos]
-  (> (count (->> (get-connected-neighbours _tiles pos)
-                 (filter #(and (is-empty? _tiles %)
-                               (or (contains? @dead-loci
-                                              (get-outer-facecode2 (get-neighbourhood _tiles %)))
-                                   (= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 0))))))
-     0))
+;(defn creates-untileable-region? [_tiles tileset pos]
+;  (> (count (->> (get-connected-neighbours _tiles pos)
+;                 (filter #(and (is-empty? _tiles %)
+;                               (or (contains? @dead-loci
+;                                              (get-outer-facecode2 (get-neighbourhood _tiles %)))
+;                                   (= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 0))))))
+;     0))
 
 
 (defn creates-untileable-region-ts? [ts pos]
@@ -368,7 +387,7 @@
     (> (count (->> (get-connected-neighbours tiles pos)
                    (filter #(and (is-empty? tiles %)
                                (or (contains? dead (get-outer-facecode2 (get-neighbourhood tiles %)))
-                                   (= (count (find-candidates2 (get-neighbourhood tiles %) tileset)) 0))))))
+                                   (= (count (find-candidates-ts (get-neighbourhood tiles %) tileset dead)) 0))))))
      0)))
 
 ; this version does not force connectivity
@@ -381,31 +400,55 @@
 ;     0))
 
 
-; returns a list of todo locations with 0 (?) or 1 matching tiles
-(defn find-best-positions2 [_tiles tileset empty-positions]
 
-  ; this line implements choosing as specified in the paper, but I don't quite 
-  ; understand why we would want positions with zero matching tiles:
-  (filter #(< (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 2)
-  
-  ; this line make more sense to me and seems to work fine. Once we have the
-  ; offline stuff setup, do a test and prove which way is more effective:
-  ;(filter #(= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 1)
+(defn find-best-positions-ts [ts empty-positions]
+  (filter #(< (count (find-candidates-ts (get-neighbourhood (ts :tiles) %)
+                                         (ts :tileset-expanded)
+                                         (ts :dead))) 2)
           empty-positions))
+
+
+(defn find-any-positions-ts [ts empty-positions]
+  (filter #(> (count (find-candidates-ts (get-neighbourhood (ts :tiles) %)
+                                         (ts :tileset-expanded)
+                                         (ts :dead))) 0)
+          empty-positions))
+
+
+; returns a list of todo locations with 0 (?) or 1 matching tiles
+;(defn find-best-positions2 [_tiles tileset empty-positions]
+;
+;  ; this line implements choosing as specified in the paper, but I don't quite 
+;  ; understand why we would want positions with zero matching tiles:
+;  (filter #(< (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 2)
+;  
+;  ; this line make more sense to me and seems to work fine. Once we have the
+;  ; offline stuff setup, do a test and prove which way is more effective:
+;  ;(filter #(= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 1)
+;          empty-positions))
 
 
 ; returns a list of todo locations with any matching tiles
-(defn find-any-positions2 [_tiles tileset empty-positions]
-  (filter #(> (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 0)
-          empty-positions))
-
-
-(defn choose-positions [_tiles tileset empty-positions]
-  (let [best (find-best-positions2 _tiles tileset empty-positions)]
-    (if (= (count best) 0)
-      (find-any-positions2 _tiles tileset empty-positions)
-      best)))
+;(defn find-any-positions2 [_tiles tileset empty-positions]
+;  (filter #(> (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 0)
+;          empty-positions))
+;
+;
+;(defn choose-positions [_tiles tileset empty-positions]
+;  (let [best (find-best-positions2 _tiles tileset empty-positions)]
+;    (if (= (count best) 0)
+;      (find-any-positions2 _tiles tileset empty-positions)
+;      best)))
  
+
+(defn choose-positions-ts [ts empty-positions]
+  (let [tiles (ts :tiles)
+        tileset (ts :tileset-expanded)
+        best (find-best-positions-ts ts empty-positions)]
+        ;best (find-best-positions2 tiles tileset empty-positions)]
+    (if (= (count best) 0)
+      (find-any-positions-ts ts empty-positions)
+      best)))
 
 
 ; Receive a vector of positions and return the closest to the center
@@ -523,8 +566,12 @@
     (-> default-state
         (assoc :tileset-expanded (expand-tiles-preserving-symmetry (params :tileset)))
         (assoc :params params)
-      
+        (assoc :tiles (ordered-map [0 0 0] (params :seed)))
       )))
+
+
+; move this definition to core
+(def tiler-state (atom (make-state)))
 
 
 (defn adapt-backtrack-params []
@@ -593,6 +640,7 @@
         (append-stats-buffer! stats-backtrack 0)
         _tiles))))
 
+
 (defn backtrack-n [_tiles n]
   (let [num-tiles (count _tiles)
         ni (- num-tiles n)]
@@ -611,65 +659,13 @@
   )
 
 
-(comment
-(defn make-backtracking-tiling-iteration3 [_tiles tileset]
-  (if-let [positions (choose-positions _tiles tileset
-                                       (get-empty-positions _tiles
-                                                            @assemblage-max-radius))]
-    (let [new-pos (find-closest-to-center positions)
-          ;new-pos (find-closest-to-point positions [0 0 0])
-          ;new-pos (find-closest-to-point positions (find-assemblage-center _tiles))
-          new-neighbourhood (get-neighbourhood _tiles new-pos)
-          new-code (choose-tilecode2 new-neighbourhood tileset)]
-      (if (nil? new-code)
-        (do ; no tile will fit 
-          (add-to-dead-loci! (get-outer-facecode2 new-neighbourhood))
-          (-> (delete-neighbours _tiles new-pos)
-               ;(backtrack)
-               (backtrack-non-zero @autism @adhd)
-            ))
-        (let [new-tiles (make-tile _tiles new-pos new-code)]
-          (if (creates-untileable-region? new-tiles tileset new-pos)
-            (do
-              (let [untileable (get-untileable-neighbours new-tiles tileset new-pos)]
-                (doseq [t untileable]
-                  (add-to-dead-loci! (get-outer-facecode2 (get-neighbourhood new-tiles t))))
-                ;(backtrack _tiles)
-                (backtrack-non-zero _tiles @autism @adhd)
-                ))
-            (do
-              (append-stats-buffer! stats-backtrack 0)
-              new-tiles)))))
-    (do
-      (reset! tiler-run-state :halted)
-      _tiles)))
-)
-
-
-(comment
-
-(defn get-next-tile [tiler-state]
-  (let [tiles (tiler-state :tiles)
-        tileset ((tiler-state :params) :tileset)
-        max-radius ((tiler-state :params) :max-radius)
-        empty-positions (get-empty-positions tiles max-radius)
-        ]
-    (if-let [chosen-positions (choose-positions tiles tileset empty-positions)
-        new-pos (find-closest-to-center chosen-positions)
-        new-neighbourhood (get-neighbourhood tiles new-pos)
-        new-code (choose-tilecode2 new-neighbourhood tileset)
-        ]
-    )
-    ; ...
-  ))
-
-)
 
 
 (defn cache-dead-nbhood [ts pos]
   (let [tiles (ts :tiles)
         tileset (ts :tileset-expanded)
-        untileable (get-untileable-neighbours tiles tileset pos)
+        dead (ts :dead)
+        untileable (get-untileable-neighbours tiles tileset pos dead)
         outercodes (into #{} (map #(get-outer-facecode2 (get-neighbourhood tiles %)) untileable)) ]
     (if (> (count outercodes) 0)
       (let [dead (apply conj (ts :dead) outercodes) ]
@@ -681,35 +677,26 @@
   (let [{:keys [params tiles dead iters solved]} ts
         tileset (ts :tileset-expanded)
         empty-positions (get-empty-positions tiles (params :max-radius))]
-    ;(println "tilerstate:" tiler-state)
     (if (zero? (count empty-positions))
       (-> ts
           (assoc :run-status :halted)
           (assoc :solved true))
 
-      (if-let [positions (choose-positions tiles tileset empty-positions)]
+      (if-let [positions (choose-positions-ts ts empty-positions)]
         (let [new-pos (find-closest-to-center positions)
               new-neighbourhood (get-neighbourhood tiles new-pos)
-              new-code (choose-tilecode2 new-neighbourhood tileset)]
+              new-code (choose-tilecode-ts new-neighbourhood tileset (ts :dead))]
           (if (nil? new-code)
             ; no tile will fit, backtrack and return new state
-
             (-> ts
-                (inc-iters-ts)
                 (add-to-dead-loci-ts (get-outer-facecode2 new-neighbourhood))
-                (delete-neighbours-ts new-pos)
-                (backtrack-non-zero-ts))
+                ;(delete-neighbours-ts new-pos)
+                (backtrack-non-zero-ts)
+                (inc-iters-ts))
 
-            ; else add tile (unless adding it create an untileable region)
-            (let [new-ts (make-tile-ts ts new-pos new-code)]
-              (if (creates-untileable-region-ts? new-ts new-pos)
-                (-> new-ts
-                    (cache-dead-nbhood new-pos)
-                    (backtrack-non-zero-ts)
-                    (inc-iters-ts))
-
-                (-> new-ts
-                    (inc-iters-ts))))))
+            ; else add tile and return new state 
+            (-> (make-tile-ts ts new-pos new-code)
+                (inc-iters-ts))))
 
         (-> ts
           (assoc :run-status :halted))))))
@@ -718,29 +705,34 @@
 
 (defn halt-tiler []
   (reset! tiler-run-state :halted)
+  ;(reset! tiler-state (-> @tiler-state (assoc :run-status :halted)))
   (println "tiler-state -> halted"))
 
 
-;(defn tiler-can-iterate? []
-;  (and (= @tiler-run-state :running)
-;       (< (count @tiles) @max-tiles)
-;       (> (count (get-empty-positions @tiles @assemblage-max-radius)) 0)))
+(defn tiler-can-iterate-ts? [ts]
+  (and (= (ts :run-status) :runnable)
+       (< (count (ts :tiles)) ((ts :params) :max-tiles))
+       (< (ts :iters) ((ts :params) :max-iters))
+       ;(> (count (get-empty-positions @tiles @assemblage-max-radius)) 0)
+       ))
 
 
 (defn run-backtracking-tiling-thread-ts [ts]
   (println "tiler thread starting with state:" ts)
-  (while (and (= (@tiler-state :run-status) :runnable)
-              (< (@tiler-state :iters) ((@tiler-state :params) :max-iters)))
+  (reset! tiler-state ts)
+;  (while (and (= (@tiler-state :run-status) :runnable)
+;              (< (@tiler-state :iters) ((@tiler-state :params) :max-iters)))
+  (while (tiler-can-iterate-ts? @tiler-state)
     (let [iter-start-time (System/nanoTime)]
       (dosync
         (swap! tiler-state make-backtracking-tiling-iteration4)
 
         ; legacy support - to be removed:
         (reset! tiles (@tiler-state :tiles))
-        (reset! dead-loci (@tiler-state :dead))
         (reset! tiler-iterations (@tiler-state :iters))
         (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
-        )))
+       ) 
+      ))
   (halt-tiler))
 
 
@@ -797,7 +789,7 @@
                                     :adhd @adhd
                                     :autism @autism)) ]
     (reset! tiler-state ts)
-    (reset! tiler-thread (future (run-backtracking-tiling-thread-ts ts)))))
+    (reset! tiler-thread (future (run-backtracking-tiling-thread-ts @tiler-state)))))
 
 
 (comment
@@ -996,24 +988,24 @@
 ; The reason for trying this is that I think it may cause the tiler to be less
 ; likely to generate repetitive tilings and may alse help somewhat to avoid
 ; dead ends.
-
-(defn compute-compatibility-score [_tiles candidate pos tileset]
-  (let [test-tiles (assoc _tiles pos candidate)
-        neighbours-pos (get-empty-connected-neighbours test-tiles pos)
-        num-connectable (count neighbours-pos)
-        nb-candidates (map #(find-candidates2 (get-neighbourhood test-tiles %) tileset)
-                           neighbours-pos)
-        num-nb-candidates (reduce + (map count nb-candidates))]
-    (if (and (> num-connectable 0)
-             (> num-nb-candidates 0))
-      (/ (double num-nb-candidates) num-connectable)
-      0.0)))
-
-
-(defn find-most-compatible [_tiles pos tileset candidates]
-  (->> (map #(vec [% (compute-compatibility-score _tiles % pos tileset)])
-                    candidates)
-       (into {})
-       (sort-by val >)
-       #(key (first %))))
-
+;
+;(defn compute-compatibility-score [_tiles candidate pos tileset]
+;  (let [test-tiles (assoc _tiles pos candidate)
+;        neighbours-pos (get-empty-connected-neighbours test-tiles pos)
+;        num-connectable (count neighbours-pos)
+;        nb-candidates (map #(find-candidates2 (get-neighbourhood test-tiles %) tileset)
+;                           neighbours-pos)
+;        num-nb-candidates (reduce + (map count nb-candidates))]
+;    (if (and (> num-connectable 0)
+;             (> num-nb-candidates 0))
+;      (/ (double num-nb-candidates) num-connectable)
+;      0.0)))
+;
+;
+;(defn find-most-compatible [_tiles pos tileset candidates]
+;  (->> (map #(vec [% (compute-compatibility-score _tiles % pos tileset)])
+;                    candidates)
+;       (into {})
+;       (sort-by val >)
+;       #(key (first %))))
+;

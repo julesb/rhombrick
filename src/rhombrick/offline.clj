@@ -197,85 +197,85 @@
 
 
 
-(defn iterate-tiler [_tiles tileset-expanded params]
-  (if (and (= @tiler-run-state :running)
-           (< (count _tiles) (params :max-tiles))
-           (< @tiler-iterations (params :max-iters))
-           (> (count (get-empty-positions _tiles (params :max-radius))) 0))
-    (do
-      (swap! tiler-iterations inc)
-      (recur (ordered-map (make-backtracking-tiling-iteration3 _tiles tileset-expanded))
-             tileset-expanded
-             params))
-    _tiles))
-
-
-(defn evaluate-tileset [params ]
-  (reset! assemblage-max-radius (params :max-radius))
-  (reset! adhd (params :adhd))
-  (reset! autism (params :autism))
-  (init-tiler (params :tileset))
-  (init-dead-loci!)
-  (let [tileset-expanded (expand-tiles-preserving-symmetry (params :tileset))
-        seed-tile (ordered-map {[0 0 0] (params :seed)})]
-    (reset! tiler-run-state :running)
-    (let [tiling (iterate-tiler seed-tile tileset-expanded params)
-          tileset (params :tileset)
-          seed (params :seed)
-          tilecount (count tiling)
-          iters-done @tiler-iterations
-          tileset-number (tileset-to-number (params :tileset))
-          ]
-      {:params params
-       :result {:tiling tiling
-                :tilecount tilecount
-                :iters-done iters-done}
-       }
-       )))
-
+;(defn iterate-tiler [_tiles tileset-expanded params]
+;  (if (and (= @tiler-run-state :running)
+;           (< (count _tiles) (params :max-tiles))
+;           (< @tiler-iterations (params :max-iters))
+;           (> (count (get-empty-positions _tiles (params :max-radius))) 0))
+;    (do
+;      (swap! tiler-iterations inc)
+;      (recur (ordered-map (make-backtracking-tiling-iteration3 _tiles tileset-expanded))
+;             tileset-expanded
+;             params))
+;    _tiles))
+;
+;
+;(defn evaluate-tileset [params ]
+;  (reset! assemblage-max-radius (params :max-radius))
+;  (reset! adhd (params :adhd))
+;  (reset! autism (params :autism))
+;  (init-tiler (params :tileset))
+;  (init-dead-loci!)
+;  (let [tileset-expanded (expand-tiles-preserving-symmetry (params :tileset))
+;        seed-tile (ordered-map {[0 0 0] (params :seed)})]
+;    (reset! tiler-run-state :running)
+;    (let [tiling (iterate-tiler seed-tile tileset-expanded params)
+;          tileset (params :tileset)
+;          seed (params :seed)
+;          tilecount (count tiling)
+;          iters-done @tiler-iterations
+;          tileset-number (tileset-to-number (params :tileset))
+;          ]
+;      {:params params
+;       :result {:tiling tiling
+;                :tilecount tilecount
+;                :iters-done iters-done}
+;       }
+;       )))
+;
 
 ;(defn print-results [results]
 ;  (pp (map #(% :result) results)))
 
-(defn evaluate-tileset-best-of [params]
-  (->> (map (fn [_] (evaluate-tileset params)) (range (params :best-of)))
-       (sort-by #((% :result) :tilecount))
-       reverse
-       first
-    ))
+;(defn evaluate-tileset-best-of [params]
+;  (->> (map (fn [_] (evaluate-tileset params)) (range (params :best-of)))
+;       (sort-by #((% :result) :tilecount))
+;       reverse
+;       first
+;    ))
+;
+;
+;(defn evaluate-tileset-all-seeds [params]
+;  (->> (make-params-for-seeds (params :tileset))
+;    (map evaluate-tileset)
+;    ;(map #(evaluate-tileset-best-of %))
+;  ))
 
 
-(defn evaluate-tileset-all-seeds [params]
-  (->> (make-params-for-seeds (params :tileset))
-    (map evaluate-tileset)
-    ;(map #(evaluate-tileset-best-of %))
-  ))
 
-
-
-(defn test-dbwrite []
-  (let [param (make-params :tileset (get-random-tileset))]
-    (print "evaluate-tileset:" (pr-str (param :tileset)) "x" (param :max-iters) "|")
-    (let [result (evaluate-tileset param)]
-      (println "result: tilecount:" ((result :result) :tilecount)
-               "iters-done:" ((result :result) :iters-done))
-      (save-tiling-result result)
-      ;result
-      )))
-
-
-(defn test-dbwrite2 []
-  (let [param (make-params :tileset (get-random-tileset))]
-    (println "evaluate-tileset:" (pr-str (param :tileset)) "x" (param :max-iters) "|")
-    (let [results (evaluate-tileset-all-seeds param)]
-      (doseq [result results]
-        (println "result: seed:" ((result :params) :seed) 
-                 "tilecount:" ((result :result) :tilecount)
-                 "iters-done:" ((result :result) :iters-done))
-        (save-tiling-result result))
-      ;result
-      )))
-
+;(defn test-dbwrite []
+;  (let [param (make-params :tileset (get-random-tileset))]
+;    (print "evaluate-tileset:" (pr-str (param :tileset)) "x" (param :max-iters) "|")
+;    (let [result (evaluate-tileset param)]
+;      (println "result: tilecount:" ((result :result) :tilecount)
+;               "iters-done:" ((result :result) :iters-done))
+;      (save-tiling-result result)
+;      ;result
+;      )))
+;
+;
+;(defn test-dbwrite2 []
+;  (let [param (make-params :tileset (get-random-tileset))]
+;    (println "evaluate-tileset:" (pr-str (param :tileset)) "x" (param :max-iters) "|")
+;    (let [results (evaluate-tileset-all-seeds param)]
+;      (doseq [result results]
+;        (println "result: seed:" ((result :params) :seed) 
+;                 "tilecount:" ((result :result) :tilecount)
+;                 "iters-done:" ((result :result) :iters-done))
+;        (save-tiling-result result))
+;      ;result
+;      )))
+;
 
 
 

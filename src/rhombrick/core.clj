@@ -6,7 +6,7 @@
         [rhombrick.tiling :as tiling]
         [rhombrick.tiling-render]
         [rhombrick.bezierbox :as bbox]
-        [rhombrick.game :as game]
+        ;[rhombrick.game :as game]
         [rhombrick.vector]
         [rhombrick.glider]
         [rhombrick.camera]
@@ -50,11 +50,11 @@
 (def draw-graphs? (atom false))
 (def tiler-auto-seed? (atom false))
 
-(def boundary-mode-idx (atom 0))
+(def boundary-mode-idx (atom 1))
 (def boundary-modes [:only-empty :type-change :all :none])
 (def current-boundary-mode (atom (boundary-modes @boundary-mode-idx)))
 
-(def game-mode? (atom true))
+(def game-mode? (atom false))
 
 (def ^:dynamic editor-font)
 (def ^:dynamic console-font)
@@ -105,12 +105,14 @@
 
     (println "initialising tiler")
     (editor/init-editor)
-    (if @game-mode?
-      (reset! camera-mode 3)
-      (start-game (editor/get-tileset-expanded))
-      ;(start-tiler (editor/get-tileset-as-set) false)
-      )
-    ;(init-gliders num-gliders)
+
+;    (if @game-mode?
+;      (reset! camera-mode 3)
+;      (start-game (editor/get-tileset-expanded))
+;      ;(start-tiler (editor/get-tileset-as-set) false)
+;      )
+
+  ;(init-gliders num-gliders)
     ;(println @gliders
 
 ;    (doseq [val (range 10)]
@@ -143,14 +145,14 @@
   (text-font console-font)
   (let [line-space 22
         lines [(str "game mode:" @game-mode?)
-               (str "candidates:" @game/candidates)
-               (str "run state: " @tiler-run-state)
-               (str "iters: " @tiler-iterations)
-               (str "tiles: " (count @tiles) "/" @max-tiles) 
+               ;(str "candidates:" @game/candidates)
+               (str "run state: " (@tiler-state :run-status))
+               (str "iters: " (@tiler-state :iters))
+               (str "tiles: " (count (@tiler-state :tiles)) "/" ((@tiler-state :params) :max-tiles)) 
                (str "ips: " (int (/ 1000 @last-iteration-time)))
                ;(str "empty: " (count @empty-positions)) 
-               (str "dead: " (count @dead-loci))
-               (str "radius: " @assemblage-max-radius)
+               (str "dead: " (count (@tiler-state :dead)))
+               (str "radius: " ((@tiler-state :params) :max-radius))
                ;(str "-------------")
                (str "bbox detail: " @bbox/bezier-box-resolution)
                (str "scale: " @model-scale)
@@ -219,17 +221,17 @@
          (if (= @camera-mode 2)
            (no-cursor)
            (cursor))))
-   \C #(do
-         ;(swap! draw-console? not)
-          (let [outercode (get-outer-facecode2 (get-neighbourhood @tiles @game/selected-pos))
-                ;new-code (make-random-tilecode-to-fit outercode)
-                new-code (make-minimal-tilecode-to-fit outercode)
-                ]
-            (editor/add-to-tileset new-code)
-            (make-tile! @selected-pos new-code)
-            (osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
-            (game/game-step (editor/get-tileset-expanded))
-         ))
+;   \C #(do
+;         ;(swap! draw-console? not)
+;          (let [outercode (get-outer-facecode2 (get-neighbourhood @tiles @game/selected-pos))
+;                ;new-code (make-random-tilecode-to-fit outercode)
+;                new-code (make-minimal-tilecode-to-fit outercode)
+;                ]
+;            (editor/add-to-tileset new-code)
+;            (make-tile! @selected-pos new-code)
+;            (osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
+;            (game/game-step (editor/get-tileset-expanded))
+;         ))
     \F #(do
          (swap! draw-facelist? not)
          (when @draw-facelist?
@@ -315,36 +317,36 @@
           (swap! bezier-box-line-weight dec))
     \M #(do
           (swap! bezier-box-smooth-shading? not))
-    \Z #(do
-          (swap! game-mode? not))
-    \z #(do
-          (game/start-game (editor/get-tileset-expanded)))
-    \u #(do
-          (osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
-          (game/game-step (editor/get-tileset-expanded))
-          )
-    \U #(do
-          (reset! game/selected-candidate-idx (int (rand (count @game/candidates))))
-          (game/game-step (editor/get-tileset-expanded))
-        )
-    \j #(do
-          (osc-send client "/rhombrick.game" "backtrack" @game/selected-candidate-idx)
-          (game/do-backtrack)
-          (game/update-game-state (editor/get-tileset-expanded))
-          )
-    \h #(do
-          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
-          (game/prev-candidate)
-          (update-neighbour-candidates @tiling/tiles (editor/get-tileset-expanded)))
-    \k #(do
-          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
-          (game/next-candidate)
-          (update-neighbour-candidates @tiling/tiles (editor/get-tileset-expanded)))
-    \D #(do
-          (osc-send client "/rhombrick.game" "destroy-neighbourhood" @game/selected-candidate-idx)
-          (game/destroy-neighbourhood)
-          (game/update-game-state (editor/get-tileset-expanded))
-          )
+;    \Z #(do
+;          (swap! game-mode? not))
+;    \z #(do
+;          (game/start-game (editor/get-tileset-expanded)))
+;    \u #(do
+;          (osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
+;          (game/game-step (editor/get-tileset-expanded))
+;          )
+;    \U #(do
+;          (reset! game/selected-candidate-idx (int (rand (count @game/candidates))))
+;          (game/game-step (editor/get-tileset-expanded))
+;        )
+;    \j #(do
+;          (osc-send client "/rhombrick.game" "backtrack" @game/selected-candidate-idx)
+;          (game/do-backtrack)
+;          (game/update-game-state (editor/get-tileset-expanded))
+;          )
+;    \h #(do
+;          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
+;          (game/prev-candidate)
+;          (update-neighbour-candidates @tiling/tiles (editor/get-tileset-expanded)))
+;    \k #(do
+;          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
+;          (game/next-candidate)
+;          (update-neighbour-candidates @tiling/tiles (editor/get-tileset-expanded)))
+;    \D #(do
+;          (osc-send client "/rhombrick.game" "destroy-neighbourhood" @game/selected-candidate-idx)
+;          (game/destroy-neighbourhood)
+;          (game/update-game-state (editor/get-tileset-expanded))
+;          )
        })
 
 (def key-editor-map
@@ -522,31 +524,31 @@
               (do
                 (reset! last-mouse-delta (mouse-delta 0.0001))
                 (.mouseMove robot (/ (width) 2) (/ (height) 2))))))
-    (= @camera-mode 3)
-    ; game mode camera
-      (do
-        (let [g (vec3-scale @selected-pos @model-scale)
-              ndir (vec3-normalize (vec3-sub @assemblage-center @selected-pos))
-              target-pos (vec3-add g (vec3-scale ndir (* @model-scale -5.0 )))
-              dir-to-target (vec3-normalize (vec3-sub target-pos @camera-pos))
-              dist-to-target (dist (@camera-pos 0) (@camera-pos 1) (@camera-pos 2)
-                                   (target-pos 0) (target-pos 1) (target-pos 2))
-              newpos (vec3-add @camera-pos (vec3-scale dir-to-target (* dist-to-target 0.250)))
-              cl-d (dist (@camera-lookat 0)
-                         (@camera-lookat 1)
-                         (@camera-lookat 2)
-                       (g 0) (g 1) (g 2))
-              cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
-              new-camera-lookat (vec3-add @camera-lookat 
-                                          (vec3-scale cl-dir
-                                                      (* cl-d 0.25))) ]
-          (reset! camera-lookat new-camera-lookat)    
-          (reset! camera-pos newpos)
-          (camera (newpos 0) (newpos 1) (+ (newpos 2) 0)
-                  (new-camera-lookat 0)
-                  (new-camera-lookat 1)
-                  (new-camera-lookat 2)
-                  0 0 -1)))
+;    (= @camera-mode 3)
+;    ; game mode camera
+;      (do
+;        (let [g (vec3-scale @selected-pos @model-scale)
+;              ndir (vec3-normalize (vec3-sub @assemblage-center @selected-pos))
+;              target-pos (vec3-add g (vec3-scale ndir (* @model-scale -5.0 )))
+;              dir-to-target (vec3-normalize (vec3-sub target-pos @camera-pos))
+;              dist-to-target (dist (@camera-pos 0) (@camera-pos 1) (@camera-pos 2)
+;                                   (target-pos 0) (target-pos 1) (target-pos 2))
+;              newpos (vec3-add @camera-pos (vec3-scale dir-to-target (* dist-to-target 0.250)))
+;              cl-d (dist (@camera-lookat 0)
+;                         (@camera-lookat 1)
+;                         (@camera-lookat 2)
+;                       (g 0) (g 1) (g 2))
+;              cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
+;              new-camera-lookat (vec3-add @camera-lookat 
+;                                          (vec3-scale cl-dir
+;                                                      (* cl-d 0.25))) ]
+;          (reset! camera-lookat new-camera-lookat)    
+;          (reset! camera-pos newpos)
+;          (camera (newpos 0) (newpos 1) (+ (newpos 2) 0)
+;                  (new-camera-lookat 0)
+;                  (new-camera-lookat 1)
+;                  (new-camera-lookat 2)
+;                  0 0 -1)))
   )
 
   (perspective (radians @camera-fov) 
@@ -617,8 +619,9 @@
     ;  (draw-face-list))
       ;(draw-face-list-textured))
 
-    (update-selected-pos-screen)
-    (update-neighbour-candidates-screen)
+    ; game:
+    ;(update-selected-pos-screen)
+    ;(update-neighbour-candidates-screen)
 
     (draw-tiling true ;(not= @current-boundary-mode :none)
                  @draw-tilecode-lines?
@@ -631,8 +634,8 @@
     (when @draw-facelist?
       (draw-face-list))
 
-    (when @game-mode?
-      (game/render))
+;    (when @game-mode?
+;      (game/render))
 
     (when (seq (get-empty-positions @tiles @assemblage-max-radius))
       (draw-empty @tiles))
@@ -674,8 +677,8 @@
     ;  (text t x y)))
     )
 
-  (when @game-mode?
-    (game/render-2d))
+  ;(when @game-mode?
+  ;  (game/render-2d))
 
     ; bottom of screen
     ;(draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))
