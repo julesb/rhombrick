@@ -1,8 +1,6 @@
 (ns rhombrick.core
   (:use [quil.core]
         [quil.applet]
-        ;[rhombrick.facecode]
-        ;[rhombrick.staticgeometry :as geom]
         [rhombrick.tiling :as tiling]
         [rhombrick.tilecode :as tc]
         [rhombrick.tiling-render]
@@ -147,7 +145,8 @@
   (let [line-space 22
         lines [(str "game mode:" @game-mode?)
                ;(str "candidates:" @game/candidates)
-               (str "run state: " (@tiler-state :run-status))
+               (str "run state:" (@tiler-state :run-status))
+               (str "solved:" (@tiler-state :solved))
                (str "iters: " (@tiler-state :iters))
                (str "tiles: " (count (@tiler-state :tiles)) "/" ((@tiler-state :params) :max-tiles)) 
                (str "ips: " (int (/ 1000 @last-iteration-time)))
@@ -274,10 +273,14 @@
           ;  (= @tiler-run-state :paused)  (reset! tiler-run-state :running))
           )
     \( #(do
-          ;(swap! assemblage-max-radius dec)
+          (reset! tiler-state
+                  (assoc @tiler-state :params
+                                      (update-in (@tiler-state :params) [:max-radius] dec )))
           )
     \) #(do
-          ;(swap! assemblage-max-radius inc)
+          (reset! tiler-state
+                  (assoc @tiler-state :params
+                                      (update-in (@tiler-state :params) [:max-radius] inc )))
           )
 
     \< #(do

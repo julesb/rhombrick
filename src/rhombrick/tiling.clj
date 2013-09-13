@@ -7,7 +7,6 @@
 
 
 
-;(def tiles (atom (ordered-map)))
 (def assemblage-center (atom [0 0 0]))
 (def last-iteration-time (atom 0))
 
@@ -67,9 +66,6 @@
 
 
 (defn delete-neighbours [_tiles pos]
-;  (->> _tiles
-;       (filter #(not (contains? (get-neighbours pos) %)))
-;       (filter #(not (contains? pos)))))
   (filter #(not (contains? (get-neighbours pos) %)) _tiles))
 
 
@@ -77,36 +73,6 @@
   (assoc tiler-state :tiles (ordered-map (delete-neighbours (tiler-state :tiles) pos))))
 
 
-(defn get-neighbour-abutting-face2 [neighbourhood face-idx]
-  (let [op-face-idx (geom/connecting-faces face-idx)
-        nb-code (neighbourhood face-idx)]
-    ;(println "nb-code:"nb-code "op-face-idx:" op-face-idx "neighbourhood:" neighbourhood)
-    (if (nil? nb-code) \. (nth nb-code op-face-idx))))
-
-
-(defn get-outer-facecode2 [neighbourhood]
-  (apply str (map #(get-neighbour-abutting-face2 neighbourhood %) (range 12))))
-
-
-; generate all unique rotations of tiles in tileset 
-(defn expand-tiles-preserving-symmetry [tiles]
-  (set (flatten (map #(get-code-symmetries %) tiles))))
-
-
-
-(defn find-candidates-ts [neighbourhood tileset dead]
-  (let [outercode (get-outer-facecode2 neighbourhood)]
-    (if (contains? dead outercode)
-      ()
-      (filter #(facecodes-directly-compatible? outercode %)
-              tileset))))
-
-
-(defn choose-tilecode-ts [neighbourhood tileset dead]
-  (let [candidates (find-candidates-ts neighbourhood tileset dead)]  
-    (if (seq candidates)
-      (nth candidates (rand-int (count candidates)))
-      nil)))
 
 
 (defn get-connected-neighbours [_tiles pos]
@@ -130,9 +96,8 @@
 
 
 
-(defn make-tile [_tiles pos facecode]
-  (assoc _tiles pos facecode))
-;  (into #{} (apply concat (map #(get-empty-connected-neighbours _tiles %) (keys _tiles)))))
+;(defn make-tile [_tiles pos facecode]
+;  (assoc _tiles pos facecode))
 
 
 (defn get-empty-positions [_tiles max-radius]
@@ -158,15 +123,8 @@
          (set))))
 
 
-
-
-
 (defn add-to-dead-loci-ts [ts code]
   (assoc ts :dead (conj (ts :dead) code)))
-
-
-;(defn update-tiler-state [ts k v]
-;  (assoc ts k v))
 
 
 (defn get-untileable-neighbours [_tiles tileset pos dead]
@@ -222,7 +180,6 @@
   (let [tiles (ts :tiles)
         tileset (ts :tileset-expanded)
         best (find-best-positions-ts ts empty-positions)]
-        ;best (find-best-positions2 tiles tileset empty-positions)]
     (if (= (count best) 0)
       (find-any-positions-ts ts empty-positions)
       best)))
@@ -254,22 +211,15 @@
       ((rand-nth tie-winners) 0))))
 
 
-;(def autism (atom 1.0))
-;(def adhd (atom 2.0)) ; lower = more adhd
-
-
 
 (def default-params {
-  ;:tileset ["111111111111"]
   :tileset ["----1A---a--"]
-  ;:tileset  ["1-1-----1---" "-1---1------"]
   :seed ""
   :max-iters 10000
   :max-radius 8
   :max-tiles 1000
   :adhd 2.0
   :autism 1.0
-  ;:best-of 1
   })
 
 
@@ -341,17 +291,16 @@
              (< n num-tiles))
       (do
         ;(append-stats-buffer! stats-backtrack n)
-        (take ni _tiles))
+        (ordered-map (take ni _tiles)))
       (do
         ;(append-stats-buffer! stats-backtrack 0)
         _tiles))))
 
 
 (defn backtrack-non-zero-ts [ts]
-  (assoc ts :tiles
-         (ordered-map (backtrack-non-zero (ts :tiles)
-                                          ((ts :params) :autism)
-                                          ((ts :params) :adhd)))))
+  (assoc ts :tiles (backtrack-non-zero (ts :tiles)
+                                       ((ts :params) :autism)
+                                       ((ts :params) :adhd))))
 
 
 ;(defn backtrack [_tiles]
@@ -381,9 +330,8 @@
         _tiles))))
 
 
-(defn inc-iters-ts [tiler-state]
-  (assoc tiler-state :iters (inc (tiler-state :iters)))
-  )
+(defn inc-iters-ts [ts]
+  (update-in ts [:iters] inc))
 
 
 
@@ -431,8 +379,7 @@
 
 
 (defn halt-tiler []
-  ;(reset! tiler-run-state :halted)
-  ;(reset! tiler-state (-> @tiler-state (assoc :run-status :halted)))
+  (reset! tiler-state (-> @tiler-state (assoc :run-status :halted)))
   (println "tiler-state -> halted"))
 
 
@@ -447,14 +394,10 @@
   (reset! tiler-state ts)
   (while (tiler-can-iterate-ts? @tiler-state)
     (let [iter-start-time (System/nanoTime)]
-      (dosync
+      ;(dosync
         (swap! tiler-state make-backtracking-tiling-iteration4)
-
-        ; legacy support - to be removed:
-        ;(reset! tiles (@tiler-state :tiles))
-        ;(reset! tiler-iterations (@tiler-state :iters))
         (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
-       ) 
+      ;  )
       ))
   (halt-tiler))
 
@@ -485,48 +428,6 @@
 
 
 
-; _______________________________________________________________________
-
-
-
-; map tilecodes between pfh's 2d codes and the current implementation
-;
-; (I think there is a problem with this. In 3 dimensions the 2 dimensional
-; tiles may be flipped as well as rotated, whereas in 2d they can only rotate)
-;
-; hexagonal:
-;   "AaAa--"  ->  "Aa-----A-a--"
-;
-;   hex index map:
-;   [0 1 3 6 7 9]
-;
-; square:
-; ...
-
-(def pfh-tilecode-map-hex [0 1 3 6 7 9 ])
-
-(defn convert-pfh-tilecode-hex [phf-code]
-  (apply str (map #(if (some #{%} pfh-tilecode-map-hex)
-                    (.charAt phf-code (.indexOf pfh-tilecode-map-hex %))
-                    \-)
-                  (range 12))))
-
-
-; pfh code for CA rule 110: 
-(def ca-rule-110 [
-                  "a-aC-C"
-                  "a-bC-D"
-                  "b-aD-C"
-                  "b-bD-D"
-                  "cacAAA" ; 0
-                  "dacBBB" ; 1
-                  "cbcBBB" ; 1
-                  "dbcBBB" ; 1
-                  "cadAAA" ; 0
-                  "dadBBB" ; 1
-                  "cbdBBB" ; 1
-                  "dbdAAA" ; 0
-                  ])
 
 ; _______________________________________________________________________
 ;

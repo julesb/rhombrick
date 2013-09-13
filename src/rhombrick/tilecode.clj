@@ -1,4 +1,5 @@
 (ns rhombrick.tilecode
+  (:use [rhombrick.staticgeometry :as geom])
 )
 
 
@@ -177,4 +178,215 @@
                      (rand-nth random-tilecode-distribution))
                   outercode)))
 
+
+(defn get-neighbour-abutting-face2 [neighbourhood face-idx]
+  (let [op-face-idx (geom/connecting-faces face-idx)
+        nb-code (neighbourhood face-idx)]
+    ;(println "nb-code:"nb-code "op-face-idx:" op-face-idx "neighbourhood:" neighbourhood)
+    (if (nil? nb-code) \. (nth nb-code op-face-idx))))
+
+
+(defn get-outer-facecode2 [neighbourhood]
+  (apply str (map #(get-neighbour-abutting-face2 neighbourhood %) (range 12))))
+
+
+; generate all unique rotations of tiles in tileset 
+(defn expand-tiles-preserving-symmetry [tiles]
+  (set (flatten (map #(get-code-symmetries %) tiles))))
+
+
+
+
+(defn find-candidates-ts [neighbourhood tileset dead]
+  (let [outercode (get-outer-facecode2 neighbourhood)]
+    (if (contains? dead outercode)
+      ()
+      (filter #(facecodes-directly-compatible? outercode %)
+              tileset))))
+
+
+(defn choose-tilecode-ts [neighbourhood tileset dead]
+  (let [candidates (find-candidates-ts neighbourhood tileset dead)]  
+    (if (seq candidates)
+      (nth candidates (rand-int (count candidates)))
+      nil)))
+
+
+
+(def tilecode-to-number-map
+  {\- \0
+   \0 \0
+   \1 \1
+   \2 \2
+   \3 \3
+   \4 \4
+   \5 \5
+   \6 \6
+   \7 \7
+   \a \8
+   \A \9
+   \b \a
+   \B \b
+   \c \c
+   \C \d
+   \d \e
+   \D \f})
+
+(def number-to-tilecode-map
+  {\0 \-
+   \1 \1
+   \2 \2
+   \3 \3
+   \4 \4
+   \5 \5
+   \6 \6
+   \7 \7
+   \8 \a
+   \9 \A
+   \a \b
+   \b \B
+   \c \c
+   \d \C
+   \e \d
+   \f \D
+   })
+
+
+(defn hex-to-num [#^String s]
+   (Long/parseLong (.substring s 2) 16))
+
+
+(defn number-to-tilecode [n]
+  (->> (format "%012x" n)
+       (map number-to-tilecode-map)
+       (apply str)))
+
+(defn tilecode-to-number [code]
+  (->> code
+       (map tilecode-to-number-map)
+       (apply str "0x")
+       hex-to-num))
+
+
+(defn tilecode-to-hex-number [code]
+  (->> code
+       (map tilecode-to-number-map)
+       (apply str)))
+
+
+(defn tilecode-to-hex-string [code]
+  (apply str "0x" (map #(if (= \- %) \0 %) code)))
+
+
+(defn normalize-tilecode [code]
+  (->> (expand-tiles-preserving-symmetry [code])
+       (map tilecode-to-number)
+       sort
+       first
+       number-to-tilecode))
+
+
+(defn tilecode-is-normalized? [code]
+  (= (tilecode-to-number code)
+     (tilecode-to-number (normalize-tilecode code))))
+
+
+(defn normalize-tileset [tileset]
+  (->> tileset
+    (map normalize-tilecode)
+    (map tilecode-to-number)
+    sort
+    (map number-to-tilecode)
+    vec))
+
+
+(defn tileset-to-number [tileset]
+  (->> tileset
+    normalize-tileset
+    (map tilecode-to-number)
+    (map #(format "%015d" %))
+    (apply str)
+    java.math.BigInteger.))
+
+
+(defn tileset-to-hex-number [tileset]
+  (->> tileset
+    normalize-tileset
+    (map tilecode-to-hex-number)
+    (apply str)))
+
+; These functions are to do with being able to quickly ignore tiles and
+; tilesets which are not able to create any sort of tiling
+
+(defn is-digit-connectable? [d]
+  (contains? #{\1 \2 \3 \4 \5 \6 \7 \a \b \c \d \A \B \C \D} d))
+
+
+(defn tilecode-to-binary-connection-number [code]
+  (let [bits (apply str (map #(if (is-digit-connectable? %) \1 \0 ) code))]
+    (Integer/parseInt bits 2)))
+
+
+(defn get-self-compatible-digits [code]
+  (->> code
+       (filter is-digit-connectable?)
+       (filter #(some #{(facecode-compatible-map %)} code))))
+
+
+(defn is-tilecode-fully-self-compatible? [code]
+  (=
+    (count (filter is-digit-connectable? code))
+    (count (get-self-compatible-digits code))))
+
+
+(defn is-tilecode-partly-self-compatible? [code]
+  (> (count (get-self-compatible-digits code)) 0))
+
+
+(defn is-tilecode-fully-self-compatible-and-normalized? [code]
+  (and (tilecode-is-normalized? code) 
+    (is-tilecode-fully-self-compatible? code)))
+
+; _______________________________________________________________________
+
+
+
+; map tilecodes between pfh's 2d codes and the current implementation
+;
+; (I think there is a problem with this. In 3 dimensions the 2 dimensional
+; tiles may be flipped as well as rotated, whereas in 2d they can only rotate)
+;
+; hexagonal:
+;   "AaAa--"  ->  "Aa-----A-a--"
+;
+;   hex index map:
+;   [0 1 3 6 7 9]
+;
+; square:
+; ...
+
+(def pfh-tilecode-map-hex [0 1 3 6 7 9 ])
+
+(defn convert-pfh-tilecode-hex [phf-code]
+  (apply str (map #(if (some #{%} pfh-tilecode-map-hex)
+                    (.charAt phf-code (.indexOf pfh-tilecode-map-hex %))
+                    \-)
+                  (range 12))))
+
+
+; pfh code for CA rule 110: 
+(def ca-rule-110 [
+                  "a-aC-C"
+                  "a-bC-D"
+                  "b-aD-C"
+                  "b-bD-D"
+                  "cacAAA" ; 0
+                  "dacBBB" ; 1
+                  "cbcBBB" ; 1
+                  "dbcBBB" ; 1
+                  "cadAAA" ; 0
+                  "dadBBB" ; 1
+                  "cbdBBB" ; 1
+                  "dbdAAA" ; 0
+                  ])
 
