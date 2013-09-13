@@ -146,11 +146,13 @@
   (do
     (reset! gliders [])
     (reset! max-glider-id 0)
-    (when (> (count @tiles) 0)
+    ;(when (> (count @tiles) 0)
+    (when (> (count (@tiler-state :tiles)) 0)
       (doseq [i (range (+ 2 num-gliders))]
-        (let [tile (rand-nth (keys @tiles))
-              entry-idx (first (get-connected-idxs (@tiles tile)))
-              path-idxs (choose-glider-path (@tiles tile) entry-idx)]
+        ;(let [tile (rand-nth (keys @tiles))
+        (let [tile (rand-nth (keys (@tiler-state :tiles) ))
+              entry-idx (first (get-connected-idxs ((@tiler-state :tiles) tile)))
+              path-idxs (choose-glider-path ((@tiler-state :tiles) tile) entry-idx)]
           (if (= (count path-idxs) 2)
             (make-glider tile path-idxs)))))
     ;(update-glider-value (@gliders 0) :time 0.3)
@@ -201,7 +203,7 @@
           new-glider-time (+ (glider :time) (glider :speed))]
       (if (>= new-glider-time 1.0)
         ; have crossed tile boundary..
-        (let [next-tile-code (@tiles next-tile-pos)
+        (let [next-tile-code ((@tiler-state :tiles) next-tile-pos)
               next-entry-face-idx (connecting-faces (glider :exit-face-idx))
               next-glider-path (choose-glider-path next-tile-code
                                                    next-entry-face-idx )]

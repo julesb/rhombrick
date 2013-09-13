@@ -1,140 +1,18 @@
 (ns rhombrick.tiling
-  (:use [rhombrick.vector]
+  (:use [rhombrick.tilecode]
+        [rhombrick.vector]
         [rhombrick.staticgeometry :as geom]
         [ordered.map]))
 
 
 
 
-(def max-tiles (atom 1000))
-(def tiles (atom (ordered-map)))
-(def tiler-iterations (atom 0))
-(def tiler-run-state (atom :halted)) ; :halted :running :paused
+;(def tiles (atom (ordered-map)))
 (def assemblage-center (atom [0 0 0]))
-(def assemblage-max-radius (atom 8))
-;(def dead-loci (atom #{}))
-(def tiler-thread (atom nil))
-;(def tiler-thread-id (atom 0))
 (def last-iteration-time (atom 0))
 
 
 
-
-(def facecode-compatible #{
-  [\- \-]
-  [\0 \0]
-  [\1 \1]
-  [\2 \2]
-  [\3 \3]
-  [\4 \4]
-  [\5 \5]
-  [\6 \6]
-  [\7 \7]
-  ;[\8 \8]
-  ;[\9 \9]
-  [\a \A]
-  [\b \B]
-  [\c \C]
-  [\d \D]
-  ;[\e \E]
-  ;[\f \F]
-  })
-
-(def facecode-compatible-map {\. \-
-                              \- \-
-                              \0 \0
-                              \1 \1
-                              \2 \2
-                              \3 \3
-                              \4 \4
-                              \5 \5
-                              \6 \6
-                              \7 \7
-                              ;\8 \8
-                              ;\9 \9
-                              \a \A \A \a
-                              \b \B \B \b
-                              \c \C \C \c
-                              \d \D \D \d
-                              ;\e \E \E \e
-                              ;\f \F \F \f
-                              })
-
-
-
-
-; NOTE: the tile renderer currently expects face digits no higher than 6 or D 
-; for simplicity, even though the tiler will handle any hex digit.
-(def ^:const random-tilecode-distribution [
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
-  \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1 \1
-  \2 \2 \2 \2 \2 \2 \2 \2
-  \3 \3 \3 \3 \3 \3 \3 \3
-  \4 \4 \4 \4
-  \5 \5 
-  \6
-  \a \a \a \a \a \a \a \a
-  \A \A \A \A \A \A \A \A
-  \b \b \b \b
-  \B \B \B \B
-  \c \c
-  \C \C
-  \d
-  \D])
-
-(defn make-random-tilecode []
-  (let [code (apply str (map (fn [_] (rand-nth random-tilecode-distribution))
-                             (range 12)))]
-    (if (= code "------------")
-      (make-random-tilecode) 
-      code)))
-
-
-; Builds a random tileset of specified length. As the set is built, a tile
-; must must have least one tilecode digit compatible with existing digits in
-; the set. This ensures that each tile added to the set is compatible with at
-; least one other tile.
-(defn make-random-tileset [num-tiles tileset]
-  (cond
-    (= (count tileset) 0)
-      (recur num-tiles [(make-random-tilecode)])
-    (>= (count tileset) num-tiles)
-      tileset
-    :else
-      (let [new-tile (make-random-tilecode)
-            new-tile-sites (into #{} (map facecode-compatible-map
-                                          (filter #(not= \- %) new-tile)))
-            tileset-sites (into #{} (filter #(not= \- %)
-                                            (apply str tileset)))
-            compatible? (some new-tile-sites tileset-sites) ]
-        (if compatible?
-          (recur num-tiles (conj tileset new-tile))
-          (recur num-tiles tileset)))))
-
-
-(defn get-random-tileset []
-  (let [max-tiles 4]
-    (make-random-tileset (+ 1 (rand-int max-tiles)) [])))
-
-
-; Tilesets generated using this will likely have some tiles in the set which
-; are not compatible with any other. Dont use it.
-;(defn get-random-tileset []
-;  (let [num-tiles (+ 1 (rand-int 10))]
-;    (vec (map (fn [_] (make-random-tilecode))
-;         (range num-tiles)))))
 
 
 ;(defn update-assemblage-center [new-pos]
@@ -144,8 +22,6 @@
 
 
 
-(defn get-num-connected [code]
-  (count (filter #(and  (not= \- %) (not= \0 %) ) code) ))
 
 
 (defn find-assemblage-center [_tiles]
@@ -175,11 +51,6 @@
 (defn get-neighbourhood [_tiles pos]
   "returns a vector containing facecodes for all neighbours"
   (vec (map #(_tiles (get-neighbour-pos pos %)) (range 12))))
-
-
-(defn make-tile! [pos facecode]
-  (when (is-empty? @tiles pos)
-    (swap! tiles assoc pos facecode)))
 
 
 (defn make-tile [_tiles pos facecode]
@@ -222,34 +93,6 @@
   (set (flatten (map #(get-code-symmetries %) tiles))))
 
 
-; compares single digits of two facecodes, using the
-; compatibility table 
-(defn face-digit-compatible? [inner outer]
-  (or (contains? facecode-compatible [inner outer])
-      (contains? facecode-compatible [outer inner])
-      (= outer \.)))
-
-
-(defn face-digit-like-compatible? [d]
-  (not (contains? #{\a \b \c \d \e \f \A \B \C \D \E \F} d)))
-
-
-; determine if faces are compatible without rotation
-(defn facecodes-directly-compatible? [outercode innercode]
-  (= 12 
-     (count (filter #(true? %)
-                    (map #(face-digit-compatible? %1 %2) 
-                         innercode outercode)))))
-
-
-; obsolete but some things still depend on it:
-;(defn find-candidates2 [neighbourhood tileset]
-;  (let [outercode (get-outer-facecode2 neighbourhood)]
-;    (if (contains? @dead-loci outercode)
-;      ()
-;      (filter #(facecodes-directly-compatible? outercode %)
-;              tileset))))
-
 
 (defn find-candidates-ts [neighbourhood tileset dead]
   (let [outercode (get-outer-facecode2 neighbourhood)]
@@ -264,15 +107,6 @@
     (if (seq candidates)
       (nth candidates (rand-int (count candidates)))
       nil)))
-
-
-
-;; neighbourhood looks like ["000000001001" "000000001000" etc ]
-;(defn choose-tilecode2 [neighbourhood tileset]
-;  (let [candidates (find-candidates2 neighbourhood tileset)]  
-;    (if (seq candidates)
-;      (nth candidates (rand-int (count candidates)))
-;      nil)))
 
 
 (defn get-connected-neighbours [_tiles pos]
@@ -296,9 +130,6 @@
 
 
 
-;(defn get-empty-positions [_tiles]
-
-
 (defn make-tile [_tiles pos facecode]
   (assoc _tiles pos facecode))
 ;  (into #{} (apply concat (map #(get-empty-connected-neighbours _tiles %) (keys _tiles)))))
@@ -314,43 +145,21 @@
          (set)
       )))
 
-;; TODO  ** change get-empty-positions to accept radius param
-;(defn get-empty-positions-ts [tiler-state]
-;  (get-empty-positions (tiler-state :tiles)
-;  ))
 
 ; this version does not force connectivity
-;(defn get-empty-positions [_tiles]
-;  (if (= (count _tiles) 0)
-;    #{[0 0 0]}
-;    (->> (keys _tiles)
-;         (map get-neighbours)
-;         (apply concat)
-;         (filter #(is-empty? _tiles %))
-;         (filter #(< (vec3-length %) @assemblage-max-radius))
-;         (set))))
+(defn get-empty-positions-nfc [_tiles max-radius]
+  (if (= (count _tiles) 0)
+    #{[0 0 0]}
+    (->> (keys _tiles)
+         (map get-neighbours)
+         (apply concat)
+         (filter #(is-empty? _tiles %))
+         (filter #(< (vec3-length %) max-radius))
+         (set))))
 
 
-(defn make-minimal-tilecode-to-fit [outercode]
-  (apply str (map facecode-compatible-map outercode)))
 
 
-(defn make-random-tilecode-to-fit [outercode]
-  (apply str (map #(if (not= % \.)
-                     (facecode-compatible-map %) 
-                     (rand-nth random-tilecode-distribution))
-                  outercode)))
-
-
-;(defn init-dead-loci! []
-;  (reset! dead-loci #{}))
-
-
-;(defn add-to-dead-loci! [code]
-;  (do
-;    (swap! dead-loci conj code)
-;    ;(println "dead-loci:" @dead-loci)
-;    ))
 
 (defn add-to-dead-loci-ts [ts code]
   (assoc ts :dead (conj (ts :dead) code)))
@@ -358,12 +167,6 @@
 
 ;(defn update-tiler-state [ts k v]
 ;  (assoc ts k v))
-
-
-
-;(defn add-to-dead-loci [ts code]
-;  (println "add to dead:" code)
-;  (assoc ts :dead (conj (ts :dead) code)))
 
 
 (defn get-untileable-neighbours [_tiles tileset pos dead]
@@ -415,32 +218,6 @@
           empty-positions))
 
 
-; returns a list of todo locations with 0 (?) or 1 matching tiles
-;(defn find-best-positions2 [_tiles tileset empty-positions]
-;
-;  ; this line implements choosing as specified in the paper, but I don't quite 
-;  ; understand why we would want positions with zero matching tiles:
-;  (filter #(< (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 2)
-;  
-;  ; this line make more sense to me and seems to work fine. Once we have the
-;  ; offline stuff setup, do a test and prove which way is more effective:
-;  ;(filter #(= (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 1)
-;          empty-positions))
-
-
-; returns a list of todo locations with any matching tiles
-;(defn find-any-positions2 [_tiles tileset empty-positions]
-;  (filter #(> (count (find-candidates2 (get-neighbourhood _tiles %) tileset)) 0)
-;          empty-positions))
-;
-;
-;(defn choose-positions [_tiles tileset empty-positions]
-;  (let [best (find-best-positions2 _tiles tileset empty-positions)]
-;    (if (= (count best) 0)
-;      (find-any-positions2 _tiles tileset empty-positions)
-;      best)))
- 
-
 (defn choose-positions-ts [ts empty-positions]
   (let [tiles (ts :tiles)
         tileset (ts :tileset-expanded)
@@ -477,38 +254,9 @@
       ((rand-nth tie-winners) 0))))
 
 
-(def autism (atom 1.0))
-(def adhd (atom 2.0)) ; lower = more adhd
+;(def autism (atom 1.0))
+;(def adhd (atom 2.0)) ; lower = more adhd
 
-(def stats-buffer-length 200)
-(def stats-tile-count (atom []))
-;(def stats-empty-count (atom ()))
-(def stats-dead-count (atom []))
-(def stats-backtrack (atom []))
-(def stats-iter-time (atom []))
-(def stats-efficiency (atom []))
-
-(defn append-stats-buffer! [buf new-val]
-  (swap! buf conj new-val)
-    (when (> (count @buf) stats-buffer-length)
-      (swap! buf #(vec (rest %)))))
-
-(defn get-buffer-scale [buf]
-  (if (> (count buf) 0)
-    (apply max buf)
-    100))
-
-(defn init-stats-buffers []
-  (reset! stats-tile-count [])
-  ;(reset! stats-empty-count (atom []))
-  (reset! stats-dead-count [])
-  (reset! stats-backtrack [])
-  (reset! stats-iter-time [])
-  )
-
-
-(def adapt-last-tilecount (atom 0))
-(def adapt-backtrack-window 1)
 
 
 (def default-params {
@@ -516,9 +264,9 @@
   :tileset ["----1A---a--"]
   ;:tileset  ["1-1-----1---" "-1---1------"]
   :seed ""
-  :max-iters 1000
-  :max-radius 4
-  :max-tiles 200
+  :max-iters 10000
+  :max-radius 8
+  :max-tiles 1000
   :adhd 2.0
   :autism 1.0
   ;:best-of 1
@@ -572,30 +320,9 @@
 
 ; move this definition to core
 (def tiler-state (atom (make-state)))
+(def tiler-thread (atom nil))
 
 
-(defn adapt-backtrack-params []
-  (let [current-tilecount (count @tiles)
-        tilecount-delta (- current-tilecount @adapt-last-tilecount)
-        efficiency (double (/ tilecount-delta adapt-backtrack-window))
-        target-distance (- 1.0 efficiency)
-        step-scale 0.1
-        adhd-step-size (* (- 1 (rand 2)) target-distance step-scale)
-        autism-step-size (* (- 1 (rand 2)) target-distance step-scale)
-        ]
-    (append-stats-buffer! stats-efficiency efficiency)
-    ;(println "tiles:" current-tilecount
-    ;         "delta:" tilecount-delta
-    ;         "efficiency:" efficiency
-    ;         "target-dist:" target-distance
-    ;         "step-size:" adhd-step-size autism-step-size)
-
-    ;(reset! adhd (+ @adhd adhd-step-size))
-    ;(reset! autism (+ @autism autism-step-size))
-    ;(println "adhd:" (format "%.2f" @adhd)
-    ;         "autism:" (format "%.2f" @autism))
-    (reset! adapt-last-tilecount current-tilecount)
-  ))
 
 
 (defn compute-backtrack-amount [num-tiles autism adhd]
@@ -613,10 +340,10 @@
     (if (and (> num-tiles 1)
              (< n num-tiles))
       (do
-        (append-stats-buffer! stats-backtrack n)
+        ;(append-stats-buffer! stats-backtrack n)
         (take ni _tiles))
       (do
-        (append-stats-buffer! stats-backtrack 0)
+        ;(append-stats-buffer! stats-backtrack 0)
         _tiles))))
 
 
@@ -627,18 +354,18 @@
                                           ((ts :params) :adhd)))))
 
 
-(defn backtrack [_tiles]
-  (let [num-tiles (count _tiles)
-        n (compute-backtrack-amount num-tiles @autism @adhd)
-        ni (- num-tiles n)]
-    (if (and (> num-tiles 0)
-             (<= n num-tiles))
-      (do
-        (append-stats-buffer! stats-backtrack n)
-        (take ni _tiles))
-      (do
-        (append-stats-buffer! stats-backtrack 0)
-        _tiles))))
+;(defn backtrack [_tiles]
+;  (let [num-tiles (count _tiles)
+;        n (compute-backtrack-amount num-tiles @autism @adhd)
+;        ni (- num-tiles n)]
+;    (if (and (> num-tiles 0)
+;             (<= n num-tiles))
+;      (do
+;        ;(append-stats-buffer! stats-backtrack n)
+;        (take ni _tiles))
+;      (do
+;        ;(append-stats-buffer! stats-backtrack 0)
+;        _tiles))))
 
 
 (defn backtrack-n [_tiles n]
@@ -647,10 +374,10 @@
     (if (and (> num-tiles 0)
              (<= n num-tiles))
       (do
-        (append-stats-buffer! stats-backtrack n)
+        ;(append-stats-buffer! stats-backtrack n)
         (take ni _tiles))
       (do
-        (append-stats-buffer! stats-backtrack 0)
+        ;(append-stats-buffer! stats-backtrack 0)
         _tiles))))
 
 
@@ -704,7 +431,7 @@
 
 
 (defn halt-tiler []
-  (reset! tiler-run-state :halted)
+  ;(reset! tiler-run-state :halted)
   ;(reset! tiler-state (-> @tiler-state (assoc :run-status :halted)))
   (println "tiler-state -> halted"))
 
@@ -712,56 +439,25 @@
 (defn tiler-can-iterate-ts? [ts]
   (and (= (ts :run-status) :runnable)
        (< (count (ts :tiles)) ((ts :params) :max-tiles))
-       (< (ts :iters) ((ts :params) :max-iters))
-       ;(> (count (get-empty-positions @tiles @assemblage-max-radius)) 0)
-       ))
+       (< (ts :iters) ((ts :params) :max-iters))))
 
 
 (defn run-backtracking-tiling-thread-ts [ts]
   (println "tiler thread starting with state:" ts)
   (reset! tiler-state ts)
-;  (while (and (= (@tiler-state :run-status) :runnable)
-;              (< (@tiler-state :iters) ((@tiler-state :params) :max-iters)))
   (while (tiler-can-iterate-ts? @tiler-state)
     (let [iter-start-time (System/nanoTime)]
       (dosync
         (swap! tiler-state make-backtracking-tiling-iteration4)
 
         ; legacy support - to be removed:
-        (reset! tiles (@tiler-state :tiles))
-        (reset! tiler-iterations (@tiler-state :iters))
+        ;(reset! tiles (@tiler-state :tiles))
+        ;(reset! tiler-iterations (@tiler-state :iters))
         (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
        ) 
       ))
   (halt-tiler))
 
-
-(comment
-(defn run-backtracking-tiling-thread [tileset]
-  (println "tiler thread starting")
-  (let [tileset-expanded (expand-tiles-preserving-symmetry tileset)]
-    (while (tiler-can-iterate?)
-      (let [iter-start-time (System/nanoTime)]
-        (dosync
-          (swap! tiles #(ordered-map (make-backtracking-tiling-iteration3 % tileset-expanded)))
-          (swap! tiler-iterations inc)
-          (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
-
-          (when (= (mod @tiler-iterations adapt-backtrack-window) 0)
-            (adapt-backtrack-params))
-          (append-stats-buffer! stats-tile-count (count @tiles))
-          (append-stats-buffer! stats-dead-count (count @dead-loci))
-          (append-stats-buffer! stats-iter-time @last-iteration-time)))))
-  (halt-tiler))
-)
-
-
-(defn seed-tiler [tileset]
-  (when (> (count tileset) 0)
-  (let [pos [0 0 0]
-        code (rand-nth (vec (expand-tiles-preserving-symmetry tileset)))]
-    (make-tile! pos code) 
-    )))
 
 
 (defn cancel-tiler-thread []
@@ -773,37 +469,20 @@
       (println "cancel-tiler-thread failed"))))
 
 
-(defn init-tiler [tileset]
-  (reset! tiles (ordered-map))
-  (reset! tiler-iterations 0)
-  )
-
 
 (defn start-tiler-ts [tileset soft-start?]
   (cancel-tiler-thread)
   (Thread/sleep 100)
-  ;(when-not soft-start?
-  ;  (init-dead-loci!))
   (let [ts (make-state (make-params :tileset tileset
-                                    :max-radius @assemblage-max-radius
-                                    :adhd @adhd
-                                    :autism @autism)) ]
-    (reset! tiler-state ts)
+                                    ;:max-radius @assemblage-max-radius
+                                    ;:adhd @adhd
+                                    ;:autism @autism
+                                    )) ]
+    (if soft-start?
+      (reset! tiler-state (assoc ts :dead (@tiler-state :dead)))
+      (reset! tiler-state ts))
     (reset! tiler-thread (future (run-backtracking-tiling-thread-ts @tiler-state)))))
 
-
-(comment
-(defn start-tiler [tileset soft-start?]
-  (cancel-tiler-thread)
-  (Thread/sleep 100)
-  (init-tiler tileset)
-  (seed-tiler tileset)
-  (when-not soft-start?
-    (init-dead-loci!))
-  ;(init-stats-buffers)
-  (reset! tiler-run-state :running)
-  (reset! tiler-thread (future (run-backtracking-tiling-thread tileset))))
-)
 
 
 ; _______________________________________________________________________

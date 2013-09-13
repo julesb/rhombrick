@@ -4,6 +4,7 @@
         [rhombrick.staticgeometry]
         ;[rhombrick.facecode]
         [rhombrick.tiling]
+        [rhombrick.tilecode]
         [rhombrick.camera]
         [rhombrick.glider]
         [rhombrick.obj-loader]
@@ -40,36 +41,36 @@
           (point x2 y2))))))
 
 
-(defn get-graph-params []
-  [{:title "tiles"
-    :range @max-tiles
-    :data @stats-tile-count}
-   {:title "iter time"
-    :range 500
-    :data @stats-iter-time}
-   {:title "backtrack"
-    :range (max 100 (count @tiles))
-    :data @stats-backtrack}
-   {:title "efficiency"
-    :range 1.0
-    :data @stats-efficiency}
-  ])
+;(defn get-graph-params []
+;  [{:title "tiles"
+;    :range ((@tiler-state :params) :max-tiles)
+;    :data @stats-tile-count}
+;   {:title "iter time"
+;    :range 500
+;    :data @stats-iter-time}
+;   {:title "backtrack"
+;    :range (max 100 (count @tiles))
+;    :data @stats-backtrack}
+;   {:title "efficiency"
+;    :range 1.0
+;    :data @stats-efficiency}
+;  ])
 
 
-(defn draw-graphs [[x y]]
-  (let [graph-height 100
-        graph-space 5
-        graphs (get-graph-params)]
-    (doseq [i (range (count graphs))]
-      (let [graph (graphs i)
-            gx x
-            gy (+ y (* i graph-height) (* i graph-space))]
-        (draw-graph [gx gy]
-                    stats-buffer-length
-                    graph-height
-                    (graph :title)
-                    (graph :range)
-                    (graph :data))))))
+;(defn draw-graphs [[x y]]
+;  (let [graph-height 100
+;        graph-space 5
+;        graphs (get-graph-params)]
+;    (doseq [i (range (count graphs))]
+;      (let [graph (graphs i)
+;            gx x
+;            gy (+ y (* i graph-height) (* i graph-space))]
+;        (draw-graph [gx gy]
+;                    stats-buffer-length
+;                    graph-height
+;                    (graph :title)
+;                    (graph :range)
+;                    (graph :data))))))
 
 
 (defn facecode-to-hex [code]
@@ -208,7 +209,7 @@
 
 (defn build-face-list []
   (reset! face-list #{})
-  (doseq [tile (keys @tiles)]
+  (doseq [tile (keys (@tiler-state :tiles))]
     (add-tile-to-facelist tile)))
 
 
@@ -265,7 +266,7 @@
 
 
 (defn draw-selected-tile [pos]
-  (let [code (@tiles pos)
+  (let [code ((@tiler-state :tiles) pos)
         col (get-tile-color code)]
     (no-fill)
     (stroke (col 0) (col 1) (col 2) 16)
@@ -288,7 +289,7 @@
 
 
 (defn draw-face-boundaries-basic [pos]
-  (when (contains? @tiles pos)
+  (when (contains? (@tiler-state :tiles) pos)
     (stroke-weight 4)
     (stroke 0 0 0 255)
     (fill 255 255 255 255)
@@ -308,7 +309,7 @@
 (defn draw-face-boundaries [pos ^String code boundary-mode]
   (when (and (not (nil? code))
              (= 12 (count code))
-             (or (contains? @tiles pos)
+             (or (contains? (@tiler-state :tiles) pos)
                  (and (= boundary-mode :all)
                       (= (count code) 12))))
     (let [[r g b] (get-tile-color code)]
@@ -322,7 +323,7 @@
         (doseq [^long i (range 12)]
           (when (cond
                   (= boundary-mode :only-empty)
-                    (and (is-empty? @tiles (get-neighbour-pos pos i))
+                    (and (is-empty? (@tiler-state :tiles) (get-neighbour-pos pos i))
                          (not= (.charAt code i) \-)
                          (not= (.charAt code i) \0))
                   (= boundary-mode :all)
@@ -331,7 +332,7 @@
                   (= boundary-mode :type-change)
                     (and (not= (.charAt code i) \-)
                          (not= (.charAt code i) \0)
-                         (not= [r g b] (get-tile-color (@tiles (get-neighbour-pos pos i)))))
+                         (not= [r g b] (get-tile-color ((@tiler-state :tiles) (get-neighbour-pos pos i)))))
                   :else
                     false)
             (let [d (.charAt code i)
@@ -357,7 +358,8 @@
 (defn draw-empty [_tiles]
   (fill 0 255 0 16)
   (stroke 0 255 0 32)
-  (doseq [tile (get-empty-positions _tiles @assemblage-max-radius)]
+  ;(doseq [tile (get-empty-positions _tiles @assemblage-max-radius)]
+  (doseq [tile (get-empty-positions _tiles ((@tiler-state :params) :max-radius))]
     (let [pos tile]
       (with-translation pos 
         (scale 0.5)
@@ -498,7 +500,7 @@
           col (glider :color)
           tile (glider :current-tile)
           ]
-      (if (contains? @tiles tile)
+      (if (contains? (@tiler-state :tiles) tile)
         (with-translation pos
           (fill (col 0) (col 1) (col 2) 255)
             (scale 0.005)
@@ -628,9 +630,9 @@
 
 
 (defn draw-tiling [with-boundaries? with-lines? with-bb-faces? with-bb-lines? boundary-mode]
-  (doseq [tile (keys @tiles)]
+  (doseq [tile (keys (@tiler-state :tiles))]
     (let [pos tile
-          code (@tiles pos)
+          code ((@tiler-state :tiles) pos)
           ;col [255 255 255 255]
           col (conj (get-tile-color code) 255)
           ;line-col [(col 0) (col 1) (col 2) 255]
@@ -647,10 +649,10 @@
           (draw-facecode-lines code))
         (when with-bb-faces?
           (if @bezier-box-smooth-shading?
-            (draw-facecode-bezier-boxes-n (@tiles pos) col bezier-steps)
-            (draw-facecode-bezier-boxes (@tiles pos) col bezier-steps)))
+            (draw-facecode-bezier-boxes-n ((@tiler-state :tiles) pos) col bezier-steps)
+            (draw-facecode-bezier-boxes ((@tiler-state :tiles) pos) col bezier-steps)))
         (when with-bb-lines?
-          (draw-facecode-bezier-box-lines (@tiles pos) line-col bezier-steps))
+          (draw-facecode-bezier-box-lines ((@tiler-state :tiles) pos) line-col bezier-steps))
         )
       (when with-boundaries?
         (draw-face-boundaries pos code boundary-mode))

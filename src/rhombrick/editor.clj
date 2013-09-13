@@ -103,7 +103,7 @@
     (set-selected (dec (count (get-tileset))) 1))
   ;(reset! adhd 2.0)
   ;(reset! autism 1.0)
-  (reset! adapt-last-tilecount 0)
+  ;(reset! adapt-last-tilecount 0)
   ;(init-dead-loci)
   ; (soft-init-tiler)
   )

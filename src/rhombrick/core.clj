@@ -4,6 +4,7 @@
         ;[rhombrick.facecode]
         ;[rhombrick.staticgeometry :as geom]
         [rhombrick.tiling :as tiling]
+        [rhombrick.tilecode :as tc]
         [rhombrick.tiling-render]
         [rhombrick.bezierbox :as bbox]
         ;[rhombrick.game :as game]
@@ -244,31 +245,40 @@
     \G #(do
           (swap! draw-graphs? not))
     \T #(do 
-         (swap! max-tiles inc)
-         (println "max tiles:" @max-tiles))
+         ;(swap! max-tiles inc)
+         ;(println "max tiles:" @max-tiles)
+        )
     \t #(do 
-         (swap! max-tiles dec)
-         (println "max tiles:" @max-tiles))
+         ;(swap! max-tiles dec)
+         ;(println "max tiles:" @max-tiles)
+        )
     \[ #(do
-          (swap! adhd - 0.1)
-          (println "adhd:" @adhd "auti:" @autism))
+          ;(swap! adhd - 0.1)
+          ;(println "adhd:" @adhd "auti:" @autism)
+          )
     \] #(do
-          (swap! adhd + 0.1)
-          (println "adhd:" @adhd "auti:" @autism))
+          ;(swap! adhd + 0.1)
+          ;(println "adhd:" @adhd "auti:" @autism)
+          )
     \{ #(do
-          (swap! autism - 0.1)
-          (println "adhd:" @adhd "auti:" @autism))
+          ;(swap! autism - 0.1)
+          ;(println "adhd:" @adhd "auti:" @autism)
+          )
     \} #(do
-          (swap! autism + 0.1)
-          (println "adhd:" @adhd "auti:" @autism))
+          ;(swap! autism + 0.1)
+          ;(println "adhd:" @adhd "auti:" @autism)
+          )
     \p #(do
-          (cond 
-            (= @tiler-run-state :running) (reset! tiler-run-state :paused)
-            (= @tiler-run-state :paused)  (reset! tiler-run-state :running)))
+          ;(cond 
+          ;  (= @tiler-run-state :running) (reset! tiler-run-state :paused)
+          ;  (= @tiler-run-state :paused)  (reset! tiler-run-state :running))
+          )
     \( #(do
-          (swap! assemblage-max-radius dec))
+          ;(swap! assemblage-max-radius dec)
+          )
     \) #(do
-          (swap! assemblage-max-radius inc))
+          ;(swap! assemblage-max-radius inc)
+          )
 
     \< #(do
           (editor/load-prev-library-tileset)
@@ -439,22 +449,22 @@
   (ellipse 0 0 200 200))
 
 (defn draw-assemblage-radius []
-  (let [rad (* @assemblage-max-radius 2)]
+  (let [rad (* ((@tiler-state :params) :max-radius) 2)]
     (stroke 255 0 0 128)
     (stroke-weight 1)
     (ellipse 0 0 rad rad)))
 
 
 
-(defn auto-seed-tiler []
-  (when (or (and (> @tiler-iterations 100)
-                 (< (count @tiles) 5))
-            (= @tiler-run-state :halted))
-      (editor/set-tileset (get-random-tileset))
-      (init-tiler (editor/get-tileset-as-set))
-      (println "random tileset:" (editor/get-tileset-as-set)) 
-      ;(make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
-      (init-gliders num-gliders)))
+;(defn auto-seed-tiler []
+;  (when (or (and (> @tiler-iterations 100)
+;                 (< (count @tiles) 5))
+;            (= @tiler-run-state :halted))
+;      (editor/set-tileset (get-random-tileset))
+;      (init-tiler (editor/get-tileset-as-set))
+;      (println "random tileset:" (editor/get-tileset-as-set)) 
+;      ;(make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
+;      (init-gliders num-gliders)))
 
 
 (defn draw []
@@ -586,8 +596,9 @@
 ;    (rotate-x (/ (frame-count) 41.231))
 ;    (rotate-y (/ (frame-count) 38.73))
 
-    (let [r (/ @assemblage-max-radius 2)
-          mr (/ (- @assemblage-max-radius) 2)]
+    (let [max-rad ((@tiler-state :params) :max-radius)
+          r (/ max-rad 2)
+          mr (/ (- max-rad) 2)]
       (fill 0 255 0)
       (with-translation [mr  r  r] (box 0.1))
       (fill 255 0 0)
@@ -637,8 +648,8 @@
 ;    (when @game-mode?
 ;      (game/render))
 
-    (when (seq (get-empty-positions @tiles @assemblage-max-radius))
-      (draw-empty @tiles))
+    (when (seq (get-empty-positions (@tiler-state :tiles) ((@tiler-state :params) :max-radius)))
+      (draw-empty (@tiler-state :tiles)))
     
 
     ;(lights)
@@ -684,8 +695,8 @@
     ;(draw-tileset-editor [20 (- (height) 180)] @current-tileset 140))
     ;(draw-tileset-editor [1285 20] @current-tileset 140))
 
-  (when @draw-graphs?
-    (draw-graphs [20 100]))
+  ;(when @draw-graphs?
+  ;  (draw-graphs [20 100]))
 
   (hint :enable-depth-test)
 
