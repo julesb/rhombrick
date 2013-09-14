@@ -358,8 +358,7 @@
 (defn draw-empty [_tiles]
   (fill 0 255 0 16)
   (stroke 0 255 0 32)
-  ;(doseq [tile (get-empty-positions _tiles @assemblage-max-radius)]
-  (doseq [tile (get-empty-positions _tiles ((@tiler-state :params) :max-radius))]
+  (doseq [tile (get-empty-positions _tiles (get-in @tiler-state [:params :max-radius]))]
     (let [pos tile]
       (with-translation pos 
         (scale 0.5)

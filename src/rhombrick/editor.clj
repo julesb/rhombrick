@@ -21,7 +21,9 @@
                    :stroke-active [255 255 255 192]
                    })
 
-(def default-tileset ["A-A---------" "0-a---0-----" "4-d---D-3---" "3-------D---" "D-d---0-0---" "D-0---6-a---" "A-----6-----" "a-----d-0---" "A-----a-----" "6-----a-----"])
+;(def default-tileset ["A-A---------" "0-a---0-----" "4-d---D-3---" "3-------D---" "D-d---0-0---" "D-0---6-a---" "A-----6-----" "a-----d-0---" "A-----a-----" "6-----a-----"])
+(def default-tileset ["----1A---a--"]) 
+
 
 (def default-editor-state {:level 0
                            :selected [0 0 0]
@@ -168,7 +170,7 @@
       (set-current-tileset-digit selected-tile-idx
                                  selected-digit-idx
                                  new-digit)
-      (start-tiler-ts (get-tileset-as-set) false))))
+      (start-tiler (get-tileset-as-set) false))))
 
 
 (defn level-up []

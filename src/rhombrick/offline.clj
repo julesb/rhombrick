@@ -54,16 +54,29 @@
   (map #(make-params :tileset tileset :seed %) tileset))
 
 
+
 (defn make-tiling [ts]
-  (if (and (= (ts :run-status) :runnable)
-           (< (ts :iters) ((ts :params) :max-iters )))
-    (do
-      ;(println "BEFORE ITER:" ts )
-      (recur (make-backtracking-tiling-iteration4 ts)))
-    ts
+  (if (tiler-can-iterate? ts)
+    (recur (make-backtracking-tiling-iteration4 ts))
+    ts))
+
+
+(defn make-tiling-best-of-n [ts n]
+  (->> (pmap (fn [_] (make-tiling ts)) (range n))
+       (sort-by #(count (% :tiles)))
+       (last)
+    ))
+
+
+(defn print-ts [ts]
+  (clojure.pprint/pprint {:params (ts :params)
+                          :solved (ts :solved)
+                          :tiles (count (ts :tiles))
+                          :iters (ts :iters)
+                          :dead (count (ts :dead))
+                          :run-status (ts :run-status)
+                          }
   ))
-
-
 
 ;(defn iterate-tiler [_tiles tileset-expanded params]
 ;  (if (and (= @tiler-run-state :running)

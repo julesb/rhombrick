@@ -47,6 +47,7 @@
 (def draw-tilecode-lines? (atom false))
 (def draw-console? (atom false))
 (def draw-graphs? (atom false))
+(def draw-empty? (atom true))
 (def tiler-auto-seed? (atom false))
 
 (def boundary-mode-idx (atom 1))
@@ -200,12 +201,12 @@
         (println "model-scale: " @model-scale))
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
-         (start-tiler-ts (editor/get-tileset-as-set) true)
+         (start-tiler (editor/get-tileset-as-set) true)
          (init-gliders num-gliders)
          )
    \R #(do 
          (editor/set-tileset (get-random-tileset))
-         (start-tiler-ts (editor/get-tileset-as-set) false)
+         (start-tiler (editor/get-tileset-as-set) false)
          (println "random tileset:" (editor/get-tileset-as-set))
          (init-gliders num-gliders)
          )
@@ -285,10 +286,10 @@
 
     \< #(do
           (editor/load-prev-library-tileset)
-          (start-tiler-ts (editor/get-tileset-as-set) false))
+          (start-tiler (editor/get-tileset-as-set) false))
     \> #(do
           (editor/load-next-library-tileset)
-          (start-tiler-ts (editor/get-tileset-as-set) false))
+          (start-tiler (editor/get-tileset-as-set) false))
     \S #(do
           (editor/save-current-tileset-to-library))
     ;\n #(do
@@ -308,6 +309,8 @@
           (swap! draw-tilecode-lines? not))
     \f #(do
           (swap! draw-bezier-box-faces? not))
+    \e #(do
+          (swap! draw-empty? not))
     \_ #(do
           (when (> @bezier-box-resolution 1)
             (swap! bezier-box-resolution dec)
@@ -651,7 +654,7 @@
 ;    (when @game-mode?
 ;      (game/render))
 
-    (when (seq (get-empty-positions (@tiler-state :tiles) ((@tiler-state :params) :max-radius)))
+    (when @draw-empty?
       (draw-empty (@tiler-state :tiles)))
     
 
