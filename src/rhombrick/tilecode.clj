@@ -5,7 +5,7 @@
 
 
 
-(def facecode-compatible #{
+(def ^:const facecode-compatible #{
   [\- \-]
   [\0 \0]
   [\1 \1]
@@ -15,35 +15,28 @@
   [\5 \5]
   [\6 \6]
   [\7 \7]
-  ;[\8 \8]
-  ;[\9 \9]
   [\a \A]
   [\b \B]
   [\c \C]
   [\d \D]
-  ;[\e \E]
-  ;[\f \F]
   })
 
-(def facecode-compatible-map {\. \-
-                              \- \-
-                              \0 \0
-                              \1 \1
-                              \2 \2
-                              \3 \3
-                              \4 \4
-                              \5 \5
-                              \6 \6
-                              \7 \7
-                              ;\8 \8
-                              ;\9 \9
-                              \a \A \A \a
-                              \b \B \B \b
-                              \c \C \C \c
-                              \d \D \D \d
-                              ;\e \E \E \e
-                              ;\f \F \F \f
-                              })
+(def ^:const facecode-compatible-map {
+  \. \-
+  \- \-
+  \0 \0
+  \1 \1
+  \2 \2
+  \3 \3
+  \4 \4
+  \5 \5
+  \6 \6
+  \7 \7
+  \a \A \A \a
+  \b \B \B \b
+  \c \C \C \c
+  \d \D \D \d
+  })
 
 
 
@@ -197,7 +190,7 @@
 
 
 
-(defn find-candidates-ts [neighbourhood tileset dead]
+(defn find-candidates [neighbourhood tileset dead]
   (let [outercode (get-outer-facecode2 neighbourhood)]
     (if (contains? dead outercode)
       ()
@@ -205,8 +198,8 @@
               tileset))))
 
 
-(defn choose-tilecode-ts [neighbourhood tileset dead]
-  (let [candidates (find-candidates-ts neighbourhood tileset dead)]  
+(defn choose-tilecode [neighbourhood tileset dead]
+  (let [candidates (find-candidates neighbourhood tileset dead)]
     (if (seq candidates)
       (nth candidates (rand-int (count candidates)))
       nil)))

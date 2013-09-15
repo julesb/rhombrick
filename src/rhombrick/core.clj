@@ -148,7 +148,7 @@
                ;(str "candidates:" @game/candidates)
                (str "run state:" (@tiler-state :run-status))
                (str "solved:" (@tiler-state :solved))
-               (str "iters: " (@tiler-state :iters))
+               (str "iters: " (@tiler-state :iters) "/" (get-in @tiler-state [:params :max-iters]))
                (str "tiles: " (count (@tiler-state :tiles)) "/" ((@tiler-state :params) :max-tiles)) 
                (str "ips: " (int (/ 1000 @last-iteration-time)))
                ;(str "empty: " (count @empty-positions)) 

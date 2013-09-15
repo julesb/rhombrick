@@ -1,26 +1,18 @@
 (ns rhombrick.tiling
   (:use [rhombrick.tilecode]
         [rhombrick.vector]
-        [rhombrick.staticgeometry :as geom]
+        [rhombrick.staticgeometry]
         [ordered.map]))
-
-
 
 
 (def assemblage-center (atom [0 0 0]))
 (def last-iteration-time (atom 0))
 
 
-
-
-
 ;(defn update-assemblage-center [new-pos]
 ;  (let [new-center (vec3-scale (vec3-add new-pos @assemblage-center)
 ;                               (/ 1.0 (count @tiles)))]
 ;    (reset! assemblage-center new-center)))
-
-
-
 
 
 (defn find-assemblage-center [tiles]
@@ -52,27 +44,16 @@
   (vec (map #(tiles (get-neighbour-pos pos %)) (range 12))))
 
 
-(defn make-tile [tiles pos facecode]
-  (assoc tiles pos facecode))
-
-
-(defn make-tile-ts [ts pos facecode]
-  (assoc ts
-         :tiles (ordered-map (make-tile (ts :tiles) pos facecode))))
-
-
-(defn delete-tile [tiles pos]
-  (dissoc tiles pos))
+(defn make-tile [ts pos facecode]
+  (assoc ts :tiles (assoc (ts :tiles) pos facecode)))
 
 
 (defn delete-neighbours [tiles pos]
-  (filter #(not (contains? (get-neighbours pos) %)) tiles))
+  (ordered-map (filter #(not (contains? (get-neighbours pos) %)) tiles)))
 
 
 (defn delete-neighbours-ts [tiler-state pos]
-  (assoc tiler-state :tiles (ordered-map (delete-neighbours (tiler-state :tiles) pos))))
-
-
+  (assoc tiler-state :tiles (delete-neighbours (tiler-state :tiles) pos)))
 
 
 (defn get-connected-neighbours [tiles pos]
@@ -87,17 +68,13 @@
        ;(filter #(< (vec3-length %) @assemblage-max-radius))
     ))
 
+
 ;(defn get-empty-neighbours [tiles pos]
 ;  (->> (get-connected-idxs (tiles pos))
 ;       (map #(get-neighbour-pos pos %))
 ;       (filter is-empty?)
 ;       (filter #(< (vec3-length %) @assemblage-max-radius))
 ;    ))
-
-
-
-;(defn make-tile [tiles pos facecode]
-;  (assoc tiles pos facecode))
 
 
 (defn get-empty-positions [tiles max-radius]
@@ -129,7 +106,7 @@
 
 (defn get-untileable-neighbours [tiles tileset pos dead]
   (->> (get-neighbours pos)
-       (filter #(= (count (find-candidates-ts (get-neighbourhood tiles %) tileset dead)) 0))))
+       (filter #(= (count (find-candidates (get-neighbourhood tiles %) tileset dead)) 0))))
 
 
 ;(defn creates-untileable-region? [_tiles tileset pos]
@@ -148,8 +125,9 @@
     (> (count (->> (get-connected-neighbours tiles pos)
                    (filter #(and (is-empty? tiles %)
                                (or (contains? dead (get-outer-facecode2 (get-neighbourhood tiles %)))
-                                   (= (count (find-candidates-ts (get-neighbourhood tiles %) tileset dead)) 0))))))
+                                   (= (count (find-candidates (get-neighbourhood tiles %) tileset dead)) 0))))))
      0)))
+
 
 ; this version does not force connectivity
 ;(defn creates-untileable-region? [_tiles tileset pos]
@@ -161,18 +139,17 @@
 ;     0))
 
 
-
 (defn find-best-positions-ts [ts empty-positions]
-  (filter #(< (count (find-candidates-ts (get-neighbourhood (ts :tiles) %)
-                                         (ts :tileset-expanded)
-                                         (ts :dead))) 2)
+  (filter #(< (count (find-candidates (get-neighbourhood (ts :tiles) %)
+                                      (ts :tileset-expanded)
+                                      (ts :dead))) 2)
           empty-positions))
 
 
 (defn find-any-positions-ts [ts empty-positions]
-  (filter #(> (count (find-candidates-ts (get-neighbourhood (ts :tiles) %)
-                                         (ts :tileset-expanded)
-                                         (ts :dead))) 0)
+  (filter #(> (count (find-candidates (get-neighbourhood (ts :tiles) %)
+                                      (ts :tileset-expanded)
+                                      (ts :dead))) 0)
           empty-positions))
 
 
@@ -211,7 +188,6 @@
       ((rand-nth tie-winners) 0))))
 
 
-
 (def default-params {
   :tileset ["----1A---a--"]
   :seed ""
@@ -243,7 +219,6 @@
            max-tiles (default-params :max-tiles)
            adhd (default-params :adhd)
            autism (default-params :autism)
-           ;best-of (default-params :best-of)
            } } ]
   {
   :tileset tileset
@@ -253,8 +228,7 @@
   :max-tiles max-tiles
   :adhd adhd
   :autism autism
-  ;:best-of best-of
-  :tileset-number (tileset-to-number tileset) 
+  :tileset-number (tileset-to-number tileset)
   } )
 
 
@@ -271,8 +245,6 @@
 ; move this definition to core
 (def tiler-state (atom (make-state)))
 (def tiler-thread (atom nil))
-
-
 
 
 (defn compute-backtrack-amount [num-tiles autism adhd]
@@ -324,7 +296,7 @@
              (<= n num-tiles))
       (do
         ;(append-stats-buffer! stats-backtrack n)
-        (take ni tiles))
+        (ordered-map (take ni tiles)))
       (do
         ;(append-stats-buffer! stats-backtrack 0)
         tiles))))
@@ -332,8 +304,6 @@
 
 (defn inc-iters [ts]
   (update-in ts [:iters] inc))
-
-
 
 
 (defn cache-dead-nbhood [ts pos]
@@ -360,7 +330,7 @@
       (if-let [positions (choose-positions-ts ts empty-positions)]
         (let [new-pos (find-closest-to-center positions)
               new-neighbourhood (get-neighbourhood tiles new-pos)
-              new-code (choose-tilecode-ts new-neighbourhood tileset (ts :dead))]
+              new-code (choose-tilecode new-neighbourhood tileset (ts :dead))]
           (if (nil? new-code)
             ; no tile will fit, backtrack and return new state
             (-> ts
@@ -370,12 +340,11 @@
                 (inc-iters))
 
             ; else add tile and return new state 
-            (-> (make-tile-ts ts new-pos new-code)
+            (-> (make-tile ts new-pos new-code)
                 (inc-iters))))
 
         (-> ts
           (assoc :run-status :halted))))))
-
 
 
 (defn halt-tiler []
@@ -402,7 +371,6 @@
   (halt-tiler))
 
 
-
 (defn cancel-tiler-thread []
   (when (future? @tiler-thread)
     (future-cancel @tiler-thread)
@@ -410,7 +378,6 @@
             (future-done? @tiler-thread))
       (halt-tiler)
       (println "cancel-tiler-thread failed"))))
-
 
 
 (defn start-tiler [tileset soft-start?]
