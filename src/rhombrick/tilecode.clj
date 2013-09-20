@@ -1,5 +1,6 @@
 (ns rhombrick.tilecode
-  (:use [rhombrick.staticgeometry :as geom])
+  (:use [rhombrick.staticgeometry :as geom]
+        [rhombrick.tileset-data])
 )
 
 
@@ -101,39 +102,7 @@
   \D])
 
 
-(defn make-random-tilecode []
-  (let [code (apply str (map (fn [_] (rand-nth random-tilecode-distribution))
-                             (range 12)))]
-    (if (= code "------------")
-      (make-random-tilecode) 
-      code)))
 
-
-; Builds a random tileset of specified length. As the set is built, a tile
-; must must have least one tilecode digit compatible with existing digits in
-; the set. This ensures that each tile added to the set is compatible with at
-; least one other tile.
-(defn make-random-tileset [num-tiles tileset]
-  (cond
-    (= (count tileset) 0)
-      (recur num-tiles [(make-random-tilecode)])
-    (>= (count tileset) num-tiles)
-      tileset
-    :else
-      (let [new-tile (make-random-tilecode)
-            new-tile-sites (into #{} (map facecode-compatible-map
-                                          (filter #(not= \- %) new-tile)))
-            tileset-sites (into #{} (filter #(not= \- %)
-                                            (apply str tileset)))
-            compatible? (some new-tile-sites tileset-sites) ]
-        (if compatible?
-          (recur num-tiles (conj tileset new-tile))
-          (recur num-tiles tileset)))))
-
-
-(defn get-random-tileset []
-  (let [max-tiles 4]
-    (make-random-tileset (+ 1 (rand-int max-tiles)) [])))
 
 
 
@@ -154,7 +123,7 @@
 
 
 ; determine if faces are compatible without rotation
-(defn facecodes-directly-compatible? [outercode innercode]
+(defn tilecodes-directly-compatible? [outercode innercode]
   (= 12 
      (count (filter #(true? %)
                     (map #(face-digit-compatible? %1 %2) 
@@ -194,7 +163,7 @@
   (let [outercode (get-outer-facecode2 neighbourhood)]
     (if (contains? dead outercode)
       ()
-      (filter #(facecodes-directly-compatible? outercode %)
+      (filter #(tilecodes-directly-compatible? outercode %)
               tileset))))
 
 
@@ -203,6 +172,51 @@
     (if (seq candidates)
       (nth candidates (rand-int (count candidates)))
       nil)))
+
+
+(defn make-random-tilecode []
+  (let [code (apply str (map (fn [_] (rand-nth random-tilecode-distribution))
+                             (range 12)))]
+    (if (= code "------------")
+      (make-random-tilecode) 
+      code)))
+
+
+; Builds a random tileset of specified length. As the set is built, a tile
+; must must have least one tilecode digit compatible with existing digits in
+; the set. This ensures that each tile added to the set is compatible with at
+; least one other tile.
+(defn make-random-tileset [num-tiles tileset]
+  (cond
+    (= (count tileset) 0)
+      (recur num-tiles [(make-random-tilecode)])
+    (>= (count tileset) num-tiles)
+      tileset
+    :else
+      (let [new-tile (make-random-tilecode)
+            new-tile-sites (into #{} (map facecode-compatible-map
+                                          (filter #(not= \- %) new-tile)))
+            tileset-sites (into #{} (filter #(not= \- %)
+                                            (apply str tileset)))
+            compatible? (some new-tile-sites tileset-sites) ]
+        (if compatible?
+          (recur num-tiles (conj tileset new-tile))
+          (recur num-tiles tileset)))))
+
+
+(defn get-random-tileset []
+  [(rand-nth (take 128 self-compatible-1-2-3))
+   (rand-nth self-compatible-1-2-3)
+   (rand-nth self-compatible-1-2-3)
+;   (rand-nth self-compatible-1-2-3)
+   ]
+  )
+
+
+
+(defn get-random-tileset-1 []
+  (let [max-tiles 4]
+    (make-random-tileset (+ 1 (rand-int max-tiles)) [])))
 
 
 
