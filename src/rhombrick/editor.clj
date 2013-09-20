@@ -42,7 +42,8 @@
                  \3 \4
                  \4 \5
                  \5 \6
-                 \6 \a
+                 \6 \7
+                 \7 \a
                  \a \A
                  \A \b
                  \b \B
@@ -50,11 +51,8 @@
                  \c \C
                  \C \d
                  \d \D
-                 \D \e
-                 \e \E
-                 \E \f
-                 \f \F
-                 \F \-})
+                 \D \-
+                 })
 
 (def symmetry-display-index (atom 0))
 
