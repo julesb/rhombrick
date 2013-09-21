@@ -640,7 +640,8 @@
     ;(update-selected-pos-screen)
     ;(update-neighbour-candidates-screen)
 
-    (draw-tiling true ;(not= @current-boundary-mode :none)
+    (draw-tiling @tiler-state
+                 true ;(not= @current-boundary-mode :none)
                  @draw-tilecode-lines?
                  @draw-bezier-box-faces?
                  @draw-bezier-box-lines?

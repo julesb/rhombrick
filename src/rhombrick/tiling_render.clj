@@ -2,12 +2,10 @@
   (:use [quil.core]
         [rhombrick.vector]
         [rhombrick.staticgeometry]
-        ;[rhombrick.facecode]
         [rhombrick.tiling]
         [rhombrick.tilecode]
         [rhombrick.camera]
-        [rhombrick.glider]
-        [rhombrick.obj-loader]
+        ;[rhombrick.obj-loader]
         [rhombrick.bezierbox :as bbox]
         [clojure.math.combinatorics]))
 
@@ -93,17 +91,16 @@
       (@current-tileset-colors code))))
 
 
+
+
 (defn get-verts [verts face]
   (vec (map #(verts %) face)))
+
 
 (defn get-obj-face-verts [obj]
   (->> (obj :face)
        (map #(get-verts (obj :vertex) %))
        (vec)))
-
-
-;(def glider-model (load-obj "data/rhombic_dodecahedron.obj"))
-(def glider-model (get-obj-face-verts (load-obj "data/smooth_spaceship.obj")))
 
 
 (defn draw-obj [faces col]
@@ -484,36 +481,6 @@
       (draw-curve-with-controls c))))
         
 
-
-(defn draw-gliders [frame]
-  (push-style)
-  (no-stroke)
-  ;(stroke-weight 1)
-  ;(stroke 255 255 192 192)
-  (doseq [glider @gliders]
-    (let [pos (get-glider-pos (glider :id))
-          pos2 (get-glider-nextpos (glider :id))
-          [dx dy dz] (vec3-normalize (vec3-sub pos pos2))
-          az (Math/atan2 dy dx)
-          el (- (Math/asin dz))
-          col (glider :color)
-          tile (glider :current-tile)
-          ]
-      (if (contains? (@tiler-state :tiles) tile)
-        (with-translation pos
-          (fill (col 0) (col 1) (col 2) 255)
-            (scale 0.005)
-            (rotate az 0 0 1)
-            (rotate el 0 1 0)
-            ;(box 4 1 1)
-            ;(box 1 3 1)
-            (draw-obj glider-model [128 128 255 255])
-            ;(draw-obj (glider-model :vertex) (glider-model :face) [128 128 255 255])
-                          ))))
-  (pop-style)
-  )
-
-
 (defn draw-facecode-lines [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (get-num-connected code)
@@ -628,10 +595,10 @@
           (end-shape))))))
 
 
-(defn draw-tiling [with-boundaries? with-lines? with-bb-faces? with-bb-lines? boundary-mode]
-  (doseq [tile (keys (@tiler-state :tiles))]
+(defn draw-tiling [ts with-boundaries? with-lines? with-bb-faces? with-bb-lines? boundary-mode]
+  (doseq [tile (keys (ts :tiles))]
     (let [pos tile
-          code ((@tiler-state :tiles) pos)
+          code ((ts :tiles) pos)
           ;col [255 255 255 255]
           col (conj (get-tile-color code) 255)
           ;line-col [(col 0) (col 1) (col 2) 255]
@@ -648,10 +615,10 @@
           (draw-facecode-lines code))
         (when with-bb-faces?
           (if @bezier-box-smooth-shading?
-            (draw-facecode-bezier-boxes-n ((@tiler-state :tiles) pos) col bezier-steps)
-            (draw-facecode-bezier-boxes ((@tiler-state :tiles) pos) col bezier-steps)))
+            (draw-facecode-bezier-boxes-n ((ts :tiles) pos) col bezier-steps)
+            (draw-facecode-bezier-boxes ((ts :tiles) pos) col bezier-steps)))
         (when with-bb-lines?
-          (draw-facecode-bezier-box-lines ((@tiler-state :tiles) pos) line-col bezier-steps))
+          (draw-facecode-bezier-box-lines ((ts :tiles) pos) line-col bezier-steps))
         )
       (when with-boundaries?
         (draw-face-boundaries pos code boundary-mode))

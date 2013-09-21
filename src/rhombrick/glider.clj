@@ -1,8 +1,10 @@
 (ns rhombrick.glider
   (:use [quil.core]
         [rhombrick.tiling]
+        [rhombrick.tiling-render]
         [rhombrick.vector]
         [rhombrick.staticgeometry]
+        [rhombrick.obj-loader]
         ;[rhombrick.facecode]
         [overtone.osc]
     ))
@@ -13,6 +15,12 @@
 
 (def OSCPORT 4242)
 (def client (osc-client "localhost" OSCPORT))
+
+
+
+;(def glider-model (load-obj "data/rhombic_dodecahedron.obj"))
+(def glider-model (get-obj-face-verts (load-obj "data/smooth_spaceship.obj")))
+
 
 
 ; _______________________________________________________________________
@@ -249,6 +257,33 @@
 
 
 
+(defn draw-gliders [frame]
+  (push-style)
+  (no-stroke)
+  ;(stroke-weight 1)
+  ;(stroke 255 255 192 192)
+  (doseq [glider @gliders]
+    (let [pos (get-glider-pos (glider :id))
+          pos2 (get-glider-nextpos (glider :id))
+          [dx dy dz] (vec3-normalize (vec3-sub pos pos2))
+          az (Math/atan2 dy dx)
+          el (- (Math/asin dz))
+          col (glider :color)
+          tile (glider :current-tile)
+          ]
+      (if (contains? (@tiler-state :tiles) tile)
+        (with-translation pos
+          (fill (col 0) (col 1) (col 2) 255)
+            (scale 0.005)
+            (rotate az 0 0 1)
+            (rotate el 0 1 0)
+            ;(box 4 1 1)
+            ;(box 1 3 1)
+            (draw-obj glider-model [128 128 255 255])
+            ;(draw-obj (glider-model :vertex) (glider-model :face) [128 128 255 255])
+                          ))))
+  (pop-style)
+  )
 
 ; _______________________________________________________________________
 
