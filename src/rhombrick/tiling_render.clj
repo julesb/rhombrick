@@ -75,6 +75,7 @@
   (apply str "0x" (map #(if (= \- %) \0 %) code)))
 
 
+
 (defn compute-tile-color [code]
   (if (not= nil code)
     (let [hs (facecode-to-hex code)
@@ -91,16 +92,19 @@
       (@current-tileset-colors code))))
 
 
+(defn init-tileset-colors [tileset]
+  (reset! current-tileset-colors {})
+  (let [col-offset (rand-int 12)]
+    (doseq [i (range (count tileset))]
+      (let [code (tileset i)
+            col-idx (mod (+ i col-offset) 12)
+            col (rd-face-colors col-idx) ]
+        ;(when-not (set-contains-rotations? (set tileset) code)
+        ;(add-to-tileset code)
+        (doseq [rc (get-code-symmetries code)]
+          (swap! current-tileset-colors assoc rc col))))))
 
 
-(defn get-verts [verts face]
-  (vec (map #(verts %) face)))
-
-
-(defn get-obj-face-verts [obj]
-  (->> (obj :face)
-       (map #(get-verts (obj :vertex) %))
-       (vec)))
 
 
 (defn draw-obj [faces col]
@@ -351,6 +355,53 @@
                 (box 0.125 thickness thickness)))))))))
 
 
+(defn draw-face-boundaries-ts [ts pos ^String code boundary-mode]
+  (when (and (not (nil? code))
+             (= 12 (count code))
+             (or (contains? (ts :tiles) pos)
+                 (and (= boundary-mode :all)
+                      (= (count code) 12))))
+    (let [[r g b] (get-tile-color code)]
+      (with-translation pos
+        (scale 0.5)
+        (stroke-weight 1)
+        (stroke 128 128 128 255)
+        ;(no-stroke)
+        ;(stroke r g b 255)
+        (assert (and (not (nil? code)) (= 12 (count code))))
+
+        (doseq [^long i (range 12)]
+          (when (cond
+                  (= boundary-mode :only-empty)
+                    (and (is-empty? (ts :tiles) (get-neighbour-pos pos i))
+                         (not= (.charAt code i) \-)
+                         (not= (.charAt code i) \0))
+                  (= boundary-mode :all)
+                    (and (not= (.charAt code i) \-)
+                         (not= (.charAt code i) \0))
+                  (= boundary-mode :type-change)
+                    (and (not= (.charAt code i) \-)
+                         (not= (.charAt code i) \0)
+                         (not= [r g b] (get-tile-color ((ts :tiles) (get-neighbour-pos pos i)))))
+                  :else
+                    false)
+            (let [d (.charAt code i)
+                  dir (co-verts i)
+                  [dx dy dz] (vec3-normalize dir)
+                  az (Math/atan2 dy dx)
+                  el (- (Math/asin dz))
+                  thickness (* 1.3 (bezier-box-thicknesses (.charAt code i)))
+                  alpha 255]
+              (if (face-digit-like-compatible? d)
+                (do (fill 160 160 220 alpha))
+                (do
+                  (if (>= (int d) 97)
+                    (fill 255 255 255 alpha)
+                    (fill 0 0 0 alpha))))
+              (with-translation (vec3-scale (co-verts i) 0.959)
+                (rotate az 0 0 1)
+                (rotate el 0 1 0)
+                (box 0.125 thickness thickness)))))))))
 
 (defn draw-empty [_tiles]
   (fill 0 255 0 16)
@@ -624,4 +675,67 @@
         (draw-face-boundaries pos code boundary-mode))
       
       )))
+
+
+(defn draw-tiling2 [ts attr]
+  (init-tileset-colors (get-in ts [:params :tileset]))
+  (doseq [tile (keys (ts :tiles))]
+    (let [pos tile
+          code ((ts :tiles) pos)
+          ;col [255 255 255 255]
+          col (conj (get-tile-color code) 255)
+          ;line-col [(col 0) (col 1) (col 2) 255]
+          line-col col
+          ;line-col  [0 0 0 192] ;[192 192 255 192]
+          bezier-steps (attr :bbox-res)]
+      (with-translation pos 
+        (scale 0.5)
+        ;(stroke-weight 8)
+        ;(stroke 0 0 0 64)
+        (no-stroke)
+        (when (attr :simple-lines?)
+          (no-fill)
+          (draw-facecode-lines code))
+        (when (attr :bbox-faces?)
+          (if (attr :bbox-smooth?)
+            (draw-facecode-bezier-boxes-n ((ts :tiles) pos) col bezier-steps)
+            (draw-facecode-bezier-boxes ((ts :tiles) pos) col bezier-steps)))
+        (when (attr :bbox-lines?)
+          (reset! bezier-box-line-weight (attr :bbox-line-weight)) ; <-- get rid of
+          (draw-facecode-bezier-box-lines ((ts :tiles) pos) line-col bezier-steps))
+        )
+      (when (not= (attr :boundary-mode) :none)
+        (draw-face-boundaries-ts ts pos code (attr :boundary-mode)))
+      
+      )))
+
+(defn get-assemblage-radius [ts]
+  (->> (ts :tiles)
+       (keys)
+       (map vec3-length)
+       (sort)
+       (last)
+  ))
+
+
+(def default-render-attribs {
+  :bbox-smooth? true
+  :bbox-lines? true
+  :bbox-faces? true
+  :bbox-line-weight 1
+  :bbox-res 32
+  :simple-lines? false
+  :boundary-mode :type-change
+                      })
+
+
+(defn render [ts attr filename]
+  (println (ts :params))
+  (println attr)
+  (println "iters:" (ts :iters) "tiles:" (count (ts :tiles)))
+
+  (draw-tiling2 ts attr)
+  (save filename)
+
+  )
 
