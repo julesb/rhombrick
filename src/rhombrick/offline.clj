@@ -55,10 +55,16 @@
 
 
 
-(defn make-tiling [ts]
-  (if (tiler-can-iterate? ts)
-    (recur (make-backtracking-tiling-iteration4 ts))
-    ts))
+(defn make-tiling [ts & best]
+  (if (nil? best)
+    (recur ts ts)
+    (if (tiler-can-iterate? ts)
+      (if (> (count (ts :tiles)) (count (best :tiles)))
+        (recur (make-backtracking-tiling-iteration4 ts) ts)
+        (recur (make-backtracking-tiling-iteration4 ts) best))
+      (if (>= (count (ts :tiles)) (count (best :tiles)))
+       ts
+       best))))
 
 
 (defn make-tiling-best-of-n [ts n]
@@ -68,15 +74,15 @@
     ))
 
 
-(defn print-ts [ts]
-  (clojure.pprint/pprint {:params (ts :params)
-                          :solved (ts :solved)
-                          :tiles (count (ts :tiles))
-                          :iters (ts :iters)
-                          :dead (count (ts :dead))
-                          :run-status (ts :run-status)
-                          }
-  ))
+;(defn print-ts [ts]
+;  (clojure.pprint/pprint {:params (ts :params)
+;                          :solved (ts :solved)
+;                          :tiles (count (ts :tiles))
+;                          :iters (ts :iters)
+;                          :dead (count (ts :dead))
+;                          :run-status (ts :run-status)
+;                          }
+;  ))
 
 ;(defn iterate-tiler [_tiles tileset-expanded params]
 ;  (if (and (= @tiler-run-state :running)
