@@ -205,7 +205,7 @@
          (init-gliders num-gliders)
          )
    \R #(do 
-         (editor/set-tileset (get-random-tileset))
+         (editor/set-tileset (get-random-tileset-1))
          (start-tiler (editor/get-tileset-as-set) false)
          (println "random tileset:" (editor/get-tileset-as-set))
          (init-gliders num-gliders)

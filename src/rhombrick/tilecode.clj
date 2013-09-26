@@ -170,7 +170,7 @@
 (defn choose-tilecode [neighbourhood tileset dead]
   (let [candidates (find-candidates neighbourhood tileset dead)]
     (if (seq candidates)
-      (nth candidates (rand-int (count candidates)))
+      (rand-nth candidates)
       nil)))
 
 
@@ -189,11 +189,13 @@
 (defn make-random-tileset [num-tiles tileset]
   (cond
     (= (count tileset) 0)
-      (recur num-tiles [(make-random-tilecode)])
+      (recur num-tiles [(rand-nth self-compatible-1-2-3)])
+      ;(recur num-tiles [(make-random-tilecode)])
     (>= (count tileset) num-tiles)
       tileset
     :else
-      (let [new-tile (make-random-tilecode)
+      ;(let [new-tile (make-random-tilecode)
+      (let [new-tile (rand-nth self-compatible-1-2-3)
             new-tile-sites (into #{} (map facecode-compatible-map
                                           (filter #(not= \- %) new-tile)))
             tileset-sites (into #{} (filter #(not= \- %)
@@ -215,7 +217,7 @@
 
 
 (defn get-random-tileset-1 []
-  (let [max-tiles 4]
+  (let [max-tiles 3]
     (make-random-tileset (+ 1 (rand-int max-tiles)) [])))
 
 
