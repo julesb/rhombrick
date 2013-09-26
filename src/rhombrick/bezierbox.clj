@@ -113,7 +113,9 @@
         p2 (vec3-scale p1 @bezier-box-control-bias)
         p4 (co-verts f2-idx)
         p3 (vec3-scale p4 @bezier-box-control-bias)]
-    [p1 p2 p3 p4]))
+    (if (not= f1-idx f2-idx)
+      [p1 p2 p3 p4]
+      [p1 p2 p3 [0 0 0]])))
 
 
 (defn get-bezier-controls-with-offset [f1-idx f2-idx f1-offset f2-offset]
@@ -122,9 +124,10 @@
   (let [p1 (vec3-add (co-verts f1-idx) f1-offset)
         p2 (vec3-sub p1 (vec3-scale (co-verts f1-idx) @bezier-box-control-bias))
         p4 (vec3-add (co-verts f2-idx) f2-offset)
-        p3 (vec3-sub p4 (vec3-scale (co-verts f2-idx) @bezier-box-control-bias))
-        ]
-    [p1 p2 p3 p4]))
+        p3 (vec3-sub p4 (vec3-scale (co-verts f2-idx) @bezier-box-control-bias))]
+    (if (not= f1-idx f2-idx)
+      [p1 p2 p3 p4]
+      [p1 p2 p3 [0 0 0]])))
 
 
 ;;
