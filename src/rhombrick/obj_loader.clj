@@ -108,3 +108,14 @@
         ;(println "LINE:" line)
         (println (get-line-type line) (str (parse-line line)))))))
 
+
+
+(defn get-verts [verts face]
+  (vec (map #(verts %) face)))
+
+
+(defn get-obj-face-verts [obj]
+  (->> (obj :face)
+       (map #(get-verts (obj :vertex) %))
+       (vec)))
+
