@@ -329,10 +329,16 @@
   (vec3-angle-between (vec3-normalize (co-verts idx1))
                       (vec3-normalize (co-verts idx2))))
 
+
 (defn get-connected-idxs [code]
   (filter #(not= nil %)
           (map #(if (and (not= %2 \-) (not= %2 \0) ) %1 nil)
                (range 12) code)))
+
+
+(defn face-idxs-to-verts [face-idxs]
+  (vec (map #(rd-verts %) face-idxs)))
+
 
 (defn get-tilecode-angles [code]
   (->> (map-indexed #(vec [%1 %2]) code)

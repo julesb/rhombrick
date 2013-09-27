@@ -160,10 +160,6 @@
       (end-shape))))
 
 
-(defn face-idxs-to-verts [face-idxs]
-  (vec (map #(rd-verts %) face-idxs)))
-
-
 (defn rotate-vec [v]
   (vec (concat (rest v) [(first v)])))
 
