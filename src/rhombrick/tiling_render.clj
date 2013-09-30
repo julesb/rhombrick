@@ -313,7 +313,9 @@
       (with-translation pos
         (scale 0.5)
         ;(stroke-weight 1)
-        (no-stroke)
+        ;(no-stroke)
+        (stroke-weight 2)
+        (stroke 128 128 128 255)
         ;(stroke r g b 255)
         (assert (and (not (nil? code)) (= 12 (count code))))
 
@@ -706,6 +708,8 @@
       
       )))
 
+
+; bounding sphere
 (defn get-assemblage-radius [ts]
   (->> (ts :tiles)
        (keys)
@@ -713,6 +717,23 @@
        (sort)
        (last)
   ))
+
+
+; returns two opposing corners of axis aligned bounding box
+; (there will be a quicker way to do this)
+(defn get-assemblage-extents [ts]
+  (let [tile-positions (keys (ts :tiles))
+        min-xyz [((apply min-key #(% 0) tile-positions) 0)
+                 ((apply min-key #(% 1) tile-positions) 1)
+                 ((apply min-key #(% 2) tile-positions) 2)]
+        max-xyz [((apply max-key #(% 0) tile-positions) 0)
+                 ((apply max-key #(% 1) tile-positions) 1)
+                 ((apply max-key #(% 2) tile-positions) 2)]]
+    [min-xyz max-xyz]))
+
+
+(defn get-bounding-box-center [ts]
+  (apply vec3-bisect (get-assemblage-extents ts)))
 
 
 (def default-render-attribs {
