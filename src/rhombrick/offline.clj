@@ -1,9 +1,10 @@
 (ns rhombrick.offline
   (:use [rhombrick.tiling]
         [rhombrick.tilecode]
-        [rhombrick.tilebase]
+        ;[rhombrick.tilebase]
         [clojure.math.combinatorics] 
-        [ordered.map]))
+        [ordered.map]
+        [clojure.java.io]))
 
 
 
@@ -18,7 +19,7 @@
 
 
 (defn generate-normalized-tilecode-permutations [ncons]
-  (->> (selections #{\1 \2 \3 \4 \5 \6 \7 \a \b \c \d \A \B \C \D} ncons)
+  (->> (selections #{\1 \2 \3 \4 \a \b \c \d \A \B \C \D} ncons)
        (mapcat get-tilecode-digit-permutations)
        (map #(apply str %))
        (into #{})
@@ -50,9 +51,10 @@
 ; batch runs etc below here
 
 
-(defn make-params-for-seeds [tileset]
-  (map #(make-params :tileset tileset :seed %) tileset))
-
+; receive a params hashmap and return an array of params with each tile in
+; the tileset set as a seed 
+(defn make-params-for-seeds [param]
+  (map #(assoc param :seed %) (param :tileset)))
 
 
 (defn make-tiling [ts & best]
@@ -72,6 +74,31 @@
        (sort-by #(count (% :tiles)))
        (last)
     ))
+
+
+(defn save-tiler-state [ts filename]
+  (with-open [wrtr (writer filename :append true)]
+      (.write wrtr (str (pr-str ts) "\n"))))
+
+
+(defn load-tiler-state [filename]
+  (with-open [rdr (reader filename)]
+    (if-let [line (first (line-seq rdr))]
+      (read-string line))))
+
+
+
+; this belongs with the client rather than here as it's very specific to 
+; what we are generating on the day... 
+(defn make-initial-states-file [filename n]
+  (doseq [i (range n)]
+    (let [tileset (get-random-tileset)
+          params (make-params-for-seeds tileset)
+          states (map make-state params)]
+      (doseq [s states]
+        (save-tiler-state s filename)))
+  ))
+
 
 
 ;(defn print-ts [ts]
