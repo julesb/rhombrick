@@ -88,13 +88,28 @@
 
 
 
+(defn parse-state-lines [lines acc]
+  (if-let [line (first lines)]
+    (recur (rest lines) (conj acc (read-string line)))
+    acc))
+
+
+(defn load-all-tiler-states [filename]
+  (with-open [rdr (reader filename)]
+    (parse-state-lines (line-seq rdr) [])))
+
+
+
 ; this belongs with the client rather than here as it's very specific to 
 ; what we are generating on the day... 
 (defn make-initial-states-file [filename n]
   (doseq [i (range n)]
-    (let [tileset (get-random-tileset)
-          params (make-params-for-seeds tileset)
-          states (map make-state params)]
+    (let [states (->> (make-params :tileset (get-random-tileset)
+                                   :max-iters 5000
+                                   :max-radius 512
+                                   :max-tiles 10000)
+                      (make-params-for-seeds)
+                      (map make-state))]
       (doseq [s states]
         (save-tiler-state s filename)))
   ))
