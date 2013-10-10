@@ -309,7 +309,7 @@
 
 (defn get-bezier-box-normals [code steps]
   (when (not (contains? @bezier-box-tristrip-cache code))
-    (let [strips (make-facecode-bezier-box-triangles code steps)
+    (let [strips (first (make-facecode-bezier-box-triangles code steps))
           normals (map make-strip-vertex-normals strips)]
       (swap! bezier-box-tristrip-cache assoc code strips)
       (swap! bezier-box-tristrip-normals-cache assoc code normals)))
