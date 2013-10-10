@@ -181,7 +181,7 @@
 			</array>
 			<key>volume</key>
 			<array>
-				<real>0.83551448583602905</real>
+				<real>0.94950920343399048</real>
 			</array>
 		</dict>
 		<key>synth list</key>
@@ -865,7 +865,7 @@
 					<key>pan angle</key>
 					<real>1</real>
 					<key>pan azimuth</key>
-					<real>0.46666669845581055</real>
+					<real>0.02222222276031971</real>
 					<key>pan distance</key>
 					<real>1</real>
 					<key>pan elevation</key>
@@ -887,7 +887,7 @@
 						<string>MIDI 0 0</string>
 					</dict>
 					<key>volume</key>
-					<real>0.53725457191467285</real>
+					<real>1.0005949735641479</real>
 				</dict>
 				<dict>
 					<key>active</key>
@@ -1249,7 +1249,7 @@
 						<string>MIDI 2 0</string>
 					</dict>
 					<key>volume</key>
-					<real>0.80428314208984375</real>
+					<real>0.91619575023651123</real>
 				</dict>
 				<dict>
 					<key>active</key>
@@ -1265,7 +1265,7 @@
 					<key>pan angle</key>
 					<real>1</real>
 					<key>pan azimuth</key>
-					<real>0.0</real>
+					<real>-0.97777777910232544</real>
 					<key>pan distance</key>
 					<real>1</real>
 					<key>pan elevation</key>
@@ -1287,11 +1287,111 @@
 						<string>MIDI 3 0</string>
 					</dict>
 					<key>volume</key>
-					<real>1</real>
+					<real>0.58900958299636841</real>
 				</dict>
 				<dict>
 					<key>active</key>
 					<integer>1</integer>
+					<key>effects</key>
+					<array>
+						<dict>
+							<key>aupreset</key>
+							<dict>
+								<key>ThresholdOK</key>
+								<integer>1</integer>
+								<key>data</key>
+								<data>
+								AAAAAAAAAAAA
+								AAAKAAAAAMIM
+								AAAAAAABQfAA
+								AAAAAAI/gAAA
+								AAAAA8LIAAAA
+								AAAEPPXCjwAA
+								AAU89cKPAAAA
+								BgAAAAAAAAPo
+								AAAAAAAAB9DC
+								8AAAAAALuMLw
+								AAA=
+								</data>
+								<key>manufacturer</key>
+								<integer>1634758764</integer>
+								<key>name</key>
+								<string>Fast and Smooth</string>
+								<key>subtype</key>
+								<integer>1684237680</integer>
+								<key>type</key>
+								<integer>1635083896</integer>
+								<key>version</key>
+								<integer>0</integer>
+							</dict>
+							<key>bypass</key>
+							<integer>0</integer>
+							<key>connections</key>
+							<array>
+								<dict>
+									<key>element ID</key>
+									<integer>0</integer>
+									<key>format</key>
+									<dict>
+										<key>channel bits</key>
+										<integer>32</integer>
+										<key>format</key>
+										<integer>1819304813</integer>
+										<key>format flags</key>
+										<integer>41</integer>
+										<key>frame bytes</key>
+										<integer>4</integer>
+										<key>frame channels</key>
+										<integer>2</integer>
+										<key>frame packets</key>
+										<integer>1</integer>
+										<key>packet bytes</key>
+										<integer>4</integer>
+										<key>sample rate</key>
+										<real>44100</real>
+									</dict>
+									<key>scope</key>
+									<integer>1</integer>
+								</dict>
+								<dict>
+									<key>element ID</key>
+									<integer>0</integer>
+									<key>format</key>
+									<dict>
+										<key>channel bits</key>
+										<integer>32</integer>
+										<key>format</key>
+										<integer>1819304813</integer>
+										<key>format flags</key>
+										<integer>41</integer>
+										<key>frame bytes</key>
+										<integer>4</integer>
+										<key>frame channels</key>
+										<integer>2</integer>
+										<key>frame packets</key>
+										<integer>1</integer>
+										<key>packet bytes</key>
+										<integer>4</integer>
+										<key>sample rate</key>
+										<real>44100</real>
+									</dict>
+									<key>scope</key>
+									<integer>2</integer>
+								</dict>
+							</array>
+							<key>unit</key>
+							<dict>
+								<key>manufacturer</key>
+								<integer>1634758764</integer>
+								<key>name</key>
+								<string>Apple: AUDynamicsProcessor</string>
+								<key>subtype</key>
+								<integer>1684237680</integer>
+								<key>type</key>
+								<integer>1635083896</integer>
+							</dict>
+						</dict>
+					</array>
 					<key>mute</key>
 					<integer>0</integer>
 					<key>name</key>
@@ -1303,7 +1403,7 @@
 					<key>pan angle</key>
 					<real>1</real>
 					<key>pan azimuth</key>
-					<real>0.0</real>
+					<real>1</real>
 					<key>pan distance</key>
 					<real>1</real>
 					<key>pan elevation</key>
@@ -1325,7 +1425,7 @@
 						<string>MIDI 4 0</string>
 					</dict>
 					<key>volume</key>
-					<real>1</real>
+					<real>0.52468764781951904</real>
 				</dict>
 			</array>
 		</dict>
@@ -1337,16 +1437,46 @@
 			<key>Active Tab Identifier</key>
 			<string>patches</string>
 			<key>Doc Drawer Open</key>
-			<true/>
+			<false/>
 			<key>Filter flags</key>
 			<integer>1</integer>
 		</dict>
 		<key>Window Frame</key>
-		<string>{{1964, 70}, {705, 575}}</string>
+		<string>{{2152, 150}, {439, 554}}</string>
 		<key>Window Max</key>
 		<string>{2560, 1622}</string>
 		<key>Window Min</key>
 		<string>{360, 540}</string>
+		<key>kAUInspectorListKey</key>
+		<array>
+			<dict>
+				<key>kAUInspectorStateKey_BusIndex</key>
+				<integer>4</integer>
+				<key>kAUInspectorStateKey_BusType</key>
+				<string>kBusType_Input</string>
+				<key>kAUInspectorStateKey_Bypassed</key>
+				<false/>
+				<key>kAUInspectorStateKey_CurrentViewName</key>
+				<string>Apple Dynamics Processor</string>
+				<key>kAUInspectorStateKey_EffectIndex</key>
+				<integer>0</integer>
+				<key>kAUInspectorStateKey_PresetDrawerExpandedItems</key>
+				<array>
+					<array>
+						<string>Factory</string>
+						<false/>
+					</array>
+				</array>
+				<key>kAUInspectorStateKey_PresetDrawerShowing</key>
+				<false/>
+				<key>kAUInspectorStateKey_TrackIndex</key>
+				<integer>0</integer>
+				<key>kAUInspectorStateKey_WindowLevel</key>
+				<integer>2147483647</integer>
+				<key>kAUInspectorStateKey_WindowRect</key>
+				<string>{{2708, 30}, {368, 339}}</string>
+			</dict>
+		</array>
 	</dict>
 </dict>
 </plist>
