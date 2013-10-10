@@ -2,12 +2,17 @@
   (:use [rhombrick.tilecode]
         [rhombrick.vector]
         [rhombrick.staticgeometry]
-        [ordered.map]))
+        [ordered.map]
+        [overtone.osc]))
 
 
 (def assemblage-center (atom [0 0 0]))
 (def last-iteration-time (atom 0))
 
+(def sonify? true)
+(when sonify?
+  (def OSCPORT2 4242)
+  (def client2 (osc-client "localhost" OSCPORT2)))
 
 ;(defn update-assemblage-center [new-pos]
 ;  (let [new-center (vec3-scale (vec3-add new-pos @assemblage-center)
@@ -45,6 +50,8 @@
 
 
 (defn make-tile [ts pos facecode]
+  (when sonify?
+    (osc-send client2 "/rhombrick.tiling" "make-tile" (int (mod (count (ts :tiles)) 36))))
   (assoc ts :tiles (assoc (ts :tiles) pos facecode)))
 
 
@@ -259,6 +266,8 @@
   (let [num-tiles (count tiles)
         n (compute-backtrack-amount num-tiles autism adhd)
         ni (- num-tiles n)]
+    (when sonify?
+      (osc-send client2 "/rhombrick.tiling" "backtrack" (int n)))
     (if (and (> num-tiles 1)
              (< n num-tiles))
       (do
@@ -355,7 +364,9 @@
 (defn tiler-can-iterate? [ts]
   (and (= (ts :run-status) :runnable)
        (< (count (ts :tiles)) (get-in ts [:params :max-tiles]))
-       (< (ts :iters) (get-in ts [:params :max-iters]))))
+       (< (ts :iters) (get-in ts [:params :max-iters]))
+       (not (and (= (ts :iters) 1000) (< (count (ts :tiles)) 50))) ; early bailout
+       ))
 
 
 (defn run-backtracking-tiling-thread [ts]
