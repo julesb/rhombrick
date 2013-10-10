@@ -90,7 +90,7 @@
   (reset! (@editor-state :tileset) [])
   (reset! current-tileset-colors {})
   (bbox/bezier-box-cache-reset)
-  (let [col-offset (rand-int 12)]
+  (let [col-offset (mod (tileset-to-number tileset) 12)]
     (doseq [i (range (count tileset))]
       (let [code (tileset i)
             col-idx (mod (+ i col-offset) 12)

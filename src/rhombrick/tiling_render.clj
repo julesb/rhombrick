@@ -78,7 +78,7 @@
 
 (defn compute-tile-color [code]
   (if (not= nil code)
-    (let [hs (facecode-to-hex code)
+    (let [hs (facecode-to-hex (normalize-tilecode code))
           n (mod (read-string hs) 12)]
       (rd-face-colors n))
     [128 128 128 128]))
@@ -92,15 +92,33 @@
       (@current-tileset-colors code))))
 
 
+;(defn get-tileset-colors2 [tileset]
+;  (let [tileset-n (normalize-tileset tileset)
+;        col-offset (mod (tileset-to-number tileset-n) 12)]
+;    (->> (expand-tiles-preserving-symmetry tileset-n)
+;         (map-indexed #(vec [%2 (rd-face-colors (mod (+ %1 col-offset) 12))]))
+;         (into {})
+;)))
+;
+;
+;(defn get-tileset-colors [tileset]
+;  (let [tileset-n (normalize-tileset tileset)
+;        col-offset (mod (tileset-to-number tileset) 12)]
+;    (map-indexed (fn [i t]
+;                   (let [col (rd-face-colors (mod (+ i col-offset) 12))]
+;                     )
+;                 tileset-n)
+;  )
+;))
+
 (defn init-tileset-colors [tileset]
   (reset! current-tileset-colors {})
-  (let [col-offset (rand-int 12)]
-    (doseq [i (range (count tileset))]
-      (let [code (tileset i)
+  (let [tileset-n (normalize-tileset tileset)
+        col-offset (mod (tileset-to-number tileset) 12)]
+    (doseq [i (range (count tileset-n))]
+      (let [code (tileset-n i)
             col-idx (mod (+ i col-offset) 12)
             col (rd-face-colors col-idx) ]
-        ;(when-not (set-contains-rotations? (set tileset) code)
-        ;(add-to-tileset code)
         (doseq [rc (get-code-symmetries code)]
           (swap! current-tileset-colors assoc rc col))))))
 
@@ -748,9 +766,9 @@
 
 
 (defn render [ts attr filename]
-  (println (ts :params))
-  (println attr)
-  (println "iters:" (ts :iters) "tiles:" (count (ts :tiles)))
+  ;(println (ts :params))
+  ;(println attr)
+  ;(println "iters:" (ts :iters) "tiles:" (count (ts :tiles)))
 
   (draw-tiling2 ts attr)
   (save filename)
