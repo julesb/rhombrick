@@ -27,6 +27,7 @@
        ;(filter is-tilecode-fully-self-compatible-and-normalized?)
   ))
 
+
 (defn generate-normalized-tilecode-permutations2 [start end]
   (->> (range start (+ start end 1))
        (map number-to-tilecode)
@@ -114,6 +115,18 @@
         (save-tiler-state s filename)))
   ))
 
+
+(defn make-initial-states-file-with-tilesets [filename tilesets]
+  (doseq [i (range (count tilesets))]
+    (let [states (->> (make-params :tileset (tilesets i)
+                                   :max-iters 5000
+                                   :max-radius 512
+                                   :max-tiles 10000)
+                      (make-params-for-seeds)
+                      (map make-state))]
+      (doseq [s states]
+        (save-tiler-state s filename)))
+  ))
 
 
 ;(defn print-ts [ts]
