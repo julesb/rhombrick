@@ -89,9 +89,9 @@
   \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2
   \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3
   \4 \4 \4 \4 \4 \4 \4 \4
-  \5 \5 \5 \5 
-  \6 \6
-  \7
+  ;\5 \5 \5 \5 
+  ;\6 \6
+  ;\7
   \a \a \a \a \a \a \a \a
   \A \A \A \A \A \A \A \A
   \b \b \b \b
@@ -189,13 +189,13 @@
 (defn make-random-tileset [num-tiles tileset]
   (cond
     (= (count tileset) 0)
-      (recur num-tiles [(rand-nth self-compatible-1-2-3)])
-      ;(recur num-tiles [(make-random-tilecode)])
+      ;(recur num-tiles [(rand-nth self-compatible-1-2-3)])
+      (recur num-tiles [(make-random-tilecode)])
     (>= (count tileset) num-tiles)
       tileset
     :else
-      ;(let [new-tile (make-random-tilecode)
-      (let [new-tile (rand-nth self-compatible-1-2-3)
+      (let [new-tile (make-random-tilecode)
+      ;(let [new-tile (rand-nth self-compatible-1-2-3)
             new-tile-sites (into #{} (map facecode-compatible-map
                                           (filter #(not= \- %) new-tile)))
             tileset-sites (into #{} (filter #(not= \- %)
@@ -358,6 +358,21 @@
 
 ; _______________________________________________________________________
 
+
+
+(defn spec-to-fn-part [spec]
+  (let [[fullname zeros nonzeros] spec]
+    (str "C" (count zeros) "Z" nonzeros)
+  ))
+
+
+(defn compress-ts-filename [ucname]
+  (let [[fullname tileset-num seed] (re-matches #"^(.*)_S(.*)\.png$" ucname)
+        tile-nums (map #(apply str %) (partition 12 tileset-num))
+        specs (map #(re-matches #"^(0*)(.*)$" %) tile-nums)
+        fn-parts (map spec-to-fn-part specs)
+        compressed-ts-num (apply str (map #(apply str %) fn-parts)) ]
+      compressed-ts-num))
 
 
 ; map tilecodes between pfh's 2d codes and the current implementation
