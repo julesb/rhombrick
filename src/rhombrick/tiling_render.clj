@@ -111,6 +111,7 @@
 ;  )
 ;))
 
+
 (defn init-tileset-colors [tileset]
   (reset! current-tileset-colors {})
   (let [tileset-n (normalize-tileset tileset)
@@ -122,6 +123,26 @@
         (doseq [rc (get-code-symmetries code)]
           (swap! current-tileset-colors assoc rc col))))))
 
+
+(defn get-ca-cell-color [code]
+  (let [ncons (count (filter #(not= \- %) code))]
+    (cond
+      (= ncons 4)
+        [80 80 80]
+      (and (= ncons 6) (= (count (filter #(= \A %) code)) 3))
+        [0 0 0]
+      (and (= ncons 6) (= (count (filter #(= \B %) code)) 3))
+        [255 255 255])))
+
+
+(defn init-tileset-colors-ca [tileset]
+  (reset! current-tileset-colors {})
+  (let [tileset-n (normalize-tileset tileset) ]
+    (doseq [i (range (count tileset-n))]
+      (let [code (tileset-n i)
+            col (get-ca-cell-color code) ]
+        (doseq [rc (get-code-symmetries code)]
+          (swap! current-tileset-colors assoc rc col))))))
 
 
 
