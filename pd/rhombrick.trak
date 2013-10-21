@@ -181,7 +181,7 @@
 			</array>
 			<key>volume</key>
 			<array>
-				<real>0.94950920343399048</real>
+				<real>0.9834175705909729</real>
 			</array>
 		</dict>
 		<key>synth list</key>
@@ -887,7 +887,7 @@
 						<string>MIDI 0 0</string>
 					</dict>
 					<key>volume</key>
-					<real>1.0005949735641479</real>
+					<real>0.22494052350521088</real>
 				</dict>
 				<dict>
 					<key>active</key>
@@ -1265,7 +1265,7 @@
 					<key>pan angle</key>
 					<real>1</real>
 					<key>pan azimuth</key>
-					<real>-0.97777777910232544</real>
+					<real>-1</real>
 					<key>pan distance</key>
 					<real>1</real>
 					<key>pan elevation</key>
@@ -1287,7 +1287,7 @@
 						<string>MIDI 3 0</string>
 					</dict>
 					<key>volume</key>
-					<real>0.58900958299636841</real>
+					<real>0.30458062887191772</real>
 				</dict>
 				<dict>
 					<key>active</key>
@@ -1425,7 +1425,7 @@
 						<string>MIDI 4 0</string>
 					</dict>
 					<key>volume</key>
-					<real>0.52468764781951904</real>
+					<real>0.31417310237884521</real>
 				</dict>
 			</array>
 		</dict>
@@ -1442,41 +1442,11 @@
 			<integer>1</integer>
 		</dict>
 		<key>Window Frame</key>
-		<string>{{2152, 150}, {439, 554}}</string>
+		<string>{{2925, 0}, {439, 540}}</string>
 		<key>Window Max</key>
 		<string>{2560, 1622}</string>
 		<key>Window Min</key>
 		<string>{360, 540}</string>
-		<key>kAUInspectorListKey</key>
-		<array>
-			<dict>
-				<key>kAUInspectorStateKey_BusIndex</key>
-				<integer>4</integer>
-				<key>kAUInspectorStateKey_BusType</key>
-				<string>kBusType_Input</string>
-				<key>kAUInspectorStateKey_Bypassed</key>
-				<false/>
-				<key>kAUInspectorStateKey_CurrentViewName</key>
-				<string>Apple Dynamics Processor</string>
-				<key>kAUInspectorStateKey_EffectIndex</key>
-				<integer>0</integer>
-				<key>kAUInspectorStateKey_PresetDrawerExpandedItems</key>
-				<array>
-					<array>
-						<string>Factory</string>
-						<false/>
-					</array>
-				</array>
-				<key>kAUInspectorStateKey_PresetDrawerShowing</key>
-				<false/>
-				<key>kAUInspectorStateKey_TrackIndex</key>
-				<integer>0</integer>
-				<key>kAUInspectorStateKey_WindowLevel</key>
-				<integer>2147483647</integer>
-				<key>kAUInspectorStateKey_WindowRect</key>
-				<string>{{2708, 30}, {368, 339}}</string>
-			</dict>
-		</array>
 	</dict>
 </dict>
 </plist>
