@@ -51,7 +51,7 @@
 
 (defn make-tile [ts pos facecode]
   (when sonify?
-    (osc-send client2 "/rhombrick.tiling" "make-tile" (int (mod (count (ts :tiles)) 36))))
+    (osc-send client2 "/rhombrick.tiling" "make-tile" (int (mod (tilecode-to-number facecode) 21))))
   (assoc ts :tiles (assoc (ts :tiles) pos facecode)))
 
 
@@ -200,7 +200,7 @@
   :seed ""
   :max-iters 10000
   :max-radius 8
-  :max-tiles 1000
+  :max-tiles 10000
   :adhd 2.0
   :autism 1.0
   })
@@ -266,12 +266,13 @@
   (let [num-tiles (count tiles)
         n (compute-backtrack-amount num-tiles autism adhd)
         ni (- num-tiles n)]
-    (when sonify?
-      (osc-send client2 "/rhombrick.tiling" "backtrack" (int n)))
     (if (and (> num-tiles 1)
              (< n num-tiles))
       (do
         ;(append-stats-buffer! stats-backtrack n)
+        (when sonify?
+          (osc-send client2 "/rhombrick.tiling" "backtrack"
+                    (int (mod (tilecode-to-number (val (last (take ni tiles)))) 21))))
         (ordered-map (take ni tiles)))
       (do
         ;(append-stats-buffer! stats-backtrack 0)
@@ -365,7 +366,7 @@
   (and (= (ts :run-status) :runnable)
        (< (count (ts :tiles)) (get-in ts [:params :max-tiles]))
        (< (ts :iters) (get-in ts [:params :max-iters]))
-       (not (and (= (ts :iters) 1000) (< (count (ts :tiles)) 50))) ; early bailout
+       ;(not (and (= (ts :iters) 1000) (< (count (ts :tiles)) 50))) ; early bailout
        ))
 
 
