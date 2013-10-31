@@ -317,9 +317,9 @@
   (let [bx (+ x (/ bscale 2))
         by (+ y (/ bscale 2))
         col (get-tile-color code)
-        ang ((symmetries-flattened @symmetry-display-index) 0)
-        rads (* (/ ang 180) Math/PI)
-        [dx dy dz] ((symmetries-flattened @symmetry-display-index) 1)
+        ;ang ((symmetries-flattened @symmetry-display-index) 0)
+        ;rads (* (/ ang 180) Math/PI)
+        ;[dx dy dz] ((symmetries-flattened @symmetry-display-index) 1)
         ]
     (stroke-weight 1)
     (when (button x y bscale bscale button-color code)
