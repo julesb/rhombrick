@@ -129,6 +129,7 @@
                     (map #(face-digit-compatible? %1 %2) 
                          innercode outercode)))))
 
+(def tilecodes-directly-compatible-m? (memoize tilecodes-directly-compatible?))
 
 (defn make-minimal-tilecode-to-fit [outercode]
   (apply str (map facecode-compatible-map outercode)))
@@ -155,6 +156,7 @@
 ; generate all unique rotations of tiles in tileset 
 (defn expand-tiles-preserving-symmetry [tiles]
   (set (flatten (map #(get-code-symmetries %) tiles))))
+  ;(set (flatten (map #(get-code-symmetries-2d-fourfold %) tiles))))
 
 
 
@@ -163,7 +165,7 @@
   (let [outercode (get-outer-facecode2 neighbourhood)]
     (if (contains? dead outercode)
       ()
-      (filter #(tilecodes-directly-compatible? outercode %)
+      (filter #(tilecodes-directly-compatible-m? outercode %)
               tileset))))
 
 
