@@ -84,7 +84,7 @@
 			<integer>1</integer>
 		</array>
 		<key>device ID</key>
-		<integer>268</integer>
+		<integer>47</integer>
 		<key>isCollapsed</key>
 		<false/>
 	</dict>
@@ -189,26 +189,27 @@
 			<dict>
 				<key>aupreset</key>
 				<dict>
-					<key>bank</key>
+					<key>Bank</key>
 					<data>
-					AAAAAAHmAAIAAAxNYWNpbnRvc2ggSEQAAAAA
-					AAAAAAAAAAAAAADJAd7pSCsAAAAAGwUSZ3Nf
+					AAAAAAHsAAIAAAxNYWNpbnRvc2ggSEQAAAAA
+					AAAAAAAAAAAAAADJAd7pSCsAAAlTpWQSZ3Nf
 					aW5zdHJ1bWVudHMuZGxzAAAAAAAAAAAAAAAA
 					AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-					AAAAAAAAAAiwMMi3r2gAAAAAAAAAAP////8A
+					AAAAAAAACVPoaM5Y7oIAAAAAAAAAAP////8A
 					AAkgAAAAAAAAAAAAAAAAAAAACVJlc291cmNl
-					cwAAEAAIAADJAUtBAAAAEQAIAADItynQAAAA
-					AQAYAAAbBQAAGv4AABr9AAARcQAAACYAAAAl
-					AAIAYE1hY2ludG9zaCBIRDpTeXN0ZW06TGli
-					cmFyeTpDb21wb25lbnRzOkNvcmVBdWRpby5j
-					b21wb25lbnQ6Q29udGVudHM6UmVzb3VyY2Vz
-					OmdzX2luc3RydW1lbnRzLmRscwAOACYAEgBn
-					AHMAXwBpAG4AcwB0AHIAdQBtAGUAbgB0AHMA
-					LgBkAGwAcwAPABoADABNAGEAYwBpAG4AdABv
-					AHMAaAAgAEgARAASAFNTeXN0ZW0vTGlicmFy
-					eS9Db21wb25lbnRzL0NvcmVBdWRpby5jb21w
-					b25lbnQvQ29udGVudHMvUmVzb3VyY2VzL2dz
-					X2luc3RydW1lbnRzLmRscwAAEwABLwD//wAA
+					cwAAEAAIAADJAUtBAAAAEQAIAADOWGjqAAAA
+					AQAYCVOlZAlTpWMJU6ViCVOfOAlTmsIJU5rB
+					AAIAZk1hY2ludG9zaCBIRDpTeXN0ZW06AExp
+					YnJhcnk6AENvbXBvbmVudHM6AENvcmVBdWRp
+					by5jb21wb25lbnQ6AENvbnRlbnRzOgBSZXNv
+					dXJjZXM6AGdzX2luc3RydW1lbnRzLmRscwAO
+					ACYAEgBnAHMAXwBpAG4AcwB0AHIAdQBtAGUA
+					bgB0AHMALgBkAGwAcwAPABoADABNAGEAYwBp
+					AG4AdABvAHMAaAAgAEgARAASAFNTeXN0ZW0v
+					TGlicmFyeS9Db21wb25lbnRzL0NvcmVBdWRp
+					by5jb21wb25lbnQvQ29udGVudHMvUmVzb3Vy
+					Y2VzL2dzX2luc3RydW1lbnRzLmRscwAAEwAB
+					LwD//wAA
 					</data>
 					<key>cpu-load</key>
 					<real>0.0</real>
@@ -321,26 +322,27 @@
 			<dict>
 				<key>aupreset</key>
 				<dict>
-					<key>bank</key>
+					<key>Bank</key>
 					<data>
-					AAAAAAHmAAIAAAxNYWNpbnRvc2ggSEQAAAAA
-					AAAAAAAAAAAAAADJAd7pSCsAAAAAGwUSZ3Nf
+					AAAAAAHsAAIAAAxNYWNpbnRvc2ggSEQAAAAA
+					AAAAAAAAAAAAAADJAd7pSCsAAAlTpWQSZ3Nf
 					aW5zdHJ1bWVudHMuZGxzAAAAAAAAAAAAAAAA
 					AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-					AAAAAAAAAAiwMMi3r2gAAAAAAAAAAP////8A
+					AAAAAAAACVPoaM5Y7oIAAAAAAAAAAP////8A
 					AAkgAAAAAAAAAAAAAAAAAAAACVJlc291cmNl
-					cwAAEAAIAADJAUtBAAAAEQAIAADItynQAAAA
-					AQAYAAAbBQAAGv4AABr9AAARcQAAACYAAAAl
-					AAIAYE1hY2ludG9zaCBIRDpTeXN0ZW06TGli
-					cmFyeTpDb21wb25lbnRzOkNvcmVBdWRpby5j
-					b21wb25lbnQ6Q29udGVudHM6UmVzb3VyY2Vz
-					OmdzX2luc3RydW1lbnRzLmRscwAOACYAEgBn
-					AHMAXwBpAG4AcwB0AHIAdQBtAGUAbgB0AHMA
-					LgBkAGwAcwAPABoADABNAGEAYwBpAG4AdABv
-					AHMAaAAgAEgARAASAFNTeXN0ZW0vTGlicmFy
-					eS9Db21wb25lbnRzL0NvcmVBdWRpby5jb21w
-					b25lbnQvQ29udGVudHMvUmVzb3VyY2VzL2dz
-					X2luc3RydW1lbnRzLmRscwAAEwABLwD//wAA
+					cwAAEAAIAADJAUtBAAAAEQAIAADOWGjqAAAA
+					AQAYCVOlZAlTpWMJU6ViCVOfOAlTmsIJU5rB
+					AAIAZk1hY2ludG9zaCBIRDpTeXN0ZW06AExp
+					YnJhcnk6AENvbXBvbmVudHM6AENvcmVBdWRp
+					by5jb21wb25lbnQ6AENvbnRlbnRzOgBSZXNv
+					dXJjZXM6AGdzX2luc3RydW1lbnRzLmRscwAO
+					ACYAEgBnAHMAXwBpAG4AcwB0AHIAdQBtAGUA
+					bgB0AHMALgBkAGwAcwAPABoADABNAGEAYwBp
+					AG4AdABvAHMAaAAgAEgARAASAFNTeXN0ZW0v
+					TGlicmFyeS9Db21wb25lbnRzL0NvcmVBdWRp
+					by5jb21wb25lbnQvQ29udGVudHMvUmVzb3Vy
+					Y2VzL2dzX2luc3RydW1lbnRzLmRscwAAEwAB
+					LwD//wAA
 					</data>
 					<key>cpu-load</key>
 					<real>0.0</real>
@@ -453,26 +455,27 @@
 			<dict>
 				<key>aupreset</key>
 				<dict>
-					<key>bank</key>
+					<key>Bank</key>
 					<data>
-					AAAAAAHmAAIAAAxNYWNpbnRvc2ggSEQAAAAA
-					AAAAAAAAAAAAAADJAd7pSCsAAAAAGwUSZ3Nf
+					AAAAAAHsAAIAAAxNYWNpbnRvc2ggSEQAAAAA
+					AAAAAAAAAAAAAADJAd7pSCsAAAlTpWQSZ3Nf
 					aW5zdHJ1bWVudHMuZGxzAAAAAAAAAAAAAAAA
 					AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-					AAAAAAAAAAiwMMi3r2gAAAAAAAAAAP////8A
+					AAAAAAAACVPoaM5Y7oIAAAAAAAAAAP////8A
 					AAkgAAAAAAAAAAAAAAAAAAAACVJlc291cmNl
-					cwAAEAAIAADJAUtBAAAAEQAIAADItynQAAAA
-					AQAYAAAbBQAAGv4AABr9AAARcQAAACYAAAAl
-					AAIAYE1hY2ludG9zaCBIRDpTeXN0ZW06TGli
-					cmFyeTpDb21wb25lbnRzOkNvcmVBdWRpby5j
-					b21wb25lbnQ6Q29udGVudHM6UmVzb3VyY2Vz
-					OmdzX2luc3RydW1lbnRzLmRscwAOACYAEgBn
-					AHMAXwBpAG4AcwB0AHIAdQBtAGUAbgB0AHMA
-					LgBkAGwAcwAPABoADABNAGEAYwBpAG4AdABv
-					AHMAaAAgAEgARAASAFNTeXN0ZW0vTGlicmFy
-					eS9Db21wb25lbnRzL0NvcmVBdWRpby5jb21w
-					b25lbnQvQ29udGVudHMvUmVzb3VyY2VzL2dz
-					X2luc3RydW1lbnRzLmRscwAAEwABLwD//wAA
+					cwAAEAAIAADJAUtBAAAAEQAIAADOWGjqAAAA
+					AQAYCVOlZAlTpWMJU6ViCVOfOAlTmsIJU5rB
+					AAIAZk1hY2ludG9zaCBIRDpTeXN0ZW06AExp
+					YnJhcnk6AENvbXBvbmVudHM6AENvcmVBdWRp
+					by5jb21wb25lbnQ6AENvbnRlbnRzOgBSZXNv
+					dXJjZXM6AGdzX2luc3RydW1lbnRzLmRscwAO
+					ACYAEgBnAHMAXwBpAG4AcwB0AHIAdQBtAGUA
+					bgB0AHMALgBkAGwAcwAPABoADABNAGEAYwBp
+					AG4AdABvAHMAaAAgAEgARAASAFNTeXN0ZW0v
+					TGlicmFyeS9Db21wb25lbnRzL0NvcmVBdWRp
+					by5jb21wb25lbnQvQ29udGVudHMvUmVzb3Vy
+					Y2VzL2dzX2luc3RydW1lbnRzLmRscwAAEwAB
+					LwD//wAA
 					</data>
 					<key>cpu-load</key>
 					<real>0.0</real>
@@ -585,26 +588,27 @@
 			<dict>
 				<key>aupreset</key>
 				<dict>
-					<key>bank</key>
+					<key>Bank</key>
 					<data>
-					AAAAAAHmAAIAAAxNYWNpbnRvc2ggSEQAAAAA
-					AAAAAAAAAAAAAADJAd7pSCsAAAAAGwUSZ3Nf
+					AAAAAAHsAAIAAAxNYWNpbnRvc2ggSEQAAAAA
+					AAAAAAAAAAAAAADJAd7pSCsAAAlTpWQSZ3Nf
 					aW5zdHJ1bWVudHMuZGxzAAAAAAAAAAAAAAAA
 					AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-					AAAAAAAAAAiwMMi3r2gAAAAAAAAAAP////8A
+					AAAAAAAACVPoaM5Y7oIAAAAAAAAAAP////8A
 					AAkgAAAAAAAAAAAAAAAAAAAACVJlc291cmNl
-					cwAAEAAIAADJAUtBAAAAEQAIAADItynQAAAA
-					AQAYAAAbBQAAGv4AABr9AAARcQAAACYAAAAl
-					AAIAYE1hY2ludG9zaCBIRDpTeXN0ZW06TGli
-					cmFyeTpDb21wb25lbnRzOkNvcmVBdWRpby5j
-					b21wb25lbnQ6Q29udGVudHM6UmVzb3VyY2Vz
-					OmdzX2luc3RydW1lbnRzLmRscwAOACYAEgBn
-					AHMAXwBpAG4AcwB0AHIAdQBtAGUAbgB0AHMA
-					LgBkAGwAcwAPABoADABNAGEAYwBpAG4AdABv
-					AHMAaAAgAEgARAASAFNTeXN0ZW0vTGlicmFy
-					eS9Db21wb25lbnRzL0NvcmVBdWRpby5jb21w
-					b25lbnQvQ29udGVudHMvUmVzb3VyY2VzL2dz
-					X2luc3RydW1lbnRzLmRscwAAEwABLwD//wAA
+					cwAAEAAIAADJAUtBAAAAEQAIAADOWGjqAAAA
+					AQAYCVOlZAlTpWMJU6ViCVOfOAlTmsIJU5rB
+					AAIAZk1hY2ludG9zaCBIRDpTeXN0ZW06AExp
+					YnJhcnk6AENvbXBvbmVudHM6AENvcmVBdWRp
+					by5jb21wb25lbnQ6AENvbnRlbnRzOgBSZXNv
+					dXJjZXM6AGdzX2luc3RydW1lbnRzLmRscwAO
+					ACYAEgBnAHMAXwBpAG4AcwB0AHIAdQBtAGUA
+					bgB0AHMALgBkAGwAcwAPABoADABNAGEAYwBp
+					AG4AdABvAHMAaAAgAEgARAASAFNTeXN0ZW0v
+					TGlicmFyeS9Db21wb25lbnRzL0NvcmVBdWRp
+					by5jb21wb25lbnQvQ29udGVudHMvUmVzb3Vy
+					Y2VzL2dzX2luc3RydW1lbnRzLmRscwAAEwAB
+					LwD//wAA
 					</data>
 					<key>cpu-load</key>
 					<real>0.0</real>
@@ -717,26 +721,27 @@
 			<dict>
 				<key>aupreset</key>
 				<dict>
-					<key>bank</key>
+					<key>Bank</key>
 					<data>
-					AAAAAAHmAAIAAAxNYWNpbnRvc2ggSEQAAAAA
-					AAAAAAAAAAAAAADJAd7pSCsAAAAAGwUSZ3Nf
+					AAAAAAHsAAIAAAxNYWNpbnRvc2ggSEQAAAAA
+					AAAAAAAAAAAAAADJAd7pSCsAAAlTpWQSZ3Nf
 					aW5zdHJ1bWVudHMuZGxzAAAAAAAAAAAAAAAA
 					AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-					AAAAAAAAAAiwMMi3r2gAAAAAAAAAAP////8A
+					AAAAAAAACVPoaM5Y7oIAAAAAAAAAAP////8A
 					AAkgAAAAAAAAAAAAAAAAAAAACVJlc291cmNl
-					cwAAEAAIAADJAUtBAAAAEQAIAADItynQAAAA
-					AQAYAAAbBQAAGv4AABr9AAARcQAAACYAAAAl
-					AAIAYE1hY2ludG9zaCBIRDpTeXN0ZW06TGli
-					cmFyeTpDb21wb25lbnRzOkNvcmVBdWRpby5j
-					b21wb25lbnQ6Q29udGVudHM6UmVzb3VyY2Vz
-					OmdzX2luc3RydW1lbnRzLmRscwAOACYAEgBn
-					AHMAXwBpAG4AcwB0AHIAdQBtAGUAbgB0AHMA
-					LgBkAGwAcwAPABoADABNAGEAYwBpAG4AdABv
-					AHMAaAAgAEgARAASAFNTeXN0ZW0vTGlicmFy
-					eS9Db21wb25lbnRzL0NvcmVBdWRpby5jb21w
-					b25lbnQvQ29udGVudHMvUmVzb3VyY2VzL2dz
-					X2luc3RydW1lbnRzLmRscwAAEwABLwD//wAA
+					cwAAEAAIAADJAUtBAAAAEQAIAADOWGjqAAAA
+					AQAYCVOlZAlTpWMJU6ViCVOfOAlTmsIJU5rB
+					AAIAZk1hY2ludG9zaCBIRDpTeXN0ZW06AExp
+					YnJhcnk6AENvbXBvbmVudHM6AENvcmVBdWRp
+					by5jb21wb25lbnQ6AENvbnRlbnRzOgBSZXNv
+					dXJjZXM6AGdzX2luc3RydW1lbnRzLmRscwAO
+					ACYAEgBnAHMAXwBpAG4AcwB0AHIAdQBtAGUA
+					bgB0AHMALgBkAGwAcwAPABoADABNAGEAYwBp
+					AG4AdABvAHMAaAAgAEgARAASAFNTeXN0ZW0v
+					TGlicmFyeS9Db21wb25lbnRzL0NvcmVBdWRp
+					by5jb21wb25lbnQvQ29udGVudHMvUmVzb3Vy
+					Y2VzL2dzX2luc3RydW1lbnRzLmRscwAAEwAB
+					LwD//wAA
 					</data>
 					<key>cpu-load</key>
 					<real>0.0</real>
@@ -887,7 +892,7 @@
 						<string>MIDI 0 0</string>
 					</dict>
 					<key>volume</key>
-					<real>0.22494052350521088</real>
+					<real>0.13234572112560272</real>
 				</dict>
 				<dict>
 					<key>active</key>
@@ -1265,7 +1270,7 @@
 					<key>pan angle</key>
 					<real>1</real>
 					<key>pan azimuth</key>
-					<real>-1</real>
+					<real>-0.33487561345100403</real>
 					<key>pan distance</key>
 					<real>1</real>
 					<key>pan elevation</key>
@@ -1287,7 +1292,7 @@
 						<string>MIDI 3 0</string>
 					</dict>
 					<key>volume</key>
-					<real>0.30458062887191772</real>
+					<real>0.50257575511932373</real>
 				</dict>
 				<dict>
 					<key>active</key>
@@ -1403,7 +1408,7 @@
 					<key>pan angle</key>
 					<real>1</real>
 					<key>pan azimuth</key>
-					<real>1</real>
+					<real>0.32752576470375061</real>
 					<key>pan distance</key>
 					<real>1</real>
 					<key>pan elevation</key>
@@ -1425,7 +1430,7 @@
 						<string>MIDI 4 0</string>
 					</dict>
 					<key>volume</key>
-					<real>0.31417310237884521</real>
+					<real>0.22052112221717834</real>
 				</dict>
 			</array>
 		</dict>
@@ -1442,7 +1447,7 @@
 			<integer>1</integer>
 		</dict>
 		<key>Window Frame</key>
-		<string>{{2925, 0}, {439, 540}}</string>
+		<string>{{974, 116}, {439, 540}}</string>
 		<key>Window Max</key>
 		<string>{2560, 1622}</string>
 		<key>Window Min</key>
