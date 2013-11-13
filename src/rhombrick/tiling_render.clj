@@ -343,53 +343,50 @@
 
 
 (defn draw-face-boundaries [pos ^String code boundary-mode]
-  (when (and (not (nil? code))
-             (= 12 (count code))
-             (or (contains? (@tiler-state :tiles) pos)
-                 (and (= boundary-mode :all)
-                      (= (count code) 12))))
-    (let [[r g b] (get-tile-color code)]
-      (with-translation pos
-        (scale 0.5)
-        ;(stroke-weight 1)
-        ;(no-stroke)
-        (stroke-weight 2)
-        (stroke 128 128 128 255)
-        ;(stroke r g b 255)
-        (assert (and (not (nil? code)) (= 12 (count code))))
+  (when (not= boundary-mode :none)
+    (when (and (not (nil? code))
+               (= 12 (count code))
+               (or (contains? (@tiler-state :tiles) pos)
+                   (and (= boundary-mode :all)
+                        (= (count code) 12))))
+      (let [[r g b] (get-tile-color code)]
+        (with-translation pos
+          (scale 0.5)
+          ;(stroke-weight 1)
+          ;(no-stroke)
+          (stroke-weight 2)
+          (stroke 128 128 128 255)
+          ;(stroke r g b 255)
+          (assert (and (not (nil? code)) (= 12 (count code))))
 
-        (doseq [^long i (range 12)]
-          (when (cond
-                  (= boundary-mode :only-empty)
-                    (and (is-empty? (@tiler-state :tiles) (get-neighbour-pos pos i))
-                         (not= (.charAt code i) \-)
-                         (not= (.charAt code i) \0))
-                  (= boundary-mode :all)
-                    (and (not= (.charAt code i) \-)
-                         (not= (.charAt code i) \0))
-                  (= boundary-mode :type-change)
-                    (and (not= (.charAt code i) \-)
-                         (not= (.charAt code i) \0)
-                         (not= [r g b] (get-tile-color ((@tiler-state :tiles) (get-neighbour-pos pos i)))))
-                  :else
-                    false)
-            (let [d (.charAt code i)
-                  dir (co-verts i)
-                  [dx dy dz] (vec3-normalize dir)
-                  az (Math/atan2 dy dx)
-                  el (- (Math/asin dz))
-                  thickness (+ 0.075 (* 1.0 (bezier-box-thicknesses (.charAt code i))))
-                  alpha 255]
-              (if (face-digit-like-compatible? d)
-                (do (fill 160 160 220 alpha))
-                (do
-                  (if (>= (int d) 97)
-                    (fill 255 255 255 alpha)
-                    (fill 0 0 0 alpha))))
-              (with-translation (vec3-scale (co-verts i) 0.956)
-                (rotate az 0 0 1)
-                (rotate el 0 1 0)
-                (box 0.125 thickness thickness)))))))))
+          (doseq [^long i (range 12)]
+            (when (cond
+                    (= boundary-mode :only-empty)
+                      (and (is-empty? (@tiler-state :tiles) (get-neighbour-pos pos i))
+                           (not= (.charAt code i) \-)
+                           (not= (.charAt code i) \0))
+                    (= boundary-mode :all)
+                      (and (not= (.charAt code i) \-)
+                           (not= (.charAt code i) \0))
+                    (= boundary-mode :type-change)
+                      (and (not= (.charAt code i) \-)
+                           (not= (.charAt code i) \0)
+                           (not= [r g b] (get-tile-color ((@tiler-state :tiles) (get-neighbour-pos pos i)))))
+                    :else
+                      false)
+              (let [d (.charAt code i)
+                    dir (co-verts i)
+                    [dx dy dz] (vec3-normalize dir)
+                    az (Math/atan2 dy dx)
+                    el (- (Math/asin dz))
+                    thickness (+ 0.075 (* 1.0 (bezier-box-thicknesses (.charAt code i))))
+                    bcol (get boundary-colors d [127 127 127])
+                    alpha 255]
+                (fill (bcol 0) (bcol 1) (bcol 2) alpha)
+                (with-translation (vec3-scale (co-verts i) 0.956)
+                  (rotate az 0 0 1)
+                  (rotate el 0 1 0)
+                  (box 0.125 thickness thickness))))))))))
 
 
 (defn draw-face-boundaries-ts [ts pos ^String code boundary-mode]
@@ -469,6 +466,17 @@
 
 ; _______________________________________________________________________
 
+
+(defn draw-axes []
+  (with-translation [1 0 0]
+    (fill 255 0 0 192)
+    (box 1 1 1))
+  (with-translation [0 1 0]
+    (fill 0 255 0 192)
+    (box 1 1 1))
+  (with-translation [0 0 1]
+    (fill 0 0 255 192)
+    (box 1 1 1)))
 
 
 

@@ -164,6 +164,25 @@
 (def ^:const connecting-faces [6 7 8 9 10 11 0 1 2 3 4 5])
 
 
+(def ^:const boundary-colors {
+  \0 [0 0 0]
+  \1 [255 0 0]
+  \2 [255 128 0]
+  \3 [255 255 0]
+  \4 [0 255 0]
+  \5 [0 0 255]
+  \6 [128 0 255]
+  \7 [255 0 255]
+  \a [0 0 0]
+  \A [255 255 255]
+  \b [0 0 0]
+  \B [255 255 255]
+  \c [0 0 0]
+  \C [255 255 255]
+  \d [0 0 0]
+  \D [255 255 255]
+})
+
 ; edge-centered cubic lattice logic
 ; 
 ; V        V % 2
@@ -323,6 +342,12 @@
 (defn get-code-symmetries [code]
   (vec (distinct (map #(get-code-symmetry code %)
                       (range (count symmetry-face-idx-map))))))
+
+
+; 2d fourfold chiral symmetry hack - tiles can only rotate mutiples of 90°
+; around the Z axis. Symmetry Indices: 0 1 5 15
+(defn get-code-symmetries-2d-fourfold [code]
+  (vec (distinct (map #(get-code-symmetry code %) [0 1 5 15]))))
 
 
 (defn get-angle-for-face-idxs [[idx1 idx2]]
