@@ -647,7 +647,7 @@
                  @draw-bezier-box-lines?
                  @current-boundary-mode)
     
-    (draw-assemblage-center)
+    ;(draw-assemblage-center)
 
     (when @draw-facelist?
       (draw-face-list))
@@ -655,9 +655,9 @@
 ;    (when @game-mode?
 ;      (game/render))
 
+
     (when @draw-empty?
       (draw-empty (@tiler-state :tiles)))
-    
 
     ;(lights)
     (when @draw-gliders?
