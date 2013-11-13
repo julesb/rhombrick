@@ -110,6 +110,9 @@
 (defn add-to-dead-loci-ts [ts code]
   (assoc ts :dead (conj (ts :dead) code)))
 
+(defn add-to-dead-loci-ts2 [ts code]
+  (assoc ts :dead (clojure.set/union (ts :dead) code)))
+
 
 (defn get-untileable-neighbours [tiles tileset pos dead]
   (->> (get-neighbours pos)
@@ -198,9 +201,9 @@
 (def default-params {
   :tileset ["----1A---a--"]
   :seed ""
-  :max-iters 10000
-  :max-radius 8
-  :max-tiles 10000
+  :max-iters 1000000
+  :max-radius 16
+  :max-tiles 1000000
   :adhd 2.0
   :autism 1.0
   })
@@ -344,7 +347,8 @@
           (if (nil? new-code)
             ; no tile will fit, backtrack and return new state
             (-> ts
-                (add-to-dead-loci-ts (get-outer-facecode2 new-neighbourhood))
+                ;(add-to-dead-loci-ts (get-outer-facecode2 new-neighbourhood))
+                (add-to-dead-loci-ts2 (set (get-code-symmetries (get-outer-facecode2 new-neighbourhood))))
                 ;(delete-neighbours-ts new-pos)
                 (backtrack-non-zero-ts)
                 (inc-iters))
