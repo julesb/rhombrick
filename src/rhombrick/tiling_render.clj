@@ -75,51 +75,41 @@
   (apply str "0x" (map #(if (= \- %) \0 %) code)))
 
 
+(defn hsv->rgb [h s v]
+  (let [col (int (java.awt.Color/HSBtoRGB h s v))]
+    [(bit-shift-right (bit-and col 0x00ff0000) 16)
+     (bit-shift-right (bit-and col 0x0000ff00) 8)
+     (bit-and col 0x000000ff)]))
 
-(defn compute-tile-color [code]
-  (if (not= nil code)
-    (let [hs (facecode-to-hex (normalize-tilecode code))
-          n (mod (read-string hs) 12)]
-      (rd-face-colors n))
-    [128 128 128 128]))
+
+(defn phi-palette-color [idx offset]
+  (let [phi-1 (- (/ (+ 1 (Math/sqrt 5)) 2) 1)]
+    (hsv->rgb
+      (mod (+ offset (* idx phi-1)) 1)
+      0.75
+      1.0)))
+
+
+(defn make-phi-palette [ncols offset]
+  (let [phi-1 (- (/ (+ 1 (Math/sqrt 5)) 2) 1)]
+    (->> (range ncols)
+         (map #(mod (+ offset (* % phi-1)) 1))
+         (map #(hsv->rgb % 0.66 0.6))
+         vec)))
 
 
 (defn get-tile-color [code]
-  (if (contains? @current-tileset-colors code)
-    (@current-tileset-colors code)
-    (do 
-      (swap! current-tileset-colors assoc code (compute-tile-color code))
-      (@current-tileset-colors code))))
-
-
-;(defn get-tileset-colors2 [tileset]
-;  (let [tileset-n (normalize-tileset tileset)
-;        col-offset (mod (tileset-to-number tileset-n) 12)]
-;    (->> (expand-tiles-preserving-symmetry tileset-n)
-;         (map-indexed #(vec [%2 (rd-face-colors (mod (+ %1 col-offset) 12))]))
-;         (into {})
-;)))
-;
-;
-;(defn get-tileset-colors [tileset]
-;  (let [tileset-n (normalize-tileset tileset)
-;        col-offset (mod (tileset-to-number tileset) 12)]
-;    (map-indexed (fn [i t]
-;                   (let [col (rd-face-colors (mod (+ i col-offset) 12))]
-;                     )
-;                 tileset-n)
-;  )
-;))
+  (get @current-tileset-colors code [64 64 64 128]))
 
 
 (defn init-tileset-colors [tileset]
   (reset! current-tileset-colors {})
   (let [tileset-n (normalize-tileset tileset)
-        col-offset (mod (tileset-to-number tileset) 12)]
+        offset (/ (mod (tileset-to-number tileset) 255) 255)
+        pal (make-phi-palette (count tileset-n) offset)]
     (doseq [i (range (count tileset-n))]
       (let [code (tileset-n i)
-            col-idx (mod (+ i col-offset) 12)
-            col (rd-face-colors col-idx) ]
+            col (pal i)]
         (doseq [rc (get-code-symmetries code)]
           (swap! current-tileset-colors assoc rc col))))))
 
@@ -354,8 +344,9 @@
           (scale 0.5)
           ;(stroke-weight 1)
           ;(no-stroke)
-          (stroke-weight 2)
+          (stroke-weight 1)
           (stroke 128 128 128 255)
+          ;(no-stroke)
           ;(stroke r g b 255)
           (assert (and (not (nil? code)) (= 12 (count code))))
 

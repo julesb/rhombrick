@@ -201,12 +201,14 @@
         (println "model-scale: " @model-scale))
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
-         (start-tiler (editor/get-tileset-as-set) true)
+         (start-tiler (editor/get-tileset-as-set) false)
+         (init-tileset-colors (get-in @tiler-state [:params :tileset]))
          (init-gliders num-gliders)
          )
    \R #(do 
          (editor/set-tileset (get-random-tileset-1))
          (start-tiler (editor/get-tileset-as-set) false)
+         (init-tileset-colors (get-in @tiler-state [:params :tileset]))
          (println "random tileset:" (editor/get-tileset-as-set))
          (init-gliders num-gliders)
          )
@@ -286,10 +288,12 @@
 
     \< #(do
           (editor/load-prev-library-tileset)
-          (start-tiler (editor/get-tileset-as-set) false))
+          (start-tiler (editor/get-tileset-as-set) false)
+          (init-tileset-colors (get-in @tiler-state [:params :tileset])))
     \> #(do
           (editor/load-next-library-tileset)
-          (start-tiler (editor/get-tileset-as-set) false))
+          (start-tiler (editor/get-tileset-as-set) false)
+          (init-tileset-colors (get-in @tiler-state [:params :tileset])))
     \S #(do
           (editor/save-current-tileset-to-library))
     ;\n #(do
