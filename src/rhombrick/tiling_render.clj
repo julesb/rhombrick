@@ -94,7 +94,7 @@
   (let [phi-1 (- (/ (+ 1 (Math/sqrt 5)) 2) 1)]
     (->> (range ncols)
          (map #(mod (+ offset (* % phi-1)) 1))
-         (map #(hsv->rgb % 0.66 0.6))
+         (map #(hsv->rgb % 0.5 0.6))
          vec)))
 
 
@@ -449,6 +449,7 @@
     ;(fill 255 255 0 32)
     (no-fill)
     ;(with-translation (find-assemblage-center @tiles)
+    (box 0.5)
     (with-translation c
       (scale 0.5)
       (box 1 1 1)
