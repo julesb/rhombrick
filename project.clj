@@ -10,9 +10,10 @@
                  [org.clojure/core.logic "0.6.5"]
                  [org.clojure/java.jdbc "0.3.0-alpha4"]
                  [mysql/mysql-connector-java "5.1.6"]
+                 [org.clojure/core.memoize "0.5.6"]
                  ]
   :main rhombrick.core
   :warn-on-reflection true
-  ;:jvm-opts ["-Xmx2g"]
+  :jvm-opts ["-Xmx2g"]
   )
 
