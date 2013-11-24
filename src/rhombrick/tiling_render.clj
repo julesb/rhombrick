@@ -575,7 +575,7 @@
         num-connected (get-num-connected code)
         col (get-tile-color code); (rd-face-colors (mod num-connected 12))
 ;        fill-col (rd-face-colors 
-;                   (connecting-faces (mod num-connected 12)))
+;                   (rd-connecting-faces (mod num-connected 12)))
         ]
     (push-style)
 

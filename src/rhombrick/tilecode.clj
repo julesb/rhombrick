@@ -146,7 +146,7 @@
 
 
 (defn get-neighbour-abutting-face2 [neighbourhood face-idx]
-  (let [op-face-idx (geom/connecting-faces face-idx)
+  (let [op-face-idx (geom/rd-connecting-faces face-idx)
         nb-code (neighbourhood face-idx)]
     ;(println "nb-code:"nb-code "op-face-idx:" op-face-idx "neighbourhood:" neighbourhood)
     (if (nil? nb-code) \. (nth nb-code op-face-idx))))

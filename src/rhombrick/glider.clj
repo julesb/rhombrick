@@ -212,7 +212,7 @@
       (if (>= new-glider-time 1.0)
         ; have crossed tile boundary..
         (let [next-tile-code ((@tiler-state :tiles) next-tile-pos)
-              next-entry-face-idx (connecting-faces (glider :exit-face-idx))
+              next-entry-face-idx (rd-connecting-faces (glider :exit-face-idx))
               next-glider-path (choose-glider-path next-tile-code
                                                    next-entry-face-idx )]
           (if (is-traversable? next-tile-code)
