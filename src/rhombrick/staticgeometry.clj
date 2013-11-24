@@ -350,6 +350,11 @@
   (vec (distinct (map #(get-code-symmetry code %) [0 1 5 15]))))
 
 
+; identity - eg for non-rotatable wang tiles
+(defn get-code-symmetries-identity-only [code]
+  code)
+
+
 (defn get-angle-for-face-idxs [[idx1 idx2]]
   (vec3-angle-between (vec3-normalize (co-verts idx1))
                       (vec3-normalize (co-verts idx2))))
