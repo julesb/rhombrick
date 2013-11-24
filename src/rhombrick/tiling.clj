@@ -198,6 +198,15 @@
       ((rand-nth tie-winners) 0))))
 
 
+(defn get-tile-freqs [tiles]
+  (->> tiles
+       vals
+       (map normalize-tilecode)
+       frequencies
+       (sort-by val)
+       reverse))
+
+
 (def default-params {
   :tileset ["----1A---a--"]
   :seed ""
@@ -341,7 +350,8 @@
           (assoc :solved true))
 
       (if-let [positions (choose-positions-ts ts empty-positions)]
-        (let [new-pos (find-closest-to-center positions)
+        (let [;new-pos (find-closest-to-center positions)
+              new-pos (find-closest-to-point positions @assemblage-center)
               new-neighbourhood (get-neighbourhood tiles new-pos)
               new-code (choose-tilecode new-neighbourhood tileset (ts :dead))]
           (if (nil? new-code)
@@ -381,6 +391,7 @@
     (let [iter-start-time (System/nanoTime)]
       ;(dosync
         (swap! tiler-state make-backtracking-tiling-iteration4)
+        (update-assemblage-center (@tiler-state :tiles))
         (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
       ;  )
       ))
@@ -400,6 +411,7 @@
   (cancel-tiler-thread)
   (Thread/sleep 100)
   (let [ts (make-state (make-params :tileset tileset
+                                    :seed (rand-nth (vec tileset))
                                     ;:max-radius @assemblage-max-radius
                                     ;:adhd @adhd
                                     ;:autism @autism

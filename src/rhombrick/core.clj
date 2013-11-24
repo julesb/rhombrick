@@ -491,8 +491,8 @@
   (when @draw-gliders?
     (update-gliders))
 
-  (background 32 32 64)
-  ;(background 0 0 0)
+  ;(background 32 32 64)
+  (background 192 192 192)
 
   (push-matrix)
 
@@ -500,13 +500,14 @@
     (= @camera-mode 0)
     ; rubber band camera to glider
       (do
-        (let [g (vec3-scale (get-glider-pos 1) @model-scale)
+        ;(let [g (vec3-scale (get-glider-pos 1) @model-scale)
+        (let [g (vec3-scale @assemblage-center @model-scale)
               d (dist (@camera-pos 0)
                       (@camera-pos 1)
                       (@camera-pos 2)
                       (g 0) (g 1) (g 2))
               dir (vec3-normalize (vec3-sub g @camera-pos))
-              newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.030)))
+              newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.01)))
               cl-d (dist (@camera-lookat 0)
                          (@camera-lookat 1)
                          (@camera-lookat 2)
@@ -514,7 +515,7 @@
               cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
               new-camera-lookat (vec3-add @camera-lookat 
                                           (vec3-scale cl-dir
-                                                      (* cl-d 0.15)))]
+                                                      (* cl-d 0.01)))]
           (reset! camera-lookat new-camera-lookat)    
           (reset! camera-pos newpos)
           (camera (newpos 0) (newpos 1) (+ (newpos 2) 10)
@@ -651,9 +652,10 @@
                  @draw-bezier-box-lines?
                  @current-boundary-mode)
     
-    ;(draw-assemblage-center)
+    (draw-assemblage-center)
 
     (when @draw-facelist?
+      (build-face-list)
       (draw-face-list))
 
 ;    (when @game-mode?
