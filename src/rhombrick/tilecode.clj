@@ -1,6 +1,7 @@
 (ns rhombrick.tilecode
   (:use [rhombrick.staticgeometry :as geom]
         [rhombrick.tileset-data])
+  (:require [clojure.core.memoize :as m])
 )
 
 
@@ -123,13 +124,15 @@
 
 
 ; determine if faces are compatible without rotation
-(defn tilecodes-directly-compatible? [outercode innercode]
+(defn tilecodes-directly-compatible-fn [outercode innercode]
   (= 12 
      (count (filter #(true? %)
                     (map #(face-digit-compatible? %1 %2) 
                          innercode outercode)))))
 
-(def tilecodes-directly-compatible-m? (memoize tilecodes-directly-compatible?))
+(def tilecodes-directly-compatible? (memoize tilecodes-directly-compatible-fn))
+;(def tilecodes-directly-compatible-m? (m/lru tilecodes-directly-compatible?
+;                                             :lru/threshold 32))
 
 (defn make-minimal-tilecode-to-fit [outercode]
   (apply str (map facecode-compatible-map outercode)))
@@ -152,10 +155,14 @@
 (defn get-outer-facecode2 [neighbourhood]
   (apply str (map #(get-neighbour-abutting-face2 neighbourhood %) (range 12))))
 
+;(def get-outer-facecode2-m (m/lru get-outer-facecode2-fn
+;                                :lru/threshold 65536))
+
 
 ; generate all unique rotations of tiles in tileset 
 (defn expand-tiles-preserving-symmetry [tiles]
   (set (flatten (map #(get-code-symmetries %) tiles))))
+  ;(set (flatten (map #(get-code-symmetries-identity-only %) tiles))))
   ;(set (flatten (map #(get-code-symmetries-2d-fourfold %) tiles))))
 
 
@@ -165,7 +172,7 @@
   (let [outercode (get-outer-facecode2 neighbourhood)]
     (if (contains? dead outercode)
       ()
-      (filter #(tilecodes-directly-compatible-m? outercode %)
+      (filter #(tilecodes-directly-compatible? outercode %)
               tileset))))
 
 
