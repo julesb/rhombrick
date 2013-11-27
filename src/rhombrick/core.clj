@@ -5,6 +5,7 @@
         [rhombrick.tilecode :as tc]
         [rhombrick.tiling-render]
         [rhombrick.bezierbox :as bbox]
+        [rhombrick.staticgeometry]
         ;[rhombrick.game :as game]
         [rhombrick.vector]
         [rhombrick.glider]
@@ -590,7 +591,7 @@
     (when @draw-gliders?
       (draw-gliders (frame-count))
     )
-
+    (draw-axes)
 ;    (push-matrix)
 ;    (rotate-x (/ (frame-count) 200.1))
 ;    (rotate-y (/ (frame-count) 180.73))
@@ -674,6 +675,20 @@
         ))
     (pop-matrix)
   )
+  
+  (fill 255)
+  (stroke 0 0 0)
+  (stroke-weight 1)
+  (with-translation [0 0]
+    (scale @model-scale)
+    (draw-verts to-verts))
+
+  (fill 0 255 0)
+  (stroke 0 0 0)
+  (stroke-weight 1)
+  (with-translation [0 0]
+    (scale @model-scale)
+    (draw-verts to-face-centers))
 
   (pop-matrix)
   

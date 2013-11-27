@@ -36,17 +36,17 @@
 
 
 (defn get-neighbour-pos [pos face]
-  (vec3-add pos (rd-neighbour-offsets face)))
+  (vec3-add pos ((current-topology :neighbors) face)))
 
 
 (defn get-neighbours [pos]
   "returns a vector containing the positions of the neighbours of a given point"
-  (vec (map #(get-neighbour-pos pos %) (range 12))))
+  (vec (map #(get-neighbour-pos pos %) (range (current-topology :num-faces)))))
 
 
 (defn get-neighbourhood [tiles pos]
   "returns a vector containing facecodes for all neighbours"
-  (vec (map #(tiles (get-neighbour-pos pos %)) (range 12))))
+  (vec (map #(tiles (get-neighbour-pos pos %)) (range (current-topology :num-faces)))))
 
 
 (defn make-tile [ts pos facecode]
@@ -209,9 +209,10 @@
 
 (def default-params {
   :tileset ["----1A---a--"]
+  ;:tileset ["---1" "-1-1" "--11"]
   :seed ""
   :max-iters 1000000
-  :max-radius 16
+  :max-radius 3 
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0

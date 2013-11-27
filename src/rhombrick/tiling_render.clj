@@ -189,6 +189,12 @@
       (end-shape))))
 
 
+(defn draw-verts [verts]
+  (doseq [i (range (count verts))]
+    (with-translation (verts i) 
+      (box 0.2))
+ ))
+
 (defn rotate-vec [v]
   (vec (concat (rest v) [(first v)])))
 
@@ -321,12 +327,12 @@
     (fill 255 255 255 255)
     (with-translation pos
       (scale 0.5)
-      (doseq [i (range 12)]
-        (let [[dx dy dz] (co-verts i)
+      (doseq [i (range (current-topology :num-faces))]
+        (let [[dx dy dz] ((current-topology :neighbors) i)
               [dxn dyn dzn] (vec3-normalize [dx dy dz])
               az (Math/atan2 dyn dxn)
               el (- (Math/asin dzn))]
-          (with-translation (co-verts i)
+          (with-translation ((current-topology :neighbors) i)
             (rotate az 0 0 1)
             (rotate el 0 1 0)
             (box 0.2)))))))
@@ -335,10 +341,10 @@
 (defn draw-face-boundaries [pos ^String code boundary-mode]
   (when (not= boundary-mode :none)
     (when (and (not (nil? code))
-               (= 12 (count code))
+               (= (current-topology :num-faces) (count code))
                (or (contains? (@tiler-state :tiles) pos)
                    (and (= boundary-mode :all)
-                        (= (count code) 12))))
+                        (= (count code) (current-topology :num-faces)))))
       (let [[r g b] (get-tile-color code)]
         (with-translation pos
           (scale 0.5)
@@ -348,9 +354,9 @@
           (stroke 128 128 128 255)
           ;(no-stroke)
           ;(stroke r g b 255)
-          (assert (and (not (nil? code)) (= 12 (count code))))
+          (assert (and (not (nil? code)) (= (current-topology :num-faces) (count code))))
 
-          (doseq [^long i (range 12)]
+          (doseq [^long i (range (current-topology :num-faces))]
             (when (cond
                     (= boundary-mode :only-empty)
                       (and (is-empty? (@tiler-state :tiles) (get-neighbour-pos pos i))
@@ -366,7 +372,7 @@
                     :else
                       false)
               (let [d (.charAt code i)
-                    dir (co-verts i)
+                    dir ((current-topology :neighbors) i)
                     [dx dy dz] (vec3-normalize dir)
                     az (Math/atan2 dy dx)
                     el (- (Math/asin dz))
@@ -374,7 +380,7 @@
                     bcol (get boundary-colors d [127 127 127])
                     alpha 255]
                 (fill (bcol 0) (bcol 1) (bcol 2) alpha)
-                (with-translation (vec3-scale (co-verts i) 0.956)
+                (with-translation (vec3-scale ((current-topology :neighbors) i) 0.956)
                   (rotate az 0 0 1)
                   (rotate el 0 1 0)
                   (box 0.125 thickness thickness))))))))))
@@ -382,10 +388,10 @@
 
 (defn draw-face-boundaries-ts [ts pos ^String code boundary-mode]
   (when (and (not (nil? code))
-             (= 12 (count code))
+             (= (current-topology :num-faces) (count code))
              (or (contains? (ts :tiles) pos)
                  (and (= boundary-mode :all)
-                      (= (count code) 12))))
+                      (= (count code) (current-topology :num-faces)))))
     (let [[r g b] (get-tile-color code)]
       (with-translation pos
         (scale 0.5)
@@ -393,9 +399,9 @@
         (stroke 128 128 128 255)
         ;(no-stroke)
         ;(stroke r g b 255)
-        (assert (and (not (nil? code)) (= 12 (count code))))
+        (assert (and (not (nil? code)) (= (current-topology :num-faces) (count code))))
 
-        (doseq [^long i (range 12)]
+        (doseq [^long i (range (current-topology :num-faces))]
           (when (cond
                   (= boundary-mode :only-empty)
                     (and (is-empty? (ts :tiles) (get-neighbour-pos pos i))
@@ -411,7 +417,7 @@
                   :else
                     false)
             (let [d (.charAt code i)
-                  dir (co-verts i)
+                  dir ((current-topology :neighbors) i)
                   [dx dy dz] (vec3-normalize dir)
                   az (Math/atan2 dy dx)
                   el (- (Math/asin dz))
@@ -424,7 +430,7 @@
                   (if (>= (int d) 97)
                     (fill 255 255 255 alpha)
                     (fill 0 0 0 alpha))))
-              (with-translation (vec3-scale (co-verts i) 0.956)
+              (with-translation (vec3-scale ((current-topology :neighbors) i) 0.956)
                 (rotate az 0 0 1)
                 (rotate el 0 1 0)
                 (box 0.125 thickness thickness)))))))))
@@ -462,13 +468,13 @@
 (defn draw-axes []
   (with-translation [1 0 0]
     (fill 255 0 0 192)
-    (box 1 1 1))
+    (box 1 0.1 0.1))
   (with-translation [0 1 0]
     (fill 0 255 0 192)
-    (box 1 1 1))
+    (box 0.1 1 0.1))
   (with-translation [0 0 1]
     (fill 0 0 255 192)
-    (box 1 1 1)))
+    (box 0.1 0.1 1)))
 
 
 
@@ -595,7 +601,7 @@
     (stroke (col 0) (col 1) (col 2) 192) 
     
     (if (= num-connected 1)
-      (let [p (co-verts (first (get-connected-idxs code)))]
+      (let [p ((current-topology :neighbors) (first (get-connected-idxs code)))]
         (line 0 0 0 (p 0) (p 1) (p 2))
         (fill 255 128 128 128)
         ;(box 0.05125 0.05125 0.05125)
