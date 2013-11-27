@@ -125,7 +125,7 @@
 
 ; determine if faces are compatible without rotation
 (defn tilecodes-directly-compatible-fn [outercode innercode]
-  (= 12 
+  (= (current-topology :num-faces) 
      (count (filter #(true? %)
                     (map #(face-digit-compatible? %1 %2) 
                          innercode outercode)))))
@@ -153,7 +153,7 @@
 
 
 (defn get-outer-facecode2 [neighbourhood]
-  (apply str (map #(get-neighbour-abutting-face2 neighbourhood %) (range 12))))
+  (apply str (map #(get-neighbour-abutting-face2 neighbourhood %) (range (current-topology :num-faces)))))
 
 ;(def get-outer-facecode2-m (m/lru get-outer-facecode2-fn
 ;                                :lru/threshold 65536))
@@ -185,8 +185,8 @@
 
 (defn make-random-tilecode []
   (let [code (apply str (map (fn [_] (rand-nth random-tilecode-distribution))
-                             (range 12)))]
-    (if (= code "------------")
+                             (range (current-topology :num-faces))))]
+    (if (= (get-num-connected code) 0)
       (make-random-tilecode) 
       code)))
 

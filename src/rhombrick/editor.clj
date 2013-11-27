@@ -22,7 +22,7 @@
                    })
 
 ;(def default-tileset ["A-A---------" "0-a---0-----" "4-d---D-3---" "3-------D---" "D-d---0-0---" "D-0---6-a---" "A-----6-----" "a-----d-0---" "A-----a-----" "6-----a-----"])
-(def default-tileset ["----1A---a--"]) 
+(def default-tileset [(make-random-tilecode)]) 
 
 
 (def default-editor-state {:level 0
@@ -90,10 +90,10 @@
   (reset! (@editor-state :tileset) [])
   (reset! current-tileset-colors {})
   (bbox/bezier-box-cache-reset)
-  (let [col-offset (mod (tileset-to-number tileset) 12)]
+  (let [col-offset (mod (tileset-to-number tileset) (current-topology :num-faces))]
     (doseq [i (range (count tileset))]
       (let [code (tileset i)
-            col-idx (mod (+ i col-offset) 12)
+            col-idx (mod (+ i col-offset) (current-topology :num-faces))
             col (rd-face-colors col-idx) ]
         ;(when-not (set-contains-rotations? (set tileset) code)
         (add-to-tileset code)
@@ -128,7 +128,7 @@
       (= level 1) 
         (count (get-tileset))
       (= level 2)
-        12)))
+        (current-topology :num-faces))))
 
 
 (defn index-exclude [r ex] 
@@ -236,14 +236,14 @@
 
 (defn draw-face-idx-numbers [pos use-face-color?]
   (no-lights)
-  (doseq [i (range 12)]
+  (doseq [i (range (current-topology :num-faces))]
     (let [[r g b] (rd-face-colors i)]
       (with-translation pos
         (scale 0.5)
         (stroke-weight 1)
         (stroke 255 255 255 128)
         (fill 255 255 255 255)                
-        (let [dir (co-verts i)
+        (let [dir ((current-topology :neighbors) i)
              [dx dy dz] (vec3-normalize dir)
              az (Math/atan2 dy dx)
              el (- (Math/asin dz))
@@ -251,7 +251,7 @@
           (if use-face-color?
             (fill r g b 192)
             (fill 255 255 255 192))
-          (with-translation (vec3-scale (co-verts i) 1.01) ;0.975)
+          (with-translation (vec3-scale ((current-topology :neighbors) i) 1.01) ;0.975)
             (rotate az 0 0 1)
             (rotate el 0 1 0)
             (scale 0.025)
@@ -270,7 +270,7 @@
 
 
 (defn draw-facecode-buttons [[x y] sc code parent-idx]
-  (let [num-buttons 12
+  (let [num-buttons (current-topology :num-faces) 
         bspace 1
         bsize (/ (- sc (* bspace (- num-buttons 1)))
                  num-buttons)

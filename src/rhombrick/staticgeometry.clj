@@ -466,7 +466,7 @@
     :neighbors to-face-centers}
   })
 
-(def current-topology (topologies :rhombic-dodecahedron))
+(def current-topology (topologies :square))
 
 
 (defn get-code-symmetry [^String code sym-idx]

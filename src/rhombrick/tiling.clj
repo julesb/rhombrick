@@ -208,8 +208,8 @@
 
 
 (def default-params {
-  :tileset ["----1A---a--"]
-  ;:tileset ["---1" "-1-1" "--11"]
+  ;:tileset ["----1A---a--"]
+  :tileset ["---1" "-1-1" "--11"]
   :seed ""
   :max-iters 1000000
   :max-radius 3 

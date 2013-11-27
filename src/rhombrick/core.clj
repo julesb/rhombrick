@@ -202,6 +202,7 @@
         (println "model-scale: " @model-scale))
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
+         (println "restart tileset:" (editor/get-tileset-as-set))
          (start-tiler (editor/get-tileset-as-set) false)
          (init-tileset-colors (get-in @tiler-state [:params :tileset]))
          (init-gliders num-gliders)
