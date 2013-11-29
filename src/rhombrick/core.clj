@@ -204,7 +204,8 @@
    \r #(do
          (println "restart tileset:" (editor/get-tileset-as-set))
          (start-tiler (editor/get-tileset-as-set) false)
-         (init-tileset-colors (get-in @tiler-state [:params :tileset]))
+         (init-tileset-colors (editor/get-tileset-as-set))
+         ;(init-tileset-colors (get-in @tiler-state [:params :tileset]))
          (init-gliders num-gliders)
          )
    \R #(do 
@@ -493,8 +494,8 @@
   (when @draw-gliders?
     (update-gliders))
 
-  ;(background 32 32 64)
-  (background 192 192 192)
+  (background 32 32 64)
+  ;(background 192 192 192)
 
   (push-matrix)
 
@@ -592,6 +593,7 @@
     (when @draw-gliders?
       (draw-gliders (frame-count))
     )
+    
     (draw-axes)
 ;    (push-matrix)
 ;    (rotate-x (/ (frame-count) 200.1))
@@ -674,22 +676,25 @@
         ;(draw-curve-boundary-points selected-tile)
         (draw-selected-tile selected-tile)
         ))
+
+    (draw-face-idx-numbers [0 0 0] false)
+
     (pop-matrix)
   )
   
-  (fill 255)
-  (stroke 0 0 0)
-  (stroke-weight 1)
-  (with-translation [0 0]
-    (scale @model-scale)
-    (draw-verts to-verts))
-
-  (fill 0 255 0)
-  (stroke 0 0 0)
-  (stroke-weight 1)
-  (with-translation [0 0]
-    (scale @model-scale)
-    (draw-verts to-face-centers))
+;  (fill 255)
+;  (stroke 0 0 0)
+;  (stroke-weight 1)
+;  (with-translation [0 0]
+;    (scale @model-scale)
+;    (draw-verts to-verts))
+;
+;  (fill 0 255 0)
+;  (stroke 0 0 0)
+;  (stroke-weight 1)
+;  (with-translation [0 0]
+;    (scale @model-scale)
+;    (draw-verts to-face-centers))
 
   (pop-matrix)
   

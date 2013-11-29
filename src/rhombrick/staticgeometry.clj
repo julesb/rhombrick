@@ -380,26 +380,11 @@
 
 
 
-(defn get-angle-for-face-idxs [[idx1 idx2]]
-  (vec3-angle-between (vec3-normalize (co-verts idx1))
-                      (vec3-normalize (co-verts idx2))))
-
 
 (defn face-idxs-to-verts [face-idxs]
   (vec (map #(rd-verts %) face-idxs)))
 
 
-(defn get-tilecode-angles [code]
-  (->> (map-indexed #(vec [%1 %2]) code)
-       (filter #(not= (%1 1) \-))
-       (map first)
-       ((fn [v] (vec (combinations v 2))))
-       (map get-angle-for-face-idxs)
-       (map int)))
-
-
-(defn get-tilecode-angle-ids [code]
-  (vec (sort (get-tilecode-angles code))))
 
 
 (def ^:const bezier-anchor-offsets [
@@ -415,20 +400,14 @@
   (vec (map vec3-normalize [(co-verts 10) (rd-verts 10) (co-verts 4) (rd-verts 9)])) ; ok
   (vec (map vec3-normalize [(co-verts 9) (rd-verts 9) (co-verts 3) (rd-verts 10)])) ; ok
   (vec (map vec3-normalize [(rd-verts 11) (co-verts 7) (rd-verts 13) (co-verts 1)])) ; ok
+
+  (vec (map vec3-normalize [(co-verts 9) (rd-verts 9) (co-verts 3) (rd-verts 10)])) ; ok
+  (vec (map vec3-normalize [(rd-verts 11) (co-verts 7) (rd-verts 13) (co-verts 1)])) ; ok
 ])
 
 
 
 (def topologies {
-  :triangle {
-    :num-faces 3
-    :symmetry-face-map [[0 1 2]
-                        [1 2 0]
-                        [2 0 1]]
-    :neighbors [[1 0 0]
-                [-0.50000008452997 0.8660253549810322 0]
-                [-0.49999991754259354 -0.8660254513912392 0] ]}
-
   :square {
     :num-faces 4
     :symmetry-face-map [[0 1 2 3]
@@ -438,7 +417,8 @@
     :neighbors [[ 1  0  0]
                 [ 0  1  0]
                 [-1  0  0]
-                [ 0 -1  0]]}
+                [ 0 -1  0]]
+    :id :square}
 
   :hexagon {
     :num-faces 6
@@ -448,7 +428,28 @@
                         [3 4 5 0 1 2]
                         [4 5 0 1 2 3]
                         [5 0 1 2 3 4]]
-    :neighbors []}
+    :neighbors [ [1.0 0.0 0.0]
+                 [0.5  -0.8660254037844 0.0]
+                 [-0.5 -0.8660254037844 0.0]
+                 [-1.0 0.0 0.0]
+                 [-0.5 0.8660254037844 0.0]
+                 [0.5  0.8660254037844 0.0]
+                 
+                 ;[0.5 -0.866025403784439 0]
+                 ;[-0.5 -0.8660254037844385 0]
+                 ;[-1.0 0 0]
+                 ;[-0.5 0.8660254037844387 0]
+                 ;[0.5 0.8660254037844386 0]
+                 ;[1.0 0.0 0]
+                ]
+               ; [1.0 0.0 0]
+               ; [0.5 0.8660254037844386 0]
+               ; [-0.5 0.8660254037844387 0]
+               ; [-1.0 0 0]
+               ; [-0.5 -0.8660254037844385 0]
+               ; [0.5 -0.866025403784439 0]]
+    :id :hexagon
+            }
 
   :cube {
     :num-faces 6
@@ -466,10 +467,11 @@
     :neighbors to-face-centers}
   })
 
-(def current-topology (topologies :square))
+(def current-topology (topologies :truncated-octahedron))
 
 
 (defn get-code-symmetry [^String code sym-idx]
+  ;(println "code:" code "sym-idx:" sym-idx)
   ;(apply str (map #(.charAt code ((rd-symmetry-face-idx-map sym-idx) %))
   (apply str (map #(.charAt code (((current-topology :symmetry-face-map) sym-idx) %))
                   (range (count code)))))
@@ -497,3 +499,18 @@
                (range (count code)) code)))
 
 
+(defn get-angle-for-face-idxs [[idx1 idx2]]
+  (vec3-angle-between (vec3-normalize ((current-topology :neighbors) idx1))
+                      (vec3-normalize ((current-topology :neighbors) idx2))))
+
+(defn get-tilecode-angles [code]
+  (->> (map-indexed #(vec [%1 %2]) code)
+       (filter #(not= (%1 1) \-))
+       (map first)
+       ((fn [v] (vec (combinations v 2))))
+       (map get-angle-for-face-idxs)
+       (map int)))
+
+
+(defn get-tilecode-angle-ids [code]
+  (vec (sort (get-tilecode-angles code))))

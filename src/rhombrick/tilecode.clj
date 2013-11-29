@@ -124,13 +124,13 @@
 
 
 ; determine if faces are compatible without rotation
-(defn tilecodes-directly-compatible-fn [outercode innercode]
-  (= (current-topology :num-faces) 
+(defn tilecodes-directly-compatible? [outercode innercode]
+  (= (current-topology :num-faces)
      (count (filter #(true? %)
                     (map #(face-digit-compatible? %1 %2) 
                          innercode outercode)))))
 
-(def tilecodes-directly-compatible? (memoize tilecodes-directly-compatible-fn))
+;(def tilecodes-directly-compatible? (memoize tilecodes-directly-compatible-fn))
 ;(def tilecodes-directly-compatible-m? (m/lru tilecodes-directly-compatible?
 ;                                             :lru/threshold 32))
 
@@ -146,7 +146,9 @@
 
 
 (defn get-neighbour-abutting-face2 [neighbourhood face-idx]
-  (let [op-face-idx (geom/rd-connecting-faces face-idx)
+  (let [op-face-idx (mod (+ face-idx (/ (current-topology :num-faces) 2))
+                         (current-topology :num-faces))
+        ;op-face-idx (geom/rd-connecting-faces face-idx)
         nb-code (neighbourhood face-idx)]
     ;(println "nb-code:"nb-code "op-face-idx:" op-face-idx "neighbourhood:" neighbourhood)
     (if (nil? nb-code) \. (nth nb-code op-face-idx))))
@@ -226,7 +228,7 @@
 
 
 (defn get-random-tileset-1 []
-  (let [max-tiles 3]
+  (let [max-tiles 4]
     (make-random-tileset (+ 1 (rand-int max-tiles)) [])))
 
 
@@ -275,9 +277,11 @@
 
 
 (defn number-to-tilecode [n]
-  (->> (format "%012x" n)
+  (let [fmt (str "%0" (current-topology :num-faces) "x") ]
+  (->> (format fmt n)
+       ;(format "%012x" n)
        (map number-to-tilecode-map)
-       (apply str)))
+       (apply str))))
 
 (defn tilecode-to-number [code]
   (->> code

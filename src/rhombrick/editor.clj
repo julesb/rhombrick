@@ -22,7 +22,7 @@
                    })
 
 ;(def default-tileset ["A-A---------" "0-a---0-----" "4-d---D-3---" "3-------D---" "D-d---0-0---" "D-0---6-a---" "A-----6-----" "a-----d-0---" "A-----a-----" "6-----a-----"])
-(def default-tileset [(make-random-tilecode)]) 
+(def default-tileset (make-random-tileset 1 [])) 
 
 
 (def default-editor-state {:level 0
@@ -94,7 +94,7 @@
     (doseq [i (range (count tileset))]
       (let [code (tileset i)
             col-idx (mod (+ i col-offset) (current-topology :num-faces))
-            col (rd-face-colors col-idx) ]
+            col (phi-palette-color col-idx 0) ]
         ;(when-not (set-contains-rotations? (set tileset) code)
         (add-to-tileset code)
         (doseq [rc (get-code-symmetries code)]
@@ -237,7 +237,7 @@
 (defn draw-face-idx-numbers [pos use-face-color?]
   (no-lights)
   (doseq [i (range (current-topology :num-faces))]
-    (let [[r g b] (rd-face-colors i)]
+    (let [[r g b] (phi-palette-color i 0)]
       (with-translation pos
         (scale 0.5)
         (stroke-weight 1)

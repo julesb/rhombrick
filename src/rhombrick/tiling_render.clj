@@ -107,6 +107,7 @@
   (let [tileset-n (normalize-tileset tileset)
         offset (/ (mod (tileset-to-number tileset) 255) 255)
         pal (make-phi-palette (count tileset-n) offset)]
+    (println "tileset-n:" tileset-n)
     (doseq [i (range (count tileset-n))]
       (let [code (tileset-n i)
             col (pal i)]
@@ -451,7 +452,7 @@
 (defn draw-assemblage-center []
   (let [c @assemblage-center]
     (stroke 255 255 255 192)
-    (stroke-weight 4)
+    (stroke-weight 1)
     ;(fill 255 255 0 32)
     (no-fill)
     ;(with-translation (find-assemblage-center @tiles)
@@ -466,15 +467,16 @@
 
 
 (defn draw-axes []
-  (with-translation [1 0 0]
-    (fill 255 0 0 192)
-    (box 1 0.1 0.1))
-  (with-translation [0 1 0]
-    (fill 0 255 0 192)
-    (box 0.1 1 0.1))
-  (with-translation [0 0 1]
-    (fill 0 0 255 192)
-    (box 0.1 0.1 1)))
+  (no-stroke)
+  (with-translation [5 0 0]
+    (fill 255 0 0 128)
+    (box 10 0.01 0.01))
+  (with-translation [0 5 0]
+    (fill 0 255 0 128)
+    (box 0.01 10 0.01))
+  (with-translation [0 0 5]
+    (fill 0 0 255 128)
+    (box 0.01 0.01 10)))
 
 
 
@@ -609,7 +611,7 @@
         (no-fill))
         )
 
-    (stroke-weight 1)
+    (stroke-weight 3)
     (stroke (col 0) (col 1) (col 2) 192)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))

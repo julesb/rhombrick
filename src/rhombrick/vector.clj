@@ -83,3 +83,23 @@
 
 (defn vec3-bisect [p1 p2]
   (vec3-scale (vec3-add p1 p2) 0.5))
+
+
+(defn myround [s n]
+  (double (.setScale (bigdec n) s java.math.RoundingMode/HALF_EVEN)))
+
+
+(defn eps-to-zero [n e]
+  (if (< (Math/abs n) e) 0.0 n))
+
+(defn vec3-eps-to-zero [v e]
+  [(eps-to-zero (v 0) e)
+   (eps-to-zero (v 1) e)
+   (eps-to-zero (v 2) e)])
+
+(defn vec3-quantize [v p]
+  [(myround p (v 0))
+   (myround p (v 1))
+   (myround p (v 2))])
+
+

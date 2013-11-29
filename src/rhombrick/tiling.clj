@@ -49,10 +49,18 @@
   (vec (map #(tiles (get-neighbour-pos pos %)) (range (current-topology :num-faces)))))
 
 
+(defn quantize-position [v]
+  (cond
+    (= (current-topology :id) :hexagon)
+      (vec3-quantize v 6)
+    :else
+      v) )
+
+
 (defn make-tile [ts pos facecode]
   (when sonify?
     (osc-send client2 "/rhombrick.tiling" "make-tile" (int (mod (tilecode-to-number facecode) 21))))
-  (assoc ts :tiles (assoc (ts :tiles) pos facecode)))
+  (assoc ts :tiles (assoc (ts :tiles) (quantize-position pos) facecode)))
 
 
 (defn delete-neighbours [tiles pos]
@@ -208,11 +216,13 @@
 
 
 (def default-params {
-  ;:tileset ["----1A---a--"]
-  :tileset ["---1" "-1-1" "--11"]
+  ;:tileset ["----1A---a----"] ; to
+  :tileset ["----1A---a--"] ; rd
+  ;:tileset ["---1" "-1-1" "--11"] ; sq
+  ;:tileset ["1-1---" "1--1-1"] ; hex 
   :seed ""
   :max-iters 1000000
-  :max-radius 3 
+  :max-radius 8 
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0
@@ -258,7 +268,7 @@
     (-> default-state
         (assoc :tileset-expanded (expand-tiles-preserving-symmetry (params :tileset)))
         (assoc :params params)
-        (assoc :tiles (ordered-map [0 0 0] (params :seed)))
+        (assoc :tiles (ordered-map (quantize-position [0 0 0]) (params :seed)))
       )))
 
 
@@ -341,6 +351,7 @@
       ts)))
 
 
+
 (defn make-backtracking-tiling-iteration4 [ts]
   (let [{:keys [params tiles dead iters solved]} ts
         tileset (ts :tileset-expanded)
@@ -365,7 +376,9 @@
                 (inc-iters))
 
             ; else add tile and return new state 
-            (-> (make-tile ts new-pos new-code)
+            ;(-> (make-tile ts new-pos new-code) ; normal
+            ;(-> (make-tile ts (vec3-quantize new-pos 5) new-code) ; for hex 
+            (-> (make-tile ts (quantize-position new-pos) new-code)
                 (inc-iters))))
 
         (-> ts
