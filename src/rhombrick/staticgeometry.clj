@@ -201,6 +201,67 @@
                               [ 1 -1 -1] ; hex b fr r
                               ])
 
+(def to-faces-old [
+[0 22 1 23]
+ [2 3 4 5]
+ [6 7 8 9]
+ [10 11 12 13]
+ [14 15 16 17]
+ [18 19 20 21]
+ [12 11 4]
+ [20 19 3]
+ [22 13 12]
+ [18 1 19]
+ [5 8 7]
+ [2 16 15]
+ [6 0 7]
+ [16 23 17]
+ [9 10 13]
+ [0 6 22]
+ [5 4 11]
+ [9 8 10]
+ [18 21 14]
+ [1 17 23]
+ [20 3 2]
+ [21 15 14]
+ [6 9 22]
+ [9 13 22]
+ [1 22 12]
+ [1 12 19]
+ [3 19 4]
+ [4 19 12]
+ [2 15 21]
+ [2 21 20]
+ [1 14 17]
+ [1 18 14]
+ [0 23 7]
+ [7 23 16]
+ [5 7 16]
+ [2 5 16]
+ [5 10 8]
+ [5 11 10]
+])
+
+(def to-faces [
+ [10 11 12 13]
+ [1 18 21 14 17 23]
+ [18 19 20 21]
+ [2 3 4 5]
+ [0 23 17 16 7 6]
+ [0 6 9 10 13 22]
+ [1 22 13 12 19 18]
+ [14 15 16 17]
+ [11 10 9 8 5 4]
+ [6 7 8 9]
+ [0 22 1 23]
+ [20 19 12 11 4 3]
+ [14 15 2 3 20 21]
+ [16 15 2 5 8 7]
+])
+
+
+
+
 ; edge-centered cubic lattice logic
 ; 
 ; V        V % 2
@@ -381,8 +442,6 @@
 
 
 
-(defn face-idxs-to-verts [face-idxs]
-  (vec (map #(rd-verts %) face-idxs)))
 
 
 
@@ -459,15 +518,21 @@
   :rhombic-dodecahedron {
     :num-faces 12
     :symmetry-face-map rd-symmetry-face-idx-map
-    :neighbors rd-neighbour-offsets}
+    :neighbors rd-neighbour-offsets
+    :id :rhombic-dodecahedron
+    :verts rd-verts
+    :faces rd-faces}
 
   :truncated-octahedron {
     :num-faces 14
     :symmetry-face-map to-symmetry-face-idx-map
-    :neighbors to-face-centers}
+    :neighbors to-face-centers
+    :id :truncated-octahedron
+    :verts to-verts
+    :faces to-faces}
   })
 
-(def current-topology (topologies :truncated-octahedron))
+(def current-topology (topologies :rhombic-dodecahedron))
 
 
 (defn get-code-symmetry [^String code sym-idx]
@@ -492,6 +557,9 @@
 ; identity - eg for non-rotatable wang tiles
 ;(defn get-code-symmetries-identity-only [code]
 ;  code)
+
+(defn face-idxs-to-verts [face-idxs]
+  (vec (map #((current-topology :verts) %) face-idxs)))
 
 (defn get-connected-idxs [code]
   (filter #(not= nil %)

@@ -60,6 +60,8 @@
 (def ^:dynamic editor-font)
 (def ^:dynamic console-font)
 
+(def to-verts-screen (atom []))
+
 ; _______________________________________________________________________
 
 
@@ -588,7 +590,8 @@
     ;(stroke-weight 1)
     ;(no-fill)
     ;(box 10 10 10)
-    
+    (reset! to-verts-screen (into [] (map world-to-screen (current-topology :verts))))
+
     (lights)
     (when @draw-gliders?
       (draw-gliders (frame-count))
@@ -665,6 +668,11 @@
 ;    (when @game-mode?
 ;      (game/render))
 
+    ;(fill 0 0 0 32)
+    (stroke 140 140 140 190)
+    (no-fill)
+    (draw-obj (map #(rhombrick.obj-loader/get-verts (current-topology :verts) %)
+                   (current-topology :faces)) [])
 
     (when @draw-empty?
       (draw-empty (@tiler-state :tiles)))
@@ -676,8 +684,6 @@
         ;(draw-curve-boundary-points selected-tile)
         (draw-selected-tile selected-tile)
         ))
-
-    (draw-face-idx-numbers [0 0 0] false)
 
     (pop-matrix)
   )
@@ -722,6 +728,8 @@
     ;  (text t x y)))
     )
 
+  (draw-vert-numbers @to-verts-screen)
+    ;(draw-vert-numbers (current-topology :verts))
   ;(when @game-mode?
   ;  (game/render-2d))
 

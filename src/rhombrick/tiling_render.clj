@@ -5,7 +5,7 @@
         [rhombrick.tiling]
         [rhombrick.tilecode]
         [rhombrick.camera]
-        ;[rhombrick.obj-loader]
+        [rhombrick.obj-loader]
         [rhombrick.bezierbox :as bbox]
         [clojure.math.combinatorics]))
 
@@ -20,7 +20,7 @@
 (def face-list (atom #{}))
 (def face-id-text (atom []))
 
-
+(def trunc-oct-model (get-obj-face-verts (load-obj "data/truncated_octahedron.obj")))
 
 (defn draw-graph [[x y] w h title data-range data]
   (stroke-weight 1)
@@ -69,7 +69,10 @@
 ;                    (graph :title)
 ;                    (graph :range)
 ;                    (graph :data))))))
-
+(defn world-to-screen [world-vec]
+  [(screen-x (world-vec 0) (world-vec 1) (world-vec 2))
+    (screen-y (world-vec 0) (world-vec 1) (world-vec 2))
+    0])
 
 (defn facecode-to-hex [code]
   (apply str "0x" (map #(if (= \- %) \0 %) code)))
@@ -231,9 +234,10 @@
 ; we dont need to check every face in the face list here
 ; only need to check the neighbours.
 (defn add-tile-to-facelist [pos]
-  (doseq [f rd-faces]
+  (doseq [f (current-topology :faces)]
     (let [fv (face-idxs-to-verts f)
-          fvw (vec (map #(vec3-add pos (vec3-scale % 0.5)) fv))]
+          fvw (vec (map #(vec3-add pos (vec3-scale % 1)) fv))]
+          ;fvw (vec (map #(vec3-add pos (vec3-scale % 0.5)) fv))]
     (if (not (facelist-contains-rotations? fvw))
       (swap! face-list conj fvw)
       (do
@@ -246,7 +250,19 @@
     (add-tile-to-facelist tile)))
 
 
-(defn draw-face-list []
+;(defn build-face-list2 []
+;  (reset! face-list #{})
+;  (doseq [tile (@tiler-state :tiles)]
+;    (let [code (val tile)
+;          connected (set (get-connected-idxs code))
+;          non-connected (filter #(not (contains? connected %)) code) 
+;          faces (face-idxs-to-verts 
+;          ]
+;
+;  ))
+
+
+(defn draw-face-list-new []
   (fill 32 32 32 128)
   ;(fill 32 32 32 128)
 
@@ -256,21 +272,57 @@
   (stroke-weight 4)
   ;(no-stroke)
   (doseq [face-verts @face-list]
-    (let [v0 (face-verts 0)
-          v1 (face-verts 1)
-          v2 (face-verts 2)
-          v3 (face-verts 3)]
-      (stroke 40 40 40 190) 
-      (begin-shape :quads)
-      ;(texture @rhomb-tex)
-      (vertex (v0 0) (v0 1) (v0 2))
-      (vertex (v1 0) (v1 1) (v1 2))
-      (vertex (v2 0) (v2 1) (v2 2))
-      (vertex (v3 0) (v3 1) (v3 2))
-      (end-shape)
-      (stroke 40 40 40 128)
-      ;(line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
-      )))
+    (draw-obj face-verts [])))
+
+(defn draw-face-list []
+  (fill 32 32 32 128)
+  ;(fill 32 32 32 128)
+
+  ;(no-fill)
+  ;(stroke 0 0 0 192)
+  (stroke 128 128 128 255)
+  (stroke-weight 1)
+  ;(no-stroke)
+  (doseq [face-verts @face-list]
+    (cond
+      (= 3 (count face-verts))
+        (let [v0 (face-verts 0)
+              v1 (face-verts 1)
+              v2 (face-verts 2) ]
+          ;(stroke 40 40 40 190) 
+          (begin-shape :triangles)
+          ;(texture @rhomb-tex)
+          (vertex (v0 0) (v0 1) (v0 2))
+          (vertex (v1 0) (v1 1) (v1 2))
+          (vertex (v2 0) (v2 1) (v2 2))
+          (end-shape)
+          (stroke 40 40 40 128)
+          ;(line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
+          )
+      (= 4 (count face-verts))
+        (let [v0 (face-verts 0)
+              v1 (face-verts 1)
+              v2 (face-verts 2)
+              v3 (face-verts 3)]
+          ;(stroke 40 40 40 190) 
+          (begin-shape :quads)
+          ;(texture @rhomb-tex)
+          (vertex (v0 0) (v0 1) (v0 2))
+          (vertex (v1 0) (v1 1) (v1 2))
+          (vertex (v2 0) (v2 1) (v2 2))
+          (vertex (v3 0) (v3 1) (v3 2))
+          (end-shape)
+          ;(stroke 40 40 40 128)
+          ;(line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
+          )
+      :else
+        (do
+          (begin-shape)
+          (doseq [v face-verts]
+            (vertex (v 0) (v 1) (v 2)))
+          (end-shape)
+          ))
+      ))
 
 
 (defn draw-face-list-textured []
@@ -348,7 +400,7 @@
                         (= (count code) (current-topology :num-faces)))))
       (let [[r g b] (get-tile-color code)]
         (with-translation pos
-          (scale 0.5)
+          ;(scale 0.5)
           ;(stroke-weight 1)
           ;(no-stroke)
           (stroke-weight 1)
@@ -395,7 +447,7 @@
                       (= (count code) (current-topology :num-faces)))))
     (let [[r g b] (get-tile-color code)]
       (with-translation pos
-        (scale 0.5)
+        ;(scale 0.5)
         (stroke-weight 1)
         (stroke 128 128 128 255)
         ;(no-stroke)
@@ -443,10 +495,7 @@
     (let [pos tile]
       (with-translation pos 
         (scale 0.5)
-        (box 0.2 0.2 0.2)
-        ;(draw-faces rd-verts rd-faces [0 255 0 8])
-        ;(draw-faces rd-verts rd-faces rd-face-colors)
-        ))))
+        (box 0.2 0.2 0.2)))))
 
 
 (defn draw-assemblage-center []
@@ -459,9 +508,7 @@
     (box 0.5)
     (with-translation c
       (scale 0.5)
-      (box 1 1 1)
-      ;(draw-faces rd-verts rd-faces nil)
-      )))
+      (box 1 1 1))))
 
 ; _______________________________________________________________________
 
@@ -475,7 +522,7 @@
     (fill 0 255 0 128)
     (box 0.01 10 0.01))
   (with-translation [0 0 5]
-    (fill 0 0 255 128)
+    (fill 128 128 255 128)
     (box 0.01 0.01 10)))
 
 
@@ -703,10 +750,14 @@
           ;line-col  [0 0 0 192] ;[192 192 255 192]
           bezier-steps @bezier-box-resolution]
       (with-translation pos 
-        (scale 0.5)
+        ;(scale 0.5)
         ;(stroke-weight 8)
         ;(stroke 0 0 0 64)
         (no-stroke)
+        
+        ;(fill 192 192 192 128)
+        ;(draw-obj trunc-oct-model [])
+
         (when with-lines?
           (no-fill)
           (draw-facecode-lines code))

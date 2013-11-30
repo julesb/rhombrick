@@ -239,7 +239,7 @@
   (doseq [i (range (current-topology :num-faces))]
     (let [[r g b] (phi-palette-color i 0)]
       (with-translation pos
-        (scale 0.5)
+        ;(scale 0.5)
         (stroke-weight 1)
         (stroke 255 255 255 128)
         (fill 255 255 255 255)                
@@ -251,7 +251,7 @@
           (if use-face-color?
             (fill r g b 192)
             (fill 255 255 255 192))
-          (with-translation (vec3-scale ((current-topology :neighbors) i) 1.01) ;0.975)
+          (with-translation (vec3-scale ((current-topology :neighbors) i) 1.1) ;0.975)
             (rotate az 0 0 1)
             (rotate el 0 1 0)
             (scale 0.025)
@@ -261,6 +261,14 @@
               (translate 10 0 0))
             (text (str i) (- tw) 0 0)                
                             ))))))
+
+(defn draw-vert-numbers [verts]
+  (fill 255 255 255 192)
+  ;(let [ps (into [] (map world-to-screen verts))]
+  (let [ps verts]
+    (doseq [i (range (count ps))]
+      (with-translation (ps i)
+        (text (str i) 0 0)))))
 
 
 (defn draw-selected [[x y] bscale col]
@@ -309,7 +317,7 @@
       (stroke-weight 1)
       (draw-faces-lite rd-verts rd-faces face-col)
       (draw-facecode-bezier-boxes code col 8)
-      (scale 2)
+      ;(scale 2)
       (draw-face-boundaries [0 0 0] code :all))))
 
 
@@ -338,7 +346,7 @@
         (no-fill)
         (draw-facecode-bezier-boxes code col 8)
         (draw-facecode-bezier-box-lines code col 8)
-        (scale 2)
+        ;(scale 2)
         (draw-face-boundaries [0 0 0] code :all)
         (no-fill)
         (draw-face-idx-numbers [0 0 0] false)
