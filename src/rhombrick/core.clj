@@ -148,6 +148,7 @@
   (text-font console-font)
   (let [line-space 22
         lines [(str "game mode:" @game-mode?)
+               (str "topology:" (@current-topology :id))
                ;(str "candidates:" @game/candidates)
                (str "run state:" (@tiler-state :run-status))
                (str "solved:" (@tiler-state :solved))
@@ -251,11 +252,18 @@
             (init-gliders num-gliders)))
     \G #(do
           (swap! draw-graphs? not))
-    \T #(do 
+    \T #(do
+         (cancel-tiler-thread)
+         (Thread/sleep 100)
+         (reset! current-topology (topologies (next-topology (@current-topology :id))))
+         (editor/set-tileset (get-random-tileset-1))
+         (start-tiler (editor/get-tileset-as-set) false)
+         (init-tileset-colors (editor/get-tileset-as-set))
          ;(swap! max-tiles inc)
          ;(println "max tiles:" @max-tiles)
         )
     \t #(do 
+          
          ;(swap! max-tiles dec)
          ;(println "max tiles:" @max-tiles)
         )
@@ -590,7 +598,7 @@
     ;(stroke-weight 1)
     ;(no-fill)
     ;(box 10 10 10)
-    (reset! to-verts-screen (into [] (map world-to-screen (current-topology :verts))))
+    (reset! to-verts-screen (into [] (map world-to-screen (@current-topology :verts))))
 
     (lights)
     (when @draw-gliders?
@@ -671,8 +679,18 @@
     ;(fill 0 0 0 32)
     (stroke 140 140 140 190)
     (no-fill)
-    (draw-obj (map #(rhombrick.obj-loader/get-verts (current-topology :verts) %)
-                   (current-topology :faces)) [])
+    (draw-obj (map #(rhombrick.obj-loader/get-verts (@current-topology :verts) %)
+                   (@current-topology :faces)) [])
+
+
+    (let [sym-ang ((symmetries-flattened @debug-symmetry-idx) 0)
+          axis ((symmetries-flattened @debug-symmetry-idx) 1) ]
+      (push-matrix)
+      (rotate (radians sym-ang) (axis 0) (axis 1) (axis 2))
+      (draw-face-idx-numbers [0 0 0] true)
+      (pop-matrix))
+
+    (draw-face-idx-numbers [0 0 0] false)
 
     (when @draw-empty?
       (draw-empty (@tiler-state :tiles)))
@@ -709,7 +727,7 @@
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info 10 (- (height) 250))
+  (draw-info 10 (- (height) 270))
   (camera)
 
   (when @draw-console?
@@ -729,7 +747,7 @@
     )
 
   (draw-vert-numbers @to-verts-screen)
-    ;(draw-vert-numbers (current-topology :verts))
+    ;(draw-vert-numbers (@current-topology :verts))
   ;(when @game-mode?
   ;  (game/render-2d))
 

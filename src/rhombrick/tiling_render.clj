@@ -234,7 +234,7 @@
 ; we dont need to check every face in the face list here
 ; only need to check the neighbours.
 (defn add-tile-to-facelist [pos]
-  (doseq [f (current-topology :faces)]
+  (doseq [f (@current-topology :faces)]
     (let [fv (face-idxs-to-verts f)
           fvw (vec (map #(vec3-add pos (vec3-scale % 1)) fv))]
           ;fvw (vec (map #(vec3-add pos (vec3-scale % 0.5)) fv))]
@@ -280,7 +280,7 @@
 
   ;(no-fill)
   ;(stroke 0 0 0 192)
-  (stroke 128 128 128 255)
+  (stroke 64 64 64 255)
   (stroke-weight 1)
   ;(no-stroke)
   (doseq [face-verts @face-list]
@@ -380,12 +380,12 @@
     (fill 255 255 255 255)
     (with-translation pos
       (scale 0.5)
-      (doseq [i (range (current-topology :num-faces))]
-        (let [[dx dy dz] ((current-topology :neighbors) i)
+      (doseq [i (range (@current-topology :num-faces))]
+        (let [[dx dy dz] ((@current-topology :neighbors) i)
               [dxn dyn dzn] (vec3-normalize [dx dy dz])
               az (Math/atan2 dyn dxn)
               el (- (Math/asin dzn))]
-          (with-translation ((current-topology :neighbors) i)
+          (with-translation ((@current-topology :neighbors) i)
             (rotate az 0 0 1)
             (rotate el 0 1 0)
             (box 0.2)))))))
@@ -394,10 +394,10 @@
 (defn draw-face-boundaries [pos ^String code boundary-mode]
   (when (not= boundary-mode :none)
     (when (and (not (nil? code))
-               (= (current-topology :num-faces) (count code))
+               (= (@current-topology :num-faces) (count code))
                (or (contains? (@tiler-state :tiles) pos)
                    (and (= boundary-mode :all)
-                        (= (count code) (current-topology :num-faces)))))
+                        (= (count code) (@current-topology :num-faces)))))
       (let [[r g b] (get-tile-color code)]
         (with-translation pos
           ;(scale 0.5)
@@ -407,9 +407,9 @@
           (stroke 128 128 128 255)
           ;(no-stroke)
           ;(stroke r g b 255)
-          (assert (and (not (nil? code)) (= (current-topology :num-faces) (count code))))
+          (assert (and (not (nil? code)) (= (@current-topology :num-faces) (count code))))
 
-          (doseq [^long i (range (current-topology :num-faces))]
+          (doseq [^long i (range (@current-topology :num-faces))]
             (when (cond
                     (= boundary-mode :only-empty)
                       (and (is-empty? (@tiler-state :tiles) (get-neighbour-pos pos i))
@@ -425,7 +425,7 @@
                     :else
                       false)
               (let [d (.charAt code i)
-                    dir ((current-topology :neighbors) i)
+                    dir ((@current-topology :neighbors) i)
                     [dx dy dz] (vec3-normalize dir)
                     az (Math/atan2 dy dx)
                     el (- (Math/asin dz))
@@ -433,7 +433,7 @@
                     bcol (get boundary-colors d [127 127 127])
                     alpha 255]
                 (fill (bcol 0) (bcol 1) (bcol 2) alpha)
-                (with-translation (vec3-scale ((current-topology :neighbors) i) 0.956)
+                (with-translation (vec3-scale ((@current-topology :neighbors) i) 0.956)
                   (rotate az 0 0 1)
                   (rotate el 0 1 0)
                   (box 0.125 thickness thickness))))))))))
@@ -441,10 +441,10 @@
 
 (defn draw-face-boundaries-ts [ts pos ^String code boundary-mode]
   (when (and (not (nil? code))
-             (= (current-topology :num-faces) (count code))
+             (= (@current-topology :num-faces) (count code))
              (or (contains? (ts :tiles) pos)
                  (and (= boundary-mode :all)
-                      (= (count code) (current-topology :num-faces)))))
+                      (= (count code) (@current-topology :num-faces)))))
     (let [[r g b] (get-tile-color code)]
       (with-translation pos
         ;(scale 0.5)
@@ -452,9 +452,9 @@
         (stroke 128 128 128 255)
         ;(no-stroke)
         ;(stroke r g b 255)
-        (assert (and (not (nil? code)) (= (current-topology :num-faces) (count code))))
+        (assert (and (not (nil? code)) (= (@current-topology :num-faces) (count code))))
 
-        (doseq [^long i (range (current-topology :num-faces))]
+        (doseq [^long i (range (@current-topology :num-faces))]
           (when (cond
                   (= boundary-mode :only-empty)
                     (and (is-empty? (ts :tiles) (get-neighbour-pos pos i))
@@ -470,7 +470,7 @@
                   :else
                     false)
             (let [d (.charAt code i)
-                  dir ((current-topology :neighbors) i)
+                  dir ((@current-topology :neighbors) i)
                   [dx dy dz] (vec3-normalize dir)
                   az (Math/atan2 dy dx)
                   el (- (Math/asin dz))
@@ -483,7 +483,7 @@
                   (if (>= (int d) 97)
                     (fill 255 255 255 alpha)
                     (fill 0 0 0 alpha))))
-              (with-translation (vec3-scale ((current-topology :neighbors) i) 0.956)
+              (with-translation (vec3-scale ((@current-topology :neighbors) i) 0.956)
                 (rotate az 0 0 1)
                 (rotate el 0 1 0)
                 (box 0.125 thickness thickness)))))))))
@@ -650,7 +650,7 @@
     (stroke (col 0) (col 1) (col 2) 192) 
     
     (if (= num-connected 1)
-      (let [p ((current-topology :neighbors) (first (get-connected-idxs code)))]
+      (let [p ((@current-topology :neighbors) (first (get-connected-idxs code)))]
         (line 0 0 0 (p 0) (p 1) (p 2))
         (fill 255 128 128 128)
         ;(box 0.05125 0.05125 0.05125)

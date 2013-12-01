@@ -36,23 +36,23 @@
 
 
 (defn get-neighbour-pos [pos face]
-  (vec3-add pos (vec3-scale ((current-topology :neighbors) face) 2 )))
-  ;(vec3-add pos ((current-topology :neighbors) face)))
+  (vec3-add pos (vec3-scale ((@current-topology :neighbors) face) 2 )))
+  ;(vec3-add pos ((@current-topology :neighbors) face)))
 
 
 (defn get-neighbours [pos]
   "returns a vector containing the positions of the neighbours of a given point"
-  (vec (map #(get-neighbour-pos pos %) (range (current-topology :num-faces)))))
+  (vec (map #(get-neighbour-pos pos %) (range (@current-topology :num-faces)))))
 
 
 (defn get-neighbourhood [tiles pos]
   "returns a vector containing facecodes for all neighbours"
-  (vec (map #(tiles (get-neighbour-pos pos %)) (range (current-topology :num-faces)))))
+  (vec (map #(tiles (get-neighbour-pos pos %)) (range (@current-topology :num-faces)))))
 
 
 (defn quantize-position [v]
   (cond
-    (= (current-topology :id) :hexagon)
+    (= (@current-topology :id) :hexagon)
       (vec3-quantize v 6)
     :else
       v) )
@@ -218,12 +218,13 @@
 
 (def default-params {
   ;:tileset ["----1A---a----"] ; to
-  :tileset ["----1A---a--"] ; rd
+  ;:tileset ["----1A---a--"] ; rd
+  :tileset ["111111"] ; cube
   ;:tileset ["---1" "-1-1" "--11"] ; sq
   ;:tileset ["1-1---" "1--1-1"] ; hex 
   :seed ""
   :max-iters 1000000
-  :max-radius 8 
+  :max-radius 16
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0

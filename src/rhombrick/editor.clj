@@ -90,10 +90,10 @@
   (reset! (@editor-state :tileset) [])
   (reset! current-tileset-colors {})
   (bbox/bezier-box-cache-reset)
-  (let [col-offset (mod (tileset-to-number tileset) (current-topology :num-faces))]
+  (let [col-offset (mod (tileset-to-number tileset) (@current-topology :num-faces))]
     (doseq [i (range (count tileset))]
       (let [code (tileset i)
-            col-idx (mod (+ i col-offset) (current-topology :num-faces))
+            col-idx (mod (+ i col-offset) (@current-topology :num-faces))
             col (phi-palette-color col-idx 0) ]
         ;(when-not (set-contains-rotations? (set tileset) code)
         (add-to-tileset code)
@@ -128,7 +128,7 @@
       (= level 1) 
         (count (get-tileset))
       (= level 2)
-        (current-topology :num-faces))))
+        (@current-topology :num-faces))))
 
 
 (defn index-exclude [r ex] 
@@ -236,14 +236,14 @@
 
 (defn draw-face-idx-numbers [pos use-face-color?]
   (no-lights)
-  (doseq [i (range (current-topology :num-faces))]
+  (doseq [i (range (@current-topology :num-faces))]
     (let [[r g b] (phi-palette-color i 0)]
       (with-translation pos
         ;(scale 0.5)
         (stroke-weight 1)
         (stroke 255 255 255 128)
         (fill 255 255 255 255)                
-        (let [dir ((current-topology :neighbors) i)
+        (let [dir ((@current-topology :neighbors) i)
              [dx dy dz] (vec3-normalize dir)
              az (Math/atan2 dy dx)
              el (- (Math/asin dz))
@@ -251,7 +251,7 @@
           (if use-face-color?
             (fill r g b 192)
             (fill 255 255 255 192))
-          (with-translation (vec3-scale ((current-topology :neighbors) i) 1.1) ;0.975)
+          (with-translation (vec3-scale ((@current-topology :neighbors) i) 1.01) ;0.975)
             (rotate az 0 0 1)
             (rotate el 0 1 0)
             (scale 0.025)
@@ -261,6 +261,7 @@
               (translate 10 0 0))
             (text (str i) (- tw) 0 0)                
                             ))))))
+
 
 (defn draw-vert-numbers [verts]
   (fill 255 255 255 192)
@@ -278,7 +279,7 @@
 
 
 (defn draw-facecode-buttons [[x y] sc code parent-idx]
-  (let [num-buttons (current-topology :num-faces) 
+  (let [num-buttons (@current-topology :num-faces) 
         bspace 1
         bsize (/ (- sc (* bspace (- num-buttons 1)))
                  num-buttons)
@@ -315,7 +316,7 @@
       (scale (/ bscale 5))
       (no-fill)
       (stroke-weight 1)
-      (draw-faces-lite rd-verts rd-faces face-col)
+      (draw-faces-lite (@current-topology :verts) (@current-topology :faces) face-col)
       (draw-facecode-bezier-boxes code col 8)
       ;(scale 2)
       (draw-face-boundaries [0 0 0] code :all))))
@@ -342,7 +343,7 @@
         (no-fill)
         (stroke-weight 1)
         (hint :enable-depth-test)
-        (draw-faces rd-verts rd-faces [128 128 128 192])
+        (draw-faces (@current-topology :verts) (@current-topology :faces) [128 128 128 192])
         (no-fill)
         (draw-facecode-bezier-boxes code col 8)
         (draw-facecode-bezier-box-lines code col 8)
