@@ -243,7 +243,7 @@
         (stroke-weight 1)
         (stroke 255 255 255 128)
         (fill 255 255 255 255)                
-        (let [dir ((@current-topology :neighbors) i)
+        (let [dir ((@current-topology :face-centers) i)
              [dx dy dz] (vec3-normalize dir)
              az (Math/atan2 dy dx)
              el (- (Math/asin dz))
@@ -251,7 +251,7 @@
           (if use-face-color?
             (fill r g b 192)
             (fill 255 255 255 192))
-          (with-translation (vec3-scale ((@current-topology :neighbors) i) 1.01) ;0.975)
+          (with-translation (vec3-scale ((@current-topology :face-centers) i) 1.01) ;0.975)
             (rotate az 0 0 1)
             (rotate el 0 1 0)
             (scale 0.025)

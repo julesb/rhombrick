@@ -36,8 +36,8 @@
 
 
 (defn get-neighbour-pos [pos face]
-  (vec3-add pos (vec3-scale ((@current-topology :neighbors) face) 2 )))
-  ;(vec3-add pos ((@current-topology :neighbors) face)))
+  (vec3-add pos (vec3-scale ((@current-topology :face-centers) face) 2 )))
+  ;(vec3-add pos ((@current-topology :face-centers) face)))
 
 
 (defn get-neighbours [pos]

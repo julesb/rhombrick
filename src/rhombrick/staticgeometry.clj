@@ -201,7 +201,7 @@
                               [ 1 -1 -1] ; hex b fr r
                               ])
 
-(def to-faces-old [
+(def to-tris-and-quads [
 [0 22 1 23]
  [2 3 4 5]
  [6 7 8 9]
@@ -498,11 +498,14 @@
                         [1 2 3 0]
                         [2 3 0 1]
                         [3 0 1 2]]
-    :neighbors [[ 1  0  0]
+    :face-centers [[ 1  0  0]
                 [ 0  1  0]
                 [-1  0  0]
                 [ 0 -1  0]]
-    :id :square}
+    :id :square
+    :verts []
+    :faces []
+  }
 
   :hexagon {
     :num-faces 6
@@ -512,7 +515,7 @@
                         [3 4 5 0 1 2]
                         [4 5 0 1 2 3]
                         [5 0 1 2 3 4]]
-    :neighbors [ [1.0 0.0 0.0]
+    :face-centers [ [1.0 0.0 0.0]
                  [0.5  -0.8660254037844 0.0]
                  [-0.5 -0.8660254037844 0.0]
                  [-1.0 0.0 0.0]
@@ -533,12 +536,14 @@
                ; [-0.5 -0.8660254037844385 0]
                ; [0.5 -0.866025403784439 0]]
     :id :hexagon
-            }
+    :verts []
+    :faces []
+  }
 
   :cube {
     :num-faces 6
     :symmetry-face-map cube-symmetry-face-idx-map
-    :neighbors [
+    :face-centers [
                 [ 0  0  1]
                 [-1  0  0]
                 [ 0 -1  0]
@@ -566,7 +571,7 @@
   :rhombic-dodecahedron {
     :num-faces 12
     :symmetry-face-map rd-symmetry-face-idx-map
-    :neighbors rd-neighbour-offsets
+    :face-centers rd-neighbour-offsets
     :id :rhombic-dodecahedron
     :verts rd-verts
     :faces rd-faces}
@@ -574,7 +579,7 @@
   :truncated-octahedron {
     :num-faces 14
     :symmetry-face-map to-symmetry-face-idx-map
-    :neighbors to-face-centers
+    :face-centers to-face-centers
     :id :truncated-octahedron
     :verts to-verts
     :faces to-faces}
@@ -631,8 +636,8 @@
 
 
 (defn get-angle-for-face-idxs [[idx1 idx2]]
-  (vec3-angle-between (vec3-normalize ((@current-topology :neighbors) idx1))
-                      (vec3-normalize ((@current-topology :neighbors) idx2))))
+  (vec3-angle-between (vec3-normalize ((@current-topology :face-centers) idx1))
+                      (vec3-normalize ((@current-topology :face-centers) idx2))))
 
 (defn get-tilecode-angles [code]
   (->> (map-indexed #(vec [%1 %2]) code)

@@ -44,8 +44,8 @@
 ; this is hideous and horrible but as long as it spits out the right numbers
 ; it will do, since it will only be used for precomputing triangle strip data 
 (defn get-bezier-anchor-offsets [f1-idx f2-idx]
-  (let [f1-center ((@current-topology :neighbors) f1-idx)
-        f2-center ((@current-topology :neighbors) f2-idx)
+  (let [f1-center ((@current-topology :face-centers) f1-idx)
+        f2-center ((@current-topology :face-centers) f2-idx)
         f1-f2-bisect (vec3-normalize (vec3-scale (vec3-add f1-center f2-center) 0.5))
         ;f1-f2-bisect (vec3-scale (vec3-add f1-center f2-center) 0.5)
 
@@ -96,9 +96,9 @@
 
 (defn get-bezier-controls [f1-idx f2-idx]
   "Given two face indices, returns a vec of four 3d bezier control points"
-  (let [p1 ((@current-topology :neighbors) f1-idx)
+  (let [p1 ((@current-topology :face-centers) f1-idx)
         p2 (vec3-scale p1 @bezier-box-control-bias)
-        p4 ((@current-topology :neighbors) f2-idx)
+        p4 ((@current-topology :face-centers) f2-idx)
         p3 (vec3-scale p4 @bezier-box-control-bias)]
     (if (not= f1-idx f2-idx)
       [p1 p2 p3 p4]
@@ -108,10 +108,10 @@
 (defn get-bezier-controls-with-offset [f1-idx f2-idx f1-offset f2-offset]
   "Given two face indices, returns a vec of four 3d bezier control points"
   "offset is a vector to specify the offset for bezier boxes."
-  (let [p1 (vec3-add ((@current-topology :neighbors) f1-idx) f1-offset)
-        p2 (vec3-sub p1 (vec3-scale ((@current-topology :neighbors) f1-idx) @bezier-box-control-bias))
-        p4 (vec3-add ((@current-topology :neighbors) f2-idx) f2-offset)
-        p3 (vec3-sub p4 (vec3-scale ((@current-topology :neighbors) f2-idx) @bezier-box-control-bias))]
+  (let [p1 (vec3-add ((@current-topology :face-centers) f1-idx) f1-offset)
+        p2 (vec3-sub p1 (vec3-scale ((@current-topology :face-centers) f1-idx) @bezier-box-control-bias))
+        p4 (vec3-add ((@current-topology :face-centers) f2-idx) f2-offset)
+        p3 (vec3-sub p4 (vec3-scale ((@current-topology :face-centers) f2-idx) @bezier-box-control-bias))]
     (if (not= f1-idx f2-idx)
       [p1 p2 p3 p4]
       [p1 p2 p3 [0 0 0]])))
