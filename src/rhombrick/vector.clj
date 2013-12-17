@@ -43,6 +43,11 @@
    (- (v1 1) (v2 1))
    (- (v1 2) (v2 2))])
 
+(defn vec3-mul [v1 v2]
+  [(* (v1 0) (v2 0))
+   (* (v1 1) (v2 1))
+   (* (v1 2) (v2 2))])
+
 (defn vec3-scale [v s]
   [(* (v 0) s) (* (v 1) s) (* (v 2) s)])
 
@@ -103,3 +108,25 @@
    (myround p (v 2))])
 
 
+(defn rotate-point [point axis ang]
+  (let [[x y z] point
+        [u v w] axis
+        ux (* u x) uy (* u y) uz (* u z)
+        vx (* v x) vy (* v y) vz (* v z)
+        wx (* w x) wy (* w y) wz (* w z)
+        sa (Math/sin ang)
+        ca (Math/cos ang)
+        xn (+ (* u (+ ux vy wz))
+              (* ca (- (* x (+ (* v v) (* w w)))
+                       (* u (+ vy wz))))
+              (* sa (+ (- wy) vz)))
+        yn (+ (* v (+ ux vy wz))
+              (* ca (- (* y (+ (* u u) (* w w)))
+                       (* v (+ ux wz))))
+              (* sa (- wx uz)))
+        zn (+ (* w (+ ux vy wz))
+              (* ca (- (* z (+ (* u u) (* v v)))
+                       (* w (+ ux vy))))
+              (* sa (+ (- vx) uy))) ]
+    [xn yn zn]))
+  

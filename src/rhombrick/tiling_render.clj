@@ -646,11 +646,11 @@
         (pop-matrix)
         (no-fill)))
 
-    (stroke-weight 4) 
-    (stroke (col 0) (col 1) (col 2) 192) 
-    
+    (stroke (col 0) (col 1) (col 2) 192)
+
     (if (= num-connected 1)
       (let [p ((@current-topology :face-centers) (first (get-connected-idxs code)))]
+        (stroke-weight 4) 
         (line 0 0 0 (p 0) (p 1) (p 2))
         (fill 255 128 128 128)
         ;(box 0.05125 0.05125 0.05125)
@@ -658,7 +658,7 @@
         (no-fill))
         )
 
-    (stroke-weight 3)
+    (stroke-weight 4)
     (stroke (col 0) (col 1) (col 2) 192)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))
@@ -737,6 +737,80 @@
               (normal nx ny nz)
               (vertex vx vy vz)))
           (end-shape))))))
+
+
+(defn make-tube-anchors [f-idx npoints rad ang-offset]
+  (let [c ((@current-topology :face-centers) f-idx)
+        ;rad 0.25
+        vert-ang-off (vec3-angle-between c [0.0 0.0 1.0])
+        fake-up-dir (if (or (< vert-ang-off 0.01) (> vert-ang-off 179.99)) [0 1 0] [0 0 1])
+        local-x-dir (vec3-cross c fake-up-dir)
+        xpos (vec3-add c (vec3-scale local-x-dir rad))
+        ang-step (/ (* Math/PI 2) npoints)
+        ]
+    (vec (map #(rotate-point xpos (vec3-normalize c) (* % ang-step)) (range npoints)))
+  ))
+
+(defn make-tube-anchors-for-topology [topo npoints]
+  (vec (map #(make-tube-anchors % npoints 0.25 0) (range (topo :num-faces))))
+  )
+
+;(defn get-tube-anchors-screen []
+
+
+(defn draw-tube-anchors [f-idx npoints]
+  (let [c ((@current-topology :face-centers) f-idx)
+        rad 0.25
+        vert-ang-off (vec3-angle-between c [0.0 0.0 1.0])
+        fake-up-dir (if (or (< vert-ang-off 0.01) (> vert-ang-off 179.99)) [0 1 0] [0 0 1])
+        local-x-dir (vec3-cross c fake-up-dir)
+        xpos (vec3-add c (vec3-scale local-x-dir rad))
+        ang-step (/ (* Math/PI 2) npoints)
+        col (phi-palette-color f-idx 0)
+        ]
+
+    (no-stroke)
+    (fill 255 255 0)
+    ; mark center
+    (with-translation c 
+      (box 0.02 0.02 0.02))
+
+    (doseq [i (range npoints)]
+      (let [pos (rotate-point xpos (vec3-normalize c) (* i ang-step))]
+        (with-translation pos 
+          (fill (col 0) (col 1) (col 2))
+          (box 0.01))))
+
+  ))
+
+
+
+(defn draw-vert-numbers [verts]
+  ;(fill 255 255 255 192)
+  ;(let [ps (into [] (map world-to-screen verts))]
+  (let [ps verts]
+    (doseq [i (range (count ps))]
+      (with-translation (ps i)
+        (text (str i) 0 0)))))
+
+
+(defn draw-anchor-numbers [verts]
+  (doseq [i (range (count verts))]
+  ;(doseq [vs verts]
+    (let [vs (verts i)
+          col (phi-palette-color i 0)]
+      (fill (col 0) (col 1) (col 2))
+      (draw-vert-numbers vs)
+    )
+  ))
+
+
+(defn draw-tubes [npoints]
+  (doseq [i (range (@current-topology :num-faces))]
+    (draw-tube-anchors i npoints)
+  ))
+
+
 
 
 (defn draw-tiling [ts with-boundaries? with-lines? with-bb-faces? with-bb-lines? boundary-mode]

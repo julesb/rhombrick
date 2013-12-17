@@ -263,15 +263,6 @@
                             ))))))
 
 
-(defn draw-vert-numbers [verts]
-  (fill 255 255 255 192)
-  ;(let [ps (into [] (map world-to-screen verts))]
-  (let [ps verts]
-    (doseq [i (range (count ps))]
-      (with-translation (ps i)
-        (text (str i) 0 0)))))
-
-
 (defn draw-selected [[x y] bscale col]
   (apply stroke col)
   (no-fill)

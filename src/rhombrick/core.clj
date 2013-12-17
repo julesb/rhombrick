@@ -13,6 +13,7 @@
         [rhombrick.button]
         [rhombrick.editor :as editor]
         [rhombrick.console :as console]
+        [rhombrick.marching-cubes]
         [clojure.math.combinatorics]
         [overtone.osc]
         )
@@ -23,18 +24,14 @@
 (def robot (new java.awt.Robot))
 
 (def mouse-position (atom [0 0]))
-(def view-scale (atom 1.0))
-;(def model-scale (atom 50))
-;(def frame (atom 0))
-
 ;(def num-gliders 50)
 
 (def last-render-time (atom 0))
 
 (def keys-down (atom #{}))
 
-;(def mousewarp-pos (atom [716 356])) ; 1440x800
-(def mousewarp-pos (atom [946 506])) ; 1900x1100
+(def mousewarp-pos (atom [716 356])) ; 1440x800
+;(def mousewarp-pos (atom [946 506])) ; 1900x1100
 (def last-mouse-delta (atom [0 0]))
 
 (def my-applet (atom nil))
@@ -61,6 +58,9 @@
 (def ^:dynamic console-font)
 
 (def to-verts-screen (atom []))
+(def anchor-verts-screen (atom []))
+(def test-surface (atom {}))
+
 
 ; _______________________________________________________________________
 
@@ -160,6 +160,7 @@
                (str "radius: " ((@tiler-state :params) :max-radius))
                ;(str "-------------")
                (str "bbox detail: " @bbox/bezier-box-resolution)
+               (str "cam:" @camera-pos)
                (str "scale: " @model-scale)
                (str "fps: " (int (current-frame-rate)))
                (str "tileset:" (get-tileset))
@@ -212,7 +213,7 @@
          (init-gliders num-gliders)
          )
    \R #(do 
-         (editor/set-tileset (get-random-tileset-1))
+         (editor/set-tileset (vec (distinct (normalize-tileset (get-random-tileset-1)))))
          (start-tiler (editor/get-tileset-as-set) false)
          (init-tileset-colors (get-in @tiler-state [:params :tileset]))
          (println "random tileset:" (editor/get-tileset-as-set))
@@ -350,6 +351,11 @@
           (swap! bezier-box-line-weight dec))
     \M #(do
           (swap! bezier-box-smooth-shading? not))
+    \y #(do
+          (reset! test-surface (make-surface 0.5 64 64 64))
+          (println "make-surface:" (count (@test-surface :tris)) "tris")
+          )
+
 ;    \Z #(do
 ;          (swap! game-mode? not))
 ;    \z #(do
@@ -490,6 +496,24 @@
 ;      (init-gliders num-gliders)))
 
 
+(defn draw-surface []
+  (fill 192 192 192)
+  ;(no-stroke)
+  (stroke-weight 1)
+  (stroke 96 96 96)
+  (push-matrix)
+  (scale (/ 1.0 (topo-coord-scales (@current-topology :id))))
+  (begin-shape :triangles)
+  (doseq [[i v n] (map vector (range (count (@test-surface :tris)))
+                              (@test-surface :tris)
+                              (@test-surface :norms)) ]
+    ;(normal (n 0) (n 1) (n 2))
+    (vertex (v 0) (v 1) (v 2)))
+  (end-shape)
+  (pop-matrix)
+  )
+
+
 (defn draw []
   ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
@@ -593,12 +617,13 @@
   (let [[mx my] @(state :mouse-position)]
     (push-matrix)
     (scale @model-scale)
-
+    (rotate (/ (frame-count) 200.0) 0 0 1)
     ;(stroke 0 255 255 128)
     ;(stroke-weight 1)
     ;(no-fill)
     ;(box 10 10 10)
     (reset! to-verts-screen (into [] (map world-to-screen (@current-topology :verts))))
+
 
     (lights)
     (when @draw-gliders?
@@ -669,6 +694,9 @@
     
     (draw-assemblage-center)
 
+
+    (draw-surface)
+
     (when @draw-facelist?
       (build-face-list)
       (draw-face-list))
@@ -691,6 +719,14 @@
       (pop-matrix))
 
     (draw-face-idx-numbers [0 0 0] false)
+
+
+    (reset! anchor-verts-screen
+            (vec (map (fn [vs] (vec (map world-to-screen vs)))
+                      (make-tube-anchors-for-topology @current-topology 4))))
+
+    (draw-tubes 4)
+    ;(draw-tube-anchors 0 6)
 
     (when @draw-empty?
       (draw-empty (@tiler-state :tiles)))
@@ -727,7 +763,7 @@
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info 10 (- (height) 270))
+  (draw-info 10 (- (height) 290))
   (camera)
 
   (when @draw-console?
@@ -745,8 +781,9 @@
     ;  (fill 255 255 255 255)
     ;  (text t x y)))
     )
-
+  (fill 255 255 255)
   (draw-vert-numbers @to-verts-screen)
+  (draw-anchor-numbers @anchor-verts-screen)
     ;(draw-vert-numbers (@current-topology :verts))
   ;(when @game-mode?
   ;  (game/render-2d))
@@ -778,8 +815,8 @@
     :title "rhombrick"
     :setup setup 
     :draw draw
-    :size [1900 1100]
-    ;:size [1440 800]
+    ;:size [1900 1100]
+    :size [1440 800]
     :renderer :opengl
     :key-typed key-typed
     :key-pressed key-pressed
