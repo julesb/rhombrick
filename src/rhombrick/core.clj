@@ -352,7 +352,7 @@
     \M #(do
           (swap! bezier-box-smooth-shading? not))
     \y #(do
-          (reset! test-surface (make-surface 0.5 64 64 64))
+          (reset! test-surface (make-surface 0.5 4 4 4))
           (println "make-surface:" (count (@test-surface :tris)) "tris")
           )
 
@@ -497,10 +497,13 @@
 
 
 (defn draw-surface []
-  (fill 192 192 192)
-  ;(no-stroke)
-  (stroke-weight 1)
-  (stroke 96 96 96)
+  (fill 64 128 255)
+  ;(fill 192 192 192)
+
+  ;(apply fill (conj (get-tile-color "111111--1---") 255)) 
+  (no-stroke)
+  ;(stroke-weight 1)
+  ;(stroke 96 96 96)
   (push-matrix)
   (scale (/ 1.0 (topo-coord-scales (@current-topology :id))))
   (begin-shape :triangles)

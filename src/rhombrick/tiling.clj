@@ -218,13 +218,13 @@
 
 (def default-params {
   ;:tileset ["----1A---a----"] ; to
-  ;:tileset ["----1A---a--"] ; rd
-  :tileset ["111111"] ; cube
+  :tileset ["----1A---a--"] ; rd
+  ;:tileset ["111111"] ; cube
   ;:tileset ["---1" "-1-1" "--11"] ; sq
   ;:tileset ["1-1---" "1--1-1"] ; hex 
   :seed ""
   :max-iters 1000000
-  :max-radius 32 
+  :max-radius 4 
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0
