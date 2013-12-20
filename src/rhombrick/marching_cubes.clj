@@ -69,23 +69,25 @@
 ; 1.0 depending on whether the point is contained within the polyhedron. The
 ; next three numbers are the components of the face normal closest to
 ;  the given point. 
-(defn polyhedron-contains? [xyz face-centers]
+;(defn polyhedron-contains? [xyz face-centers]
+(def polyhedron-contains? (memoize (fn [xyz face-centers]
   (let [closest-f (first (sort-by #(vec3-distance xyz %) face-centers)) ]
     (if (= (count face-centers)
            (count (filter #(> % 0) (map #(is-below xyz (vec3-scale % 0.5))
                                         face-centers))))
       true
-      false)))
+      false)))))
       ;(vec (flatten [0.0 (vec3-normalize closest-f)]))
       ;(vec (flatten [1.0 (vec3-normalize closest-f)])))))
 
 
 
-(defn get-points-for-curve [f1-idx f2-idx npoints]
+;(defn get-points-for-curve [f1-idx f2-idx npoints topo]
+(def get-points-for-curve (memoize (fn [f1-idx f2-idx npoints topo]
   (let [step (double (/ 1.0 npoints))]
     (->> (map #(get-bezier-point-3d f1-idx f2-idx (* % step)) (range npoints))
-         (map #(vec3-scale % (topo-coord-scales (@current-topology :id))))
-         vec)))
+         (map #(vec3-scale % (topo-coord-scales (topo :id))))
+         vec)))))
 
 
 (defn get-points-for-curve-orig [f1-idx f2-idx npoints]
@@ -102,15 +104,16 @@
            best nil
            i 0]
       (if (zero? (count ps))
-        best
+        [(best 0) (Math/sqrt (best 1)) (best 2) (best 3)]
         (let [test-p (first ps)
-              dist (vec3-distance p test-p)
+              dist-sqr (vec3-distance-squared p test-p)
+              ;dist (vec3-distance p test-p)
               t (double (/ i npoints))]
           (cond
             (nil? best)
-              (recur p (vec (rest ps)) (vec [test-p dist [1 0 0] t]) (inc i))
-            (< dist (best 1))
-              (recur p (vec (rest ps)) (vec [test-p dist (vec3-normalize (vec3-sub p test-p)) t]) (inc i))
+              (recur p (vec (rest ps)) (vec [test-p dist-sqr [1 0 0] t]) (inc i))
+            (< dist-sqr (best 1))
+              (recur p (vec (rest ps)) (vec [test-p dist-sqr (vec3-normalize (vec3-sub p test-p)) t]) (inc i))
             :else
               (recur p (vec (rest ps)) (vec best) (inc i))))))))
 
@@ -156,24 +159,25 @@
       [1.0 (n 0) (n 1) (n 2)])))
 
 
-(defn tilecode-bezier-blob [xyz code]
-  (if-not (polyhedron-contains? xyz (@current-topology :face-centers))
-    [1.0 0 0 0]
+(defn tilecode-bezier-blob [xyz code topo]
+;(def tilecode-bezier-blob (memoize (fn [xyz code topo]
+  (if-not (polyhedron-contains? xyz (topo :face-centers))
+    [999.0 0.0 0.0 0.0]
     (let [curve-res 16 
           endpoint-pairs (-make-curve-endpoints (get-connected-idxs code))
-          curves-points (map-indexed #(vec [%1 (get-points-for-curve (%2 0) (%2 1) curve-res) ])
+          curves-points (map-indexed #(vec [%1 (get-points-for-curve (%2 0) (%2 1) curve-res topo) ])
                                      endpoint-pairs)
           closest-per-curve (map #(find-closest-point xyz (% 1)) curves-points)
           ;closest-per-curve (map-indexed #(vec [%1 (find-closest-point xyz (% 2))]) curves-points)
           [closest-p closest-d closest-n closest-t] (first (sort-by #(% 1) closest-per-curve))
-          radius-at-p (lerp- closest-t 0.1333 0.1333)
+          radius-at-p (lerp- closest-t 0.1333 0.333)
           n closest-n]
-      (if (and 
-            (< closest-d radius-at-p)
-            ;(polyhedron-contains? xyz (@current-topology :face-centers))
-            )
-        [0.0 (n 0) (n 1) (n 2)]
-        [1.0 (n 0) (n 1) (n 2)]))))
+      [(* closest-d 2.0) (n 0) (n 1) (n 2)]))
+;      (if (< closest-d radius-at-p)
+;        [0.0 (n 0) (n 1) (n 2)]
+;        [1.0 (n 0) (n 1) (n 2)])))
+  )
+;))
 
 
 
@@ -196,8 +200,6 @@
 (defn- normalize [x y z]
   (let [mag (Math/sqrt (+ (* x x) (* y y) (* z z)))]
     [(/ x mag) (/ y mag) (/ z mag)]))
-
-
 
 
 (defn cube-index [grid isolevel]
@@ -269,7 +271,7 @@
                                                    ;            [1.0 1.0 1.0 1.0]
                                                   ;             [0.0 1.0 1.0 1.0])]
                                                    ;[n _ _ _] (bezier-blob v 0 1 0.12 0.4)]
-                                                   [n _ _ _] (tilecode-bezier-blob v "111111--1---")]
+                                                   [n _ _ _] (tilecode-bezier-blob v "111111--1---" @current-topology)]
                                                    ;[n _ _ _] (spheres-func v 0.4)]
                                                 n))
                                             grid-vertices))
@@ -282,7 +284,7 @@
                                       ;                     [1.0 1.0 1.0 1.0]
                                       ;                         [0.0 1.0 1.0 1.0])]
                                       ;(let [[_ nx ny nz] (bezier-blob v 0 1 0.12 0.4)]
-                                      (let [[_ nx ny nz] (tilecode-bezier-blob v "111111--1---")]
+                                      (let [[_ nx ny nz] (tilecode-bezier-blob v "111111--1---" @current-topology)]
 
                                       ;(let [[_ nx ny nz] (spheres-func v 0.4)]
                                         (normalize nx ny nz)))

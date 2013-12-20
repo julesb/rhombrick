@@ -352,7 +352,7 @@
     \M #(do
           (swap! bezier-box-smooth-shading? not))
     \y #(do
-          (reset! test-surface (make-surface 0.5 4 4 4))
+          (time (reset! test-surface (make-surface 0.25 32 32 32)))
           (println "make-surface:" (count (@test-surface :tris)) "tris")
           )
 
@@ -499,11 +499,9 @@
 (defn draw-surface []
   (fill 64 128 255)
   ;(fill 192 192 192)
-
-  ;(apply fill (conj (get-tile-color "111111--1---") 255)) 
-  (no-stroke)
-  ;(stroke-weight 1)
-  ;(stroke 96 96 96)
+  ;(no-stroke)
+  (stroke-weight 1)
+  (stroke 96 96 96)
   (push-matrix)
   (scale (/ 1.0 (topo-coord-scales (@current-topology :id))))
   (begin-shape :triangles)
@@ -540,8 +538,8 @@
     (= @camera-mode 0)
     ; rubber band camera to glider
       (do
-        ;(let [g (vec3-scale (get-glider-pos 1) @model-scale)
-        (let [g (vec3-scale @assemblage-center @model-scale)
+        (let [g (vec3-scale (get-glider-pos 1) @model-scale)
+        ;(let [g (vec3-scale @assemblage-center @model-scale)
               d (dist (@camera-pos 0)
                       (@camera-pos 1)
                       (@camera-pos 2)
@@ -630,7 +628,10 @@
 
     (lights)
     (when @draw-gliders?
+      (push-matrix)
+      (scale 1.0)
       (draw-gliders (frame-count))
+      (pop-matrix)
     )
     
     (draw-axes)

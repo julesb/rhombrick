@@ -51,8 +51,11 @@
 (defn vec3-scale [v s]
   [(* (v 0) s) (* (v 1) s) (* (v 2) s)])
 
-(defn vec3-sum-of-squares [[x y z]]
-  (+ (* x x) (* y y) (* z z)))
+(defn vec3-sum-of-squares [v]
+  (+ (* (v 0) (v 0)) (* (v 1) (v 1)) (* (v 2) (v 2))))
+
+;(defn vec3-sum-of-squares [[x y z]]
+;  (+ (* x x) (* y y) (* z z)))
 
 (defn vec3-length [[x y z]]
   (Math/sqrt (+ (* x x) (* y y) (* z z))))
@@ -85,6 +88,10 @@
 
 (defn vec3-distance [p1 p2]
   (vec3-length (vec3-sub p2 p1)))
+
+(defn vec3-distance-squared [p1 p2]
+  (vec3-sum-of-squares (vec3-sub p2 p1)))
+
 
 (defn vec3-bisect [p1 p2]
   (vec3-scale (vec3-add p1 p2) 0.5))
