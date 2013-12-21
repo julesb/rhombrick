@@ -352,9 +352,14 @@
     \M #(do
           (swap! bezier-box-smooth-shading? not))
     \y #(do
-          (time (reset! test-surface (make-surface 0.25 32 32 32)))
-          (println "make-surface:" (count (@test-surface :tris)) "tris")
-          )
+          (if (contains? (@tiler-state :tiles) [0 0 0])
+            (do
+                (reset! test-surface (make-tilecode-bezier-blob-surface
+                                          0.125
+                                          ((@tiler-state :tiles) [0 0 0])
+                                          32 32 32)))
+            ;(println "make-surface:" (count (@test-surface :tris)) "tris"))
+          ))
 
 ;    \Z #(do
 ;          (swap! game-mode? not))
@@ -498,6 +503,8 @@
 
 (defn draw-surface []
   (fill 64 128 255)
+  (if (contains? (@tiler-state :tiles) [0 0 0])
+    (apply fill (get-tile-color ((@tiler-state :tiles) [0 0 0]))))
   ;(fill 192 192 192)
   ;(no-stroke)
   (stroke-weight 1)
@@ -538,8 +545,8 @@
     (= @camera-mode 0)
     ; rubber band camera to glider
       (do
-        (let [g (vec3-scale (get-glider-pos 1) @model-scale)
-        ;(let [g (vec3-scale @assemblage-center @model-scale)
+        ;(let [g (vec3-scale (get-glider-pos 1) @model-scale)
+        (let [g (vec3-scale @assemblage-center @model-scale)
               d (dist (@camera-pos 0)
                       (@camera-pos 1)
                       (@camera-pos 2)
@@ -618,7 +625,7 @@
   (let [[mx my] @(state :mouse-position)]
     (push-matrix)
     (scale @model-scale)
-    (rotate (/ (frame-count) 200.0) 0 0 1)
+    ;(rotate (/ (frame-count) 200.0) 0 0 1)
     ;(stroke 0 255 255 128)
     ;(stroke-weight 1)
     ;(no-fill)

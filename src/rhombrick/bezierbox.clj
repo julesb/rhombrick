@@ -139,12 +139,13 @@
 
 
 (defn get-bezier-point-3d [f1-idx f2-idx t]
-  (when (not= f1-idx f2-idx)
+  ;(when (not= f1-idx f2-idx)
     (let [[p1 p2 p3 p4] (get-bezier-controls f1-idx f2-idx)
           bx (bezier-point2 (p1 0) (p2 0) (p3 0) (p4 0) t)
           by (bezier-point2 (p1 1) (p2 1) (p3 1) (p4 1) t)
           bz (bezier-point2 (p1 2) (p2 2) (p3 2) (p4 2) t)]
-      [bx by bz])))
+      [bx by bz]))
+  ;)
 
 
 (defn get-bezier-point [[p1 p2 p3 p4] t]

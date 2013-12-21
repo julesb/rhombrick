@@ -18,7 +18,7 @@
                          [0 1 1]])
 
 (def topo-coord-scales {:square 1.0
-                        :cube 1.0
+                        :cube 0.5
                        :hexagon 1.0
                        :rhombic-dodecahedron 0.5
                        :truncated-octahedron 0.5})
@@ -90,13 +90,7 @@
          vec)))))
 
 
-(defn get-points-for-curve-orig [f1-idx f2-idx npoints]
-  (let [step (/ 1 npoints)]
-    (vec (map #(get-bezier-point-3d f1-idx f2-idx (* % step))
-              (range npoints)))))
-
-
-; find the closest ps to p. returns [closest distance]
+; find the closest ps to p. returns [closest distance normal t]
 (defn find-closest-point [p ps]
   (let [npoints (count ps)]
     (loop [p p
@@ -107,7 +101,6 @@
         [(best 0) (Math/sqrt (best 1)) (best 2) (best 3)]
         (let [test-p (first ps)
               dist-sqr (vec3-distance-squared p test-p)
-              ;dist (vec3-distance p test-p)
               t (double (/ i npoints))]
           (cond
             (nil? best)
@@ -131,54 +124,32 @@
           (recur p (vec (rest ps)) (vec best))))))
 
 
-(defn get-t-for-bezier-point [p ps]
-  (let [t (->> ps
-               (map-indexed #(vec [(/ %1 (count ps)) %2]))
-               (filter #(= (second %) p))
-               (first)
-               (first))]
-    (if (nil? t) 0.0 (double t))))
-
-  
-;  (let [t (first (filter #(= %2 p) %1) ps)) ]
-;    (if (nil? t)
-;      0.0
-;      (/ t (count ps)))))
-
-
-(defn bezier-blob [xyz f1-idx f2-idx r1 r2]
-  (let [curve-points (map #(vec3-scale % (topo-coord-scales (@current-topology :id)))
-                          (get-points-for-curve f1-idx f2-idx 10))
-        [closest-p closest-d n] (find-closest-point xyz curve-points)
-        t-at-closest-p (get-t-for-bezier-point closest-p curve-points)
-        radius-at-p (lerp- t-at-closest-p r1 r2)
-        ]
-    (if (and (< closest-d radius-at-p)
-             (polyhedron-contains? xyz (@current-topology :face-centers)))
-      [0.0 (n 0) (n 1) (n 2)]
-      [1.0 (n 0) (n 1) (n 2)])))
-
 
 (defn tilecode-bezier-blob [xyz code topo]
 ;(def tilecode-bezier-blob (memoize (fn [xyz code topo]
-  (if-not (polyhedron-contains? xyz (topo :face-centers))
+  (if-not (polyhedron-contains? (vec3-scale xyz 0.9) (topo :face-centers))
     [999.0 0.0 0.0 0.0]
     (let [curve-res 16 
-          endpoint-pairs (-make-curve-endpoints (get-connected-idxs code))
+          endpoint-pairs (vec (-make-curve-endpoints (get-connected-idxs code)))
           curves-points (map-indexed #(vec [%1 (get-points-for-curve (%2 0) (%2 1) curve-res topo) ])
                                      endpoint-pairs)
-          closest-per-curve (map #(find-closest-point xyz (% 1)) curves-points)
-          ;closest-per-curve (map-indexed #(vec [%1 (find-closest-point xyz (% 2))]) curves-points)
-          [closest-p closest-d closest-n closest-t] (first (sort-by #(% 1) closest-per-curve))
-          radius-at-p (lerp- closest-t 0.1333 0.333)
+          closest-per-curve (map-indexed #(vec [%1 (find-closest-point xyz (%2 1))]) curves-points)
+          closest-data (first (sort-by #((% 1) 1) closest-per-curve))
+          closest-idx (first closest-data)
+          [closest-p closest-d closest-n closest-t] (second closest-data)
+          r1 (bezier-box-thicknesses (.charAt code (first (endpoint-pairs closest-idx)))) 
+          r2 (bezier-box-thicknesses (.charAt code (second (endpoint-pairs closest-idx))))
+          radius-at-p (lerp- closest-t (/ r1 4.0) (/ r2 4.0))
           n closest-n]
-      [(* closest-d 2.0) (n 0) (n 1) (n 2)]))
+      [(* (- closest-d radius-at-p) 2.0) (n 0) (n 1) (n 2)]))
+
 ;      (if (< closest-d radius-at-p)
 ;        [0.0 (n 0) (n 1) (n 2)]
 ;        [1.0 (n 0) (n 1) (n 2)])))
   )
 ;))
 
+(def surface-thread (atom nil))
 
 
 
@@ -242,7 +213,7 @@
     (map #(vertex-position % grid isolevel) (tri-table index))))
 
 
-(defn make-surface [isolevel xdim ydim zdim]
+(defn make-tilecode-bezier-blob-surface [isolevel code xdim ydim zdim]
   (let [xstep (/ 2.0 xdim)
         ystep (/ 2.0 ydim)
         zstep (/ 2.0 zdim)
@@ -271,7 +242,7 @@
                                                    ;            [1.0 1.0 1.0 1.0]
                                                   ;             [0.0 1.0 1.0 1.0])]
                                                    ;[n _ _ _] (bezier-blob v 0 1 0.12 0.4)]
-                                                   [n _ _ _] (tilecode-bezier-blob v "111111--1---" @current-topology)]
+                                                   [n _ _ _] (tilecode-bezier-blob v code @current-topology)]
                                                    ;[n _ _ _] (spheres-func v 0.4)]
                                                 n))
                                             grid-vertices))
@@ -284,7 +255,7 @@
                                       ;                     [1.0 1.0 1.0 1.0]
                                       ;                         [0.0 1.0 1.0 1.0])]
                                       ;(let [[_ nx ny nz] (bezier-blob v 0 1 0.12 0.4)]
-                                      (let [[_ nx ny nz] (tilecode-bezier-blob v "111111--1---" @current-topology)]
+                                      (let [[_ nx ny nz] (tilecode-bezier-blob v code @current-topology)]
 
                                       ;(let [[_ nx ny nz] (spheres-func v 0.4)]
                                         (normalize nx ny nz)))
@@ -297,4 +268,28 @@
     {:tris (mapcat :tris surface)
      :norms (mapcat :norms surface)}))
 
+
+
+
+
+;(defn get-t-for-bezier-point [p ps]
+;  (let [t (->> ps
+;               (map-indexed #(vec [(/ %1 (count ps)) %2]))
+;               (filter #(= (second %) p))
+;               (first)
+;               (first))]
+;    (if (nil? t) 0.0 (double t))))
+;
+;
+;(defn bezier-blob [xyz f1-idx f2-idx r1 r2]
+;  (let [curve-points (map #(vec3-scale % (topo-coord-scales (@current-topology :id)))
+;                          (get-points-for-curve f1-idx f2-idx 10))
+;        [closest-p closest-d n] (find-closest-point xyz curve-points)
+;        t-at-closest-p (get-t-for-bezier-point closest-p curve-points)
+;        radius-at-p (lerp- t-at-closest-p r1 r2)
+;        ]
+;    (if (and (< closest-d radius-at-p)
+;             (polyhedron-contains? xyz (@current-topology :face-centers)))
+;      [0.0 (n 0) (n 1) (n 2)]
+;      [1.0 (n 0) (n 1) (n 2)])))
 
