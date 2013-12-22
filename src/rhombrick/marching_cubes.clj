@@ -269,6 +269,67 @@
      :norms (mapcat :norms surface)}))
 
 
+(def test-surface (atom {}))
+
+(def tileset-meshes (atom {}))
+
+
+(defn make-tileset-meshes-old [isolevel tileset xdim ydim zdim ]
+  (println "make-tileset-meshes" isolevel tileset xdim ydim zdim)
+  (reset! tileset-meshes {})
+  (doseq [code tileset]
+    (print code "...")
+    (swap! tileset-meshes assoc code (make-tilecode-bezier-blob-surface isolevel code xdim ydim zdim))
+    (println "done"))
+  )
+
+
+(defn prioritise-tiles [ts]
+  (let [freqs (frequencies (vals (ts :tiles)))
+        sorted (reverse (sort-by #(get freqs % 0) (ts :tileset-expanded)))]
+    sorted
+  ))
+
+(defn make-tileset-meshes [ts isolevel xdim ydim zdim ]
+  (println "make-tileset-meshes" isolevel (ts :tileset-expanded) xdim ydim zdim)
+  (reset! tileset-meshes {})
+  (doseq [code (prioritise-tiles ts)]
+    (print code "...")
+    (swap! tileset-meshes assoc code (make-tilecode-bezier-blob-surface isolevel code xdim ydim zdim))
+    (println "done"))
+  )
+
+
+(defn make-tileset-meshes-p [isolevel tileset xdim ydim zdim ]
+  (println "make-tileset-meshes" isolevel tileset xdim ydim zdim)
+  (reset! tileset-meshes {})
+  (into {} (doall (pmap #(vec [% (make-tilecode-bezier-blob-surface isolevel % xdim ydim zdim)]) tileset)))
+
+;    (print code "...")
+;    (swap! tileset-meshes assoc code (make-tilecode-bezier-blob-surface isolevel code xdim ydim zdim))
+;    (println "done"))
+  )
+
+(defn cancel-surface-thread []
+  (when (future? @surface-thread)
+    (future-cancel @surface-thread)
+    (if (or (future-cancelled? @surface-thread)
+            (future-done? @surface-thread))
+      (println "cancel-surface-thread failed"))))
+
+
+(defn run-surface-thread [ts]
+  (let [s (make-tilecode-bezier-blob-surface 0.125
+                                             ((ts :tiles) [0 0 0])
+                                             32 32 32)]
+    (reset! test-surface s)
+    ))
+
+
+(defn start-surface-thread []
+  (cancel-surface-thread)
+  (reset! surface-thread (future (run-surface-thread)))
+  )
 
 
 

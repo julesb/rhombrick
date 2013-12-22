@@ -43,6 +43,7 @@
 (def draw-bezier-box-lines? (atom false))
 (def draw-bezier-box-faces? (atom true))
 (def draw-tilecode-lines? (atom false))
+(def draw-tilecode-blobs? (atom false))
 (def draw-console? (atom false))
 (def draw-graphs? (atom false))
 (def draw-empty? (atom true))
@@ -59,7 +60,7 @@
 
 (def to-verts-screen (atom []))
 (def anchor-verts-screen (atom []))
-(def test-surface (atom {}))
+;(def test-surface (atom {}))
 
 
 ; _______________________________________________________________________
@@ -352,15 +353,26 @@
     \M #(do
           (swap! bezier-box-smooth-shading? not))
     \y #(do
-          (if (contains? (@tiler-state :tiles) [0 0 0])
-            (do
-                (reset! test-surface (make-tilecode-bezier-blob-surface
-                                          0.125
-                                          ((@tiler-state :tiles) [0 0 0])
-                                          32 32 32)))
+          (make-tileset-meshes @tiler-state
+                                                      0.125
+                                                      ;(get-tileset-expanded)
+                                                      ;(vec (distinct (vals (@tiler-state :tiles))))
+                                                      16 16 16
+                                                      )
+          ;(if (contains? (@tiler-state :tiles) [0 0 0])
+          ;  (do
+          ;    (run-surface-thread @tiler-state)
+          ;    ;  (reset! test-surface (make-tilecode-bezier-blob-surface
+          ;    ;                            0.125
+          ;    ;                            ((@tiler-state :tiles) [0 0 0])
+          ;    ;                            32 32 32))
+          ;    )
             ;(println "make-surface:" (count (@test-surface :tris)) "tris"))
-          ))
-
+          )
+    \B #(do
+          (swap! draw-tilecode-blobs? not)
+          (println "draw-tilecode-blobs:" @draw-tilecode-blobs?)
+          )
 ;    \Z #(do
 ;          (swap! game-mode? not))
 ;    \z #(do
@@ -501,25 +513,41 @@
 ;      (init-gliders num-gliders)))
 
 
-(defn draw-surface []
-  (fill 64 128 255)
-  (if (contains? (@tiler-state :tiles) [0 0 0])
-    (apply fill (get-tile-color ((@tiler-state :tiles) [0 0 0]))))
+(defn draw-surface [surf]
+  ;(fill 64 128 255)
+  ;(if (contains? (@tiler-state :tiles) [0 0 0])
+  ;  (apply fill (get-tile-color ((@tiler-state :tiles) [0 0 0]))))
   ;(fill 192 192 192)
   ;(no-stroke)
-  (stroke-weight 1)
-  (stroke 96 96 96)
+  ;(stroke-weight 1)
+  ;(stroke 96 96 96)
+
   (push-matrix)
   (scale (/ 1.0 (topo-coord-scales (@current-topology :id))))
   (begin-shape :triangles)
-  (doseq [[i v n] (map vector (range (count (@test-surface :tris)))
-                              (@test-surface :tris)
-                              (@test-surface :norms)) ]
-    ;(normal (n 0) (n 1) (n 2))
+  (doseq [[i v n] (map vector (range (count (surf :tris)))
+                              (surf :tris)
+                              (surf :norms)) ]
+    (normal (n 0) (n 1) (n 2))
     (vertex (v 0) (v 1) (v 2)))
   (end-shape)
   (pop-matrix)
   )
+
+
+(defn draw-blobs [ts]
+  ;(stroke-weight 1)
+  ;(stroke 96 96 96)
+  (no-stroke)
+  (doseq [[pos code] (ts :tiles)]
+    (if (contains? @tileset-meshes code)
+      (do
+        (apply fill (get-tile-color code))
+        (with-translation pos
+          (draw-surface (@tileset-meshes code)))
+  ))))
+
+
 
 
 (defn draw []
@@ -625,7 +653,7 @@
   (let [[mx my] @(state :mouse-position)]
     (push-matrix)
     (scale @model-scale)
-    ;(rotate (/ (frame-count) 200.0) 0 0 1)
+    (rotate (/ (frame-count) 200.0) 0 0 1)
     ;(stroke 0 255 255 128)
     ;(stroke-weight 1)
     ;(no-fill)
@@ -706,7 +734,9 @@
     (draw-assemblage-center)
 
 
-    (draw-surface)
+    (when @draw-tilecode-blobs?
+      ;(draw-surface @test-surface)
+      (draw-blobs @tiler-state))
 
     (when @draw-facelist?
       (build-face-list)
