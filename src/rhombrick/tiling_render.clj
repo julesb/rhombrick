@@ -658,7 +658,7 @@
         (no-fill))
         )
 
-    (stroke-weight 4)
+    (stroke-weight 1)
     (stroke (col 0) (col 1) (col 2) 192)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))

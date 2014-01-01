@@ -136,4 +136,30 @@
                        (* w (+ ux vy))))
               (* sa (+ (- vx) uy))) ]
     [xn yn zn]))
-  
+
+
+
+; p=point, pv=point on plane, pn=plane normal
+(defn project-point-to-plane [p pv pn]
+  (let [;norm (fn [v] (Math/sqrt (vec3-dot v v)))
+        ;dist (fn [p q] (norm (vec3-sub p q)))
+        sn (- (vec3-dot pn (vec3-sub p pv)))
+        sd (vec3-dot pn pn)
+        sb (/ sn sd)
+        b (vec3-add p (vec3-scale pn sb))]
+    b))
+
+;; p=point, pv=point on plane, pn=plane normal
+(defn distance-point-to-plane [p pv pn]
+  (vec3-distance p (project-point-to-plane p pv pn)))
+
+
+;; p=point, pv=point on plane, pn=plane normal
+;(defn distance-point-to-plane [p pv pn]
+;  (let [norm (fn [v] (Math/sqrt (vec3-dot v v)))
+;        dist (fn [p q] (norm (vec3-sub p q)))
+;        sn (- (vec3-dot pn (vec3-sub p pv)))
+;        sd (vec3-dot pn pn)
+;        sb (/ sn sd)
+;        b (vec3-add p (vec3-scale pn sb))]
+;    (dist p b)))

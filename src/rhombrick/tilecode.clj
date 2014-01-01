@@ -228,7 +228,7 @@
 
 
 (defn get-random-tileset-1 []
-  (let [max-tiles 16]
+  (let [max-tiles 6]
     (make-random-tileset (+ 1 (rand-int max-tiles)) [])))
 
 

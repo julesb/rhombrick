@@ -18,7 +18,7 @@
                          [0 1 1]])
 
 (def topo-coord-scales {:square 1.0
-                        :cube 0.5
+                        :cube 1.0 
                        :hexagon 1.0
                        :rhombic-dodecahedron 0.5
                        :truncated-octahedron 0.5})
@@ -71,21 +71,33 @@
 ;  the given point. 
 ;(defn polyhedron-contains? [xyz face-centers]
 (def polyhedron-contains? (memoize (fn [xyz face-centers]
-  (let [closest-f (first (sort-by #(vec3-distance xyz %) face-centers)) ]
+;  (let [closest-f (first (sort-by #(vec3-distance xyz %) face-centers)) ]
     (if (= (count face-centers)
-           (count (filter #(> % 0) (map #(is-below xyz (vec3-scale % 0.5))
+           (count (filter #(> % 0) (map #(is-below xyz (vec3-scale % (topo-coord-scales (@current-topology :id))))
                                         face-centers))))
+           ;(count (filter #(> % 0) (map #(is-below xyz (vec3-scale % 0.5))
+           ;                             face-centers))))
       true
-      false)))))
+      false))))
+;)
       ;(vec (flatten [0.0 (vec3-normalize closest-f)]))
       ;(vec (flatten [1.0 (vec3-normalize closest-f)])))))
+
+(defn tilecode-planes-contain [xyz code topo]
+  (let [face-idxs (get-connected-idxs code)
+        face-centers (map #((topo :face-centers) %) face-idxs)]
+    (if (= (count face-centers)
+           (count (filter #(> % 0) (map #(is-below xyz (vec3-scale % (topo-coord-scales (@current-topology :id))))
+                                        face-centers))))
+      [1.0 1.0 1.0 1.0]
+      [0.0 1.0 1.0 1.0])))
 
 
 
 ;(defn get-points-for-curve [f1-idx f2-idx npoints topo]
 (def get-points-for-curve (memoize (fn [f1-idx f2-idx npoints topo]
   (let [step (double (/ 1.0 npoints))]
-    (->> (map #(get-bezier-point-3d f1-idx f2-idx (* % step)) (range npoints))
+    (->> (map #(get-bezier-point-3d f1-idx f2-idx (* % step)) (range (inc npoints)))
          (map #(vec3-scale % (topo-coord-scales (topo :id))))
          vec)))))
 
@@ -110,24 +122,45 @@
             :else
               (recur p (vec (rest ps)) (vec best) (inc i))))))))
 
-(defn find-closest-point-orig [p ps & best]
-  (if (zero? (count ps))
-    best
-    (let [test-p (first ps)
-          dist (vec3-distance p test-p)]
-      (cond
-        (nil? best)
-          (recur p (vec (rest ps)) (vec [test-p dist [1 0 0]]))
-        (< dist (best 1))
-          (recur p (vec (rest ps)) (vec [test-p dist (vec3-normalize (vec3-sub p test-p))]))
-        :else
-          (recur p (vec (rest ps)) (vec best))))))
+
+
+(defn cell-func [xyz topo]
+  (let [closest-f (first (sort-by #(vec3-distance xyz %) (topo :face-centers))) ]
+;    (if (= (count (topo :face-centers))
+;           (count (filter #(> % 0) (map #(is-below xyz (vec3-scale % (topo-coord-scales (topo :id))))
+;                                        (topo :face-centers)))))
+      (let [n (vec3-normalize closest-f)
+            d (distance-point-to-plane xyz closest-f n)
+            field (/ 1.0 (* d d))]
+        [field (n 0) (n 1) (n 2)])))
+
+
+; bounding sphere radii : 
+;   trunc-oct: 2.449489742783178
+;   rhomb-dodeca: 2.0
+;   cube: 1.7320508075688772
+
+(defn tilecode-distance-avg-blob [xyz f1-idx f2-idx r1 r2]
+  (let [;curve-points (map #(vec3-scale % (topo-coord-scales (@current-topology :id)))
+        ;                  (get-points-for-curve f1-idx f2-idx 16 @current-topology))
+        curve-points (get-points-for-curve f1-idx f2-idx 16 @current-topology)
+
+        rad 0.3
+        dists (map #(/ 1.0 (- (* rad rad) (vec3-distance-squared xyz %))) curve-points)
+        ;dist-avg (/ (reduce + dists) (count curve-points))
+        dist-sum (reduce + dists)
+        ;[closest-p closest-d n] (find-closest-point xyz curve-points)
+        ;t-at-closest-p (get-t-for-bezier-point closest-p curve-points)
+        ;radius-at-p (lerp- t-at-closest-p r1 r2)
+        ]
+    [dist-sum 0.0 0.0 0.0]))
 
 
 
 (defn tilecode-bezier-blob [xyz code topo]
 ;(def tilecode-bezier-blob (memoize (fn [xyz code topo]
-  (if-not (polyhedron-contains? (vec3-scale xyz 0.9) (topo :face-centers))
+  (if (> (vec3-length xyz) 1.224744871391589)
+          ;(not (polyhedron-contains? (vec3-scale xyz 0.9375) (topo :face-centers))))
     [999.0 0.0 0.0 0.0]
     (let [curve-res 16 
           endpoint-pairs (vec (-make-curve-endpoints (get-connected-idxs code)))
@@ -147,7 +180,45 @@
 ;        [0.0 (n 0) (n 1) (n 2)]
 ;        [1.0 (n 0) (n 1) (n 2)])))
   )
+;;))
+
+
+(defn tilecode-bezier-blob2 [xyz code topo]
+  (if ;(> (vec3-length xyz) 1.224744871391589)
+      (not (polyhedron-contains? (vec3-scale xyz 1.0) (topo :face-centers)))
+    [999.0 0.0 0.0 0.0]
+    (let [curve-res 16 
+          endpoint-pairs (vec (-make-curve-endpoints (get-connected-idxs code)))
+          curves-points (map-indexed #(vec [%1 (get-points-for-curve (%2 0) (%2 1) curve-res topo) ])
+                                     endpoint-pairs)
+          closest-per-curve (map-indexed #(vec [%1 (find-closest-point xyz (%2 1))]) curves-points)
+          closest-data (first (sort-by #((% 1) 1) closest-per-curve))
+          closest-idx (first closest-data)
+          ;field-strengths (map #(/ 1.0 (* (% 1) (% 1))) closest-per-curve) 
+
+          [closest-p closest-d closest-n closest-t] (second closest-data)
+          r1 (bezier-box-thicknesses (.charAt code (first (endpoint-pairs closest-idx)))) 
+          r2 (bezier-box-thicknesses (.charAt code (second (endpoint-pairs closest-idx))))
+          radius-at-p (lerp- closest-t (/ r1 1.0) (/ r2 1.0))
+          n closest-n
+          d (- closest-d radius-at-p)
+          field (/ 1.0 (* d d))
+          ]
+      ;[(* (- closest-d radius-at-p) 2.0) (n 0) (n 1) (n 2)]))
+      [field (n 0) (n 1) (n 2)]))
+
+;      (if (< closest-d radius-at-p)
+;        [0.0 (n 0) (n 1) (n 2)]
+;        [1.0 (n 0) (n 1) (n 2)])))
+  )
 ;))
+
+
+(defn make-surface-cache-obj [code dim mesh]
+  {:code code
+   :dim dim
+   :mesh mesh})
+
 
 (def surface-thread (atom nil))
 
@@ -242,7 +313,10 @@
                                                    ;            [1.0 1.0 1.0 1.0]
                                                   ;             [0.0 1.0 1.0 1.0])]
                                                    ;[n _ _ _] (bezier-blob v 0 1 0.12 0.4)]
-                                                   [n _ _ _] (tilecode-bezier-blob v code @current-topology)]
+                                                   [n _ _ _] (cell-func v @current-topology)]
+                                                   ;[n _ _ _] (tilecode-planes-contain v code @current-topology)]
+                                                   ; [n _ _ _] (tilecode-bezier-blob2 v code @current-topology)]
+                                                    ;[n _ _ _] (tilecode-distance-avg-blob v 0 2 0.2 0.5)]
                                                    ;[n _ _ _] (spheres-func v 0.4)]
                                                 n))
                                             grid-vertices))
@@ -255,7 +329,10 @@
                                       ;                     [1.0 1.0 1.0 1.0]
                                       ;                         [0.0 1.0 1.0 1.0])]
                                       ;(let [[_ nx ny nz] (bezier-blob v 0 1 0.12 0.4)]
-                                      (let [[_ nx ny nz] (tilecode-bezier-blob v code @current-topology)]
+                                      (let [[_ nx ny nz] (cell-func v @current-topology)]
+                                      ;(let [[_ nx ny nz] (tilecode-bezier-blob2 v code @current-topology)]
+                                      ;(let [[_ nx ny nz] (tilecode-distance-avg-blob v 0 2 0.2 0.5)]
+                                      ;(let [[_ nx ny nz] (tilecode-planes-contain v code @current-topology)]
 
                                       ;(let [[_ nx ny nz] (spheres-func v 0.4)]
                                         (normalize nx ny nz)))
@@ -274,6 +351,16 @@
 (def tileset-meshes (atom {}))
 
 
+(defn remove-endcap-triangles [mesh topo]
+  (let [idxs-to-remove (->> (mesh :tris)
+                            (partition 3)
+                            (map-indexed #(vec [%1 %2]))
+                            (filter #(not (polyhedron-contains? (second %) (topo :face-centers)))))]
+                            ;(map first))]
+    idxs-to-remove
+    ))
+
+
 (defn make-tileset-meshes-old [isolevel tileset xdim ydim zdim ]
   (println "make-tileset-meshes" isolevel tileset xdim ydim zdim)
   (reset! tileset-meshes {})
@@ -286,7 +373,7 @@
 
 (defn prioritise-tiles [ts]
   (let [freqs (frequencies (vals (ts :tiles)))
-        sorted (reverse (sort-by #(get freqs % 0) (ts :tileset-expanded)))]
+        sorted (vec (reverse (sort-by #(get freqs % 0) (ts :tileset-expanded))))]
     sorted
   ))
 
@@ -294,17 +381,34 @@
   (println "make-tileset-meshes" isolevel (ts :tileset-expanded) xdim ydim zdim)
   (reset! tileset-meshes {})
   (doseq [code (prioritise-tiles ts)]
-    (print code "...")
-    (swap! tileset-meshes assoc code (make-tilecode-bezier-blob-surface isolevel code xdim ydim zdim))
+    (when-not (contains? @tileset-meshes code)
+      (print code "...") 
+      (swap! tileset-meshes assoc code (make-tilecode-bezier-blob-surface isolevel code xdim ydim zdim)))
     (println "done"))
   )
 
+; use geometrical transform to generate tileset symmetries
+(defn make-tileset-meshes-with-rotations [ts isolevel xdim ydim zdim ]
+  (println "make-tileset-meshes" isolevel (ts :tileset-expanded) xdim ydim zdim)
+  ;(reset! tileset-meshes {})
+  (doseq [code (get-in ts [:params :tileset])]
+    (let [identity-mesh (make-tilecode-bezier-blob-surface isolevel code xdim ydim zdim)]
+      (doseq [i (range (count symmetries-flattened))]
+        (let [ang (first (symmetries-flattened i))
+              axis (second (symmetries-flattened i))
+              new-tris (map #(rotate-point % axis ang) (identity-mesh :tris))
+              new-norms (map #(rotate-point % axis ang) (identity-mesh :norms))
+              new-code (get-code-symmetry code i)]
+          (println new-code)
+          (swap! tileset-meshes assoc new-code {:tris new-tris :norms new-norms})
+      )))
+    (println "done"))
+  )
 
 (defn make-tileset-meshes-p [isolevel tileset xdim ydim zdim ]
   (println "make-tileset-meshes" isolevel tileset xdim ydim zdim)
   (reset! tileset-meshes {})
-  (into {} (doall (pmap #(vec [% (make-tilecode-bezier-blob-surface isolevel % xdim ydim zdim)]) tileset)))
-
+  (into {} (pmap #(vec [% (doall (make-tilecode-bezier-blob-surface isolevel % xdim ydim zdim))]) tileset))
 ;    (print code "...")
 ;    (swap! tileset-meshes assoc code (make-tilecode-bezier-blob-surface isolevel code xdim ydim zdim))
 ;    (println "done"))

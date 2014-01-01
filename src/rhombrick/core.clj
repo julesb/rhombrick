@@ -354,11 +354,13 @@
           (swap! bezier-box-smooth-shading? not))
     \y #(do
           (make-tileset-meshes @tiler-state
-                                                      0.125
-                                                      ;(get-tileset-expanded)
-                                                      ;(vec (distinct (vals (@tiler-state :tiles))))
-                                                      16 16 16
-                                                      )
+                               0.5
+                               ;(get-tileset-expanded)
+                               ;(vec (distinct (vals (@tiler-state :tiles))))
+                                16 16 16
+                               )
+
+
           ;(if (contains? (@tiler-state :tiles) [0 0 0])
           ;  (do
           ;    (run-surface-thread @tiler-state)
@@ -514,21 +516,13 @@
 
 
 (defn draw-surface [surf]
-  ;(fill 64 128 255)
-  ;(if (contains? (@tiler-state :tiles) [0 0 0])
-  ;  (apply fill (get-tile-color ((@tiler-state :tiles) [0 0 0]))))
-  ;(fill 192 192 192)
-  ;(no-stroke)
-  ;(stroke-weight 1)
-  ;(stroke 96 96 96)
-
   (push-matrix)
   (scale (/ 1.0 (topo-coord-scales (@current-topology :id))))
   (begin-shape :triangles)
   (doseq [[i v n] (map vector (range (count (surf :tris)))
                               (surf :tris)
                               (surf :norms)) ]
-    (normal (n 0) (n 1) (n 2))
+    ;(normal (n 0) (n 1) (n 2))
     (vertex (v 0) (v 1) (v 2)))
   (end-shape)
   (pop-matrix)
@@ -752,12 +746,12 @@
                    (@current-topology :faces)) [])
 
 
-    (let [sym-ang ((symmetries-flattened @debug-symmetry-idx) 0)
-          axis ((symmetries-flattened @debug-symmetry-idx) 1) ]
-      (push-matrix)
-      (rotate (radians sym-ang) (axis 0) (axis 1) (axis 2))
-      (draw-face-idx-numbers [0 0 0] true)
-      (pop-matrix))
+;    (let [sym-ang ((symmetries-flattened @debug-symmetry-idx) 0)
+;          axis ((symmetries-flattened @debug-symmetry-idx) 1) ]
+;      (push-matrix)
+;      (rotate (radians sym-ang) (axis 0) (axis 1) (axis 2))
+;      (draw-face-idx-numbers [0 0 0] true)
+;      (pop-matrix))
 
     (draw-face-idx-numbers [0 0 0] false)
 
@@ -766,7 +760,7 @@
             (vec (map (fn [vs] (vec (map world-to-screen vs)))
                       (make-tube-anchors-for-topology @current-topology 4))))
 
-    (draw-tubes 4)
+    ;(draw-tubes 4)
     ;(draw-tube-anchors 0 6)
 
     (when @draw-empty?
@@ -822,9 +816,9 @@
     ;  (fill 255 255 255 255)
     ;  (text t x y)))
     )
-  (fill 255 255 255)
-  (draw-vert-numbers @to-verts-screen)
-  (draw-anchor-numbers @anchor-verts-screen)
+  ;(fill 255 255 255)
+  ;(draw-vert-numbers @to-verts-screen)
+  ;(draw-anchor-numbers @anchor-verts-screen)
     ;(draw-vert-numbers (@current-topology :verts))
   ;(when @game-mode?
   ;  (game/render-2d))

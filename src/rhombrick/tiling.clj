@@ -216,6 +216,13 @@
        reverse))
 
 
+
+; some useful trunc-octa tiles:
+; "-3---3-----3-3" ; tetrahedron
+; "-3--333-3--333" ; octahedron
+; "3-33---3-33---" ; cube
+; "-33----3--3---" ; cubic corner piece
+
 (def default-params {
   ;:tileset ["----1A---a----"] ; to
   ;:tileset ["----1A---a--"] ; rd
@@ -224,7 +231,7 @@
   ;:tileset ["1-1---" "1--1-1"] ; hex 
   :seed ""
   :max-iters 1000000
-  :max-radius 6 
+  :max-radius 3
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0
