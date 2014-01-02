@@ -354,10 +354,11 @@
           (swap! bezier-box-smooth-shading? not))
     \y #(do
           (make-tileset-meshes @tiler-state
-                               0.5
+                               0.0
+                               ;512.0
                                ;(get-tileset-expanded)
                                ;(vec (distinct (vals (@tiler-state :tiles))))
-                                16 16 16
+                               32 32 32
                                )
 
 
@@ -530,9 +531,10 @@
 
 
 (defn draw-blobs [ts]
-  ;(stroke-weight 1)
-  ;(stroke 96 96 96)
-  (no-stroke)
+  (stroke-weight 1)
+  (stroke 96 96 96)
+  ;(no-stroke)
+  ;(no-fill)
   (doseq [[pos code] (ts :tiles)]
     (if (contains? @tileset-meshes code)
       (do
@@ -647,7 +649,7 @@
   (let [[mx my] @(state :mouse-position)]
     (push-matrix)
     (scale @model-scale)
-    (rotate (/ (frame-count) 200.0) 0 0 1)
+    ;(rotate (/ (frame-count) 200.0) 0 0 1)
     ;(stroke 0 255 255 128)
     ;(stroke-weight 1)
     ;(no-fill)

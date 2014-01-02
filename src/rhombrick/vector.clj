@@ -97,6 +97,12 @@
   (vec3-scale (vec3-add p1 p2) 0.5))
 
 
+(defn vec3-abs [v] [(Math/abs (v 0)) (Math/abs (v 1)) (Math/abs (v 2))])
+
+(defn vec3-max [v1 v2] [(max (v1 0) (v2 0)) (max (v1 1) (v2 1)) (max (v1 2) (v2 2))])
+
+(defn vec3-min [v1 v2] [(min (v1 0) (v2 0)) (min (v1 1) (v2 1)) (min (v1 2) (v2 2))])
+
 (defn myround [s n]
   (double (.setScale (bigdec n) s java.math.RoundingMode/HALF_EVEN)))
 
@@ -152,6 +158,17 @@
 ;; p=point, pv=point on plane, pn=plane normal
 (defn distance-point-to-plane [p pv pn]
   (vec3-distance p (project-point-to-plane p pv pn)))
+
+
+(defn signed-distance-point-to-plane [p pv pn]
+  (let[prj-p (project-point-to-plane p pv pn)
+       dir (vec3-sub p prj-p)
+       n (vec3-normalize dir)
+       dist (vec3-length dir)]
+    (if (>= (vec3-dot n (vec3-normalize p)) 0.0)
+      dist
+      (- dist))))
+
 
 
 ;; p=point, pv=point on plane, pn=plane normal
