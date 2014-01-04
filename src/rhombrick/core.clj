@@ -358,7 +358,7 @@
                                ;512.0
                                ;(get-tileset-expanded)
                                ;(vec (distinct (vals (@tiler-state :tiles))))
-                               32 32 32
+                                32 32 32 
                                )
 
 
@@ -518,7 +518,9 @@
 
 (defn draw-surface [surf]
   (push-matrix)
-  (scale (/ 1.0 (topo-coord-scales (@current-topology :id))))
+  ;(scale (/ 1.0 (topo-coord-scales (@current-topology :id))))
+  ;(scale (topo-coord-scales (@current-topology :id)))
+  (scale (@current-topology :aabb-radius))
   (begin-shape :triangles)
   (doseq [[i v n] (map vector (range (count (surf :tris)))
                               (surf :tris)
@@ -531,9 +533,9 @@
 
 
 (defn draw-blobs [ts]
-  (stroke-weight 1)
-  (stroke 96 96 96)
-  ;(no-stroke)
+  ;(stroke-weight 1)
+  ;(stroke 96 96 96)
+  (no-stroke)
   ;(no-fill)
   (doseq [[pos code] (ts :tiles)]
     (if (contains? @tileset-meshes code)
@@ -649,13 +651,12 @@
   (let [[mx my] @(state :mouse-position)]
     (push-matrix)
     (scale @model-scale)
-    ;(rotate (/ (frame-count) 200.0) 0 0 1)
+    (rotate (/ (frame-count) 200.0) 0 0 1)
     ;(stroke 0 255 255 128)
     ;(stroke-weight 1)
     ;(no-fill)
     ;(box 10 10 10)
     (reset! to-verts-screen (into [] (map world-to-screen (@current-topology :verts))))
-
 
     (lights)
     (when @draw-gliders?

@@ -17,11 +17,12 @@
                          [1 1 1]
                          [0 1 1]])
 
-(def topo-coord-scales {:square 1.0
-                        :cube 1.0 
+(def topo-coord-scales {:square 1.001 
                        :hexagon 1.0
-                       :rhombic-dodecahedron 0.5
-                       :truncated-octahedron 0.5 ; 0.4472135954999579 ; (/ 1.0 (vec3-length [2 1 0]))
+                       :cube 1.001
+                       :hexagonal-prism 1.0
+                       :rhombic-dodecahedron 2.0
+                       :truncated-octahedron 2.001
                         })
 
 (defn lerp- [t a b]
@@ -54,42 +55,13 @@
     d))
 
 (defn sd-cell [p topo]
-  (let [xyz (vec3-scale p (/ 1.0 (topo-coord-scales (topo :id))))
-        xyz (vec3-scale xyz 1.001) ; 
-        ds (map #(sd-plane-o xyz (vec3-normalize %) (vec3-length %))
-                (topo :face-centers))
+  (let [ds (map #(sd-plane-o p (vec3-normalize %) (vec3-length %))
+                (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))
+                     (topo :face-centers)))
         closest-d (first (sort ds))]
-    (* closest-d (topo-coord-scales (topo :id)))))
+    closest-d)) 
 
 
-;(defn sd-cell [xyz topo]
-;  (let [;face-center (first (sort-by #(vec3-distance-squared xyz %) (topo :face-centers)))
-;        xyz (vec3-scale xyz (topo-coord-scales (topo :id)))
-;        closest-f (first (sort-by #(vec3-distance xyz %) (topo :face-centers)))
-;        n (vec3-normalize closest-f)
-;        d (distance-point-to-plane xyz closest-f n)
-;            ;field (/ 1.0 (* d d))
-;            ]
-;    d))
-
-(defn spheres-func [xyz r]
-  (if (or 
-          (< (vec3-distance [(- 0.5) 0 0] xyz) r)
-          (< (vec3-distance [0.5 0 0] xyz) r)
-          (< (vec3-distance [0 (- 0.5) 0] xyz) r)
-          (< (vec3-distance [0 0.5 0] xyz) r)
-          (< (vec3-distance [0 0 (- 0.5)] xyz) r)
-          (< (vec3-distance [0 0 0.5] xyz) r)
-        
-        )
-    [1 (xyz 0) (xyz 1) (xyz 2)]
-    [0 (xyz 0) (xyz 1) (xyz 2)]))
-
-
-;(defn fuzzy-sphere-func [sample-xyz r fr]
-;  (if (< (vec3-length sample-xyz) (+ r fr))
-;    (let [dist (- r )] [1 0 0 0]
-;    [0 0 0 0])))
 
 (defn sin-combo [xyz a]
   (let [s1 (+ 0.5 (* 0.5 (Math/sin (* (xyz 0) 13.00135))))
@@ -158,9 +130,9 @@
         c2 (sd-capsule v [0.0 0.6 0.6] [0.0 -0.6 -0.6] 0.3)
 
         cell (sd-cell v @current-topology)
-        caps (op-blend c1 c2 0.2)
-        ;dist (op-blend caps cell 0.3)
-        dist caps
+        caps (op-blend c1 c2 0.1)
+        dist (op-blend caps cell 0.1)
+        ;dist cell
         ]
     [dist 1.0 1.0 1.0]
   ))
