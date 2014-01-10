@@ -28,13 +28,31 @@
 (defn lerp- [t a b]
   (+ a (* t (- b a))))
 
-(defn clamp [n mn mx]
-  (cond (> n mx) mx
-        (< n mn) mn
-        :else n))
+
+
+;(defn clamp [n mn mx]
+;  (cond (> n mx) mx
+;        (< n mn) mn
+;        :else n))
+
+(defn clamp [n mn mx] (min (max n mn) mx))
+
+; polynomial smooth min (k = 0.1)
+(defn smin [a b k]
+  (let [h (clamp (+ 0.5 (/ (* 0.5 (- b a)) k)) 0.0 1.0)]
+    (- (lerp- h b a) (* k h (- 1.0 h)))))
+
+(defn op-union [d1 d2] (min d1 d2))
+(defn op-subtract [d1 d2] (max (- d1) d2))
+(defn op-intersect [d1 d2] (max d1 d2))
+(defn op-blend [d1 d2 k] (smin d1 d2 k))
+
 
 (defn sd-sphere [p r]
   (- (vec3-length p) r))
+
+(defn  sd-sphere-o [p r o]
+  (- (vec3-length (vec3-sub p o)) r))
 
 (defn sd-box [p b]
   (let [d (vec3-sub (vec3-abs p) b) ]
@@ -54,12 +72,44 @@
         d (- (vec3-length (vec3-sub pa (vec3-scale ba h))) r)]
     d))
 
+;(defn sd-cell-orig [p topo]
+;  (let [ds (map #(sd-plane-o p (vec3-normalize %) (vec3-length %))
+;                (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))
+;                     (topo :face-centers)))
+;        ;closest-d (first (sort-by #(Math/abs %) ds))]
+;        ;closest-d (first (sort ds))]
+;        closest-d (reduce min ds)]
+;    closest-d))
+
 (defn sd-cell [p topo]
-  (let [ds (map #(sd-plane-o p (vec3-normalize %) (vec3-length %))
-                (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))
-                     (topo :face-centers)))
-        closest-d (first (sort ds))]
-    closest-d)) 
+  (->> (topo :face-centers)
+       (map #(vec3-scale % (/ 1.0 (topo :aabb-radius))))
+       (map #(sd-plane-o p (vec3-normalize %) (vec3-length %)))
+       (reduce op-union)))
+
+(defn sd-smooth-cell [p topo k]
+  (->> (topo :face-centers)
+       (map #(vec3-scale % (/ 1.0 (topo :aabb-radius))))
+       (map #(sd-plane-o p (vec3-normalize %) (vec3-length %)))
+       (reduce #(op-blend %1 %2 k))))
+
+
+(defn sd-nonconnected-spheres [p code topo]
+  (->> (get-non-connected-idxs code)
+       (map #((topo :face-centers) %))
+       (map #(vec3-scale % (/ 1.0 (topo :aabb-radius))))
+       (map #(sd-sphere-o p 0.85 (vec3-scale % 2.0)))
+       (reduce #(op-blend %1 %2 0.1))))
+       ;(reduce op-union)))
+
+
+;(defn sd-cell2 [p code topo]
+;  (let [closest-fc (map vec3-length 
+;  (let [ds (map #(sd-plane-o p (vec3-normalize %) (vec3-length %))
+;                (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))
+;                     (topo :face-centers)))
+;        closest-d (first (sort ds))]
+;    closest-d)) 
 
 
 
@@ -80,8 +130,8 @@
 ; 1.0 depending on whether the point is contained within the polyhedron. The
 ; next three numbers are the components of the face normal closest to
 ;  the given point. 
-;(defn polyhedron-contains? [xyz face-centers]
-(def polyhedron-contains? (memoize (fn [xyz face-centers]
+(defn polyhedron-contains? [xyz face-centers]
+;(def polyhedron-contains? (memoize (fn [xyz face-centers]
 ;  (let [closest-f (first (sort-by #(vec3-distance xyz %) face-centers)) ]
     (if (= (count face-centers)
            (count (filter #(> % 0) (map #(is-below xyz (vec3-scale % (topo-coord-scales (@current-topology :id))))
@@ -89,50 +139,60 @@
            ;(count (filter #(> % 0) (map #(is-below xyz (vec3-scale % 0.5))
            ;                             face-centers))))
       true
-      false))))
+      false))
 ;)
       ;(vec (flatten [0.0 (vec3-normalize closest-f)]))
       ;(vec (flatten [1.0 (vec3-normalize closest-f)])))))
 
-(defn tilecode-planes-contain [xyz code topo]
-  (let [face-idxs (get-connected-idxs code)
-        face-centers (map #((topo :face-centers) %) face-idxs)]
-    (if (= (count face-centers)
-           (count (filter #(> % 0) (map #(is-below xyz (vec3-scale % (topo-coord-scales (@current-topology :id))))
-                                        face-centers))))
-      [1.0 1.0 1.0 1.0]
-      [0.0 1.0 1.0 1.0])))
+
+(defn sd-tilecode-planes [p code topo]
+  (let [fc (->> (get-connected-idxs code)
+                (map #((topo :face-centers) %))
+                (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))))
+        cog (vec3-scale (reduce vec3-add fc) (/ 1.0 (count fc)))
+        cog-dir (vec3-normalize cog)
+        backplane-n (vec3-scale (vec3-normalize (reduce vec3-add fc)) -1.0)
+        con-planes (map #(sd-plane-o p (vec3-normalize %) (vec3-length %)) fc)
+        all-planes (conj con-planes (sd-plane-o p backplane-n 0.0))
+      ]  
+  (reduce min all-planes)))
+;  (first (sort all-planes))))
+
+;(defn sd-tilecode-planes [p code topo]
+;  (->> (get-connected-idxs code)
+;       (map #((topo :face-centers) %))
+;       (map #(vec3-scale % (/ 1.0 (topo :aabb-radius))))
+;       (map #(sd-plane-o p (vec3-normalize %) (vec3-length %)))
+;       sort
+;       first))
 
 
 
 
-; polynomial smooth min (k = 0.1)
-(defn smin [a b k]
-  (let [h (clamp (+ 0.5 (/ (* 0.5 (- b a)) k)) 0.0 1.0)]
-    (- (lerp- h b a) (* k h (- 1.0 h)))))
 
 
-(defn op-union [d1 d2] (min d1 d2))
-(defn op-subtract [d1 d2] (max (- d1) d2))
-(defn op-intersect [d1 d2] (max d1 d2))
-(defn op-blend [d1 d2 k] (smin d1 d2 k))
-
-
-
-(defn build-scene [v]
-  (let [sphere (sd-sphere v 1.0)
+(defn build-scene [v code]
+  (let [;sphere (sd-sphere-o v 0.5 [0.5 0.0 0.0])
         ;box1 (sd-box v [0.5 0.5 0.95])
         ;box2 (sd-box v [0.95 0.5 0.5])
         ;dist (op-blend box1 box2 0.2)
         ;dist (sd-plane v (vec3-normalize [0.0 1.0 1.0]))
         ;dist (signed-distance-point-to-plane v [0.0 0.0 0.0] [0.0 0.0 1.0])
-        c1 (sd-capsule v [0.6 0.6 0.0] [-0.6 -0.6 0.0] 0.3)
-        c2 (sd-capsule v [0.0 0.6 0.6] [0.0 -0.6 -0.6] 0.3)
+        ;c1 (sd-capsule v [0.6 0.6 0.0] [-0.6 -0.6 0.0] 0.3)
+        ;c2 (sd-capsule v [0.0 0.6 0.6] [0.0 -0.6 -0.6] 0.3)
 
-        cell (sd-cell v @current-topology)
-        caps (op-blend c1 c2 0.1)
-        dist (op-blend caps cell 0.1)
+
+        cell (- (sd-smooth-cell v @current-topology 0.1))
+        ;caps (op-blend c1 c2 0.3)
+        ;dist (op-blend caps cell 0.1)
+        ;tc-planes (sd-tilecode-planes v code @current-topology)
+
+
+        nc-spheres (sd-nonconnected-spheres v code @current-topology)
+        dist  (op-subtract nc-spheres cell)
         ;dist cell
+        ;dist (op-subtract cell nc-spheres ) 
+        ;dist (op-intersect cell nc-spheres ) 
         ]
     [dist 1.0 1.0 1.0]
   ))
@@ -223,12 +283,12 @@
 ;;))
 
 
-(defn tilecode-bezier-blob2 [xyz code topo]
+(defn tilecode-bezier-blob2 [p code topo]
 ;  (if ;(> (vec3-length xyz) 1.224744871391589)
 ;      (not (polyhedron-contains? (vec3-scale xyz 1.0) (topo :face-centers)))
 ;    [999.0 0.0 0.0 0.0]
     (let [curve-res 16 
-          ;xyz (vec3-scale xyz 0.5)
+          xyz (vec3-scale p (topo :aabb-radius))
           endpoint-pairs (vec (-make-curve-endpoints (get-connected-idxs code)))
           curves-points (map-indexed #(vec [%1 (get-points-for-curve (%2 0) (%2 1) curve-res topo) ])
                                      endpoint-pairs)
@@ -242,11 +302,11 @@
           r2 (bezier-box-thicknesses (.charAt code (second (endpoint-pairs closest-idx))))
           radius-at-p (/ (lerp- closest-t r1 r2) 1.0)
           n closest-n
-          d (/ (- closest-d radius-at-p) 1.0)
-          field (/ 1.0 (* d d))
+          ;d (/ (- closest-d radius-at-p) 1.0)
+          ;field (/ 1.0 (* d d))
           ]
-      ;[(* (- closest-d radius-at-p) 2.0) (n 0) (n 1) (n 2)]))
-      [field (n 0) (n 1) (n 2)]))
+      [(* (- closest-d radius-at-p) 1.0) (n 0) (n 1) (n 2)]))
+      ;[field (n 0) (n 1) (n 2)]))
 
 ;      (if (< closest-d radius-at-p)
 ;        [0.0 (n 0) (n 1) (n 2)]
@@ -349,7 +409,7 @@
                                  (- (* zidx zstep) 1)]
                          grid (into [] (map (fn [v]
                                               (let [v (scale-vert v offset)
-                                                   [n _ _ _] (build-scene v) ]
+                                                   [n _ _ _] (build-scene v code) ]
                                                    ;[n _ _ _] [(sphere-func v 1.0) 1.0 1.0 1.0] ]
                                                    ;[n _ _ _] (if (polyhedron-contains? v (@current-topology :face-centers))
                                                    ;            [1.0 1.0 1.0 1.0]
@@ -366,7 +426,7 @@
                          base-tris (polygonise grid isolevel)
                          tris (map #(scale-vert % offset) base-tris)
                          norms (map (fn [v]
-                                      (let [[_ nx ny nz] (build-scene v)]
+                                      (let [[_ nx ny nz] (build-scene v code)]
                                       ;(let [[_ nx ny nz] (if (polyhedron-contains? v (@current-topology :face-centers))
                                       ;                     [1.0 1.0 1.0 1.0]
                                       ;                         [0.0 1.0 1.0 1.0])]

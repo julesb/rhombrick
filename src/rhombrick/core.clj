@@ -358,7 +358,7 @@
                                ;512.0
                                ;(get-tileset-expanded)
                                ;(vec (distinct (vals (@tiler-state :tiles))))
-                                32 32 32 
+                               32 32 32 
                                )
 
 
@@ -541,6 +541,7 @@
     (if (contains? @tileset-meshes code)
       (do
         (apply fill (get-tile-color code))
+        ;(apply stroke (get-tile-color code))
         (with-translation pos
           (draw-surface (@tileset-meshes code)))
   ))))
@@ -684,6 +685,7 @@
 ;    (rotate-y (/ (frame-count) 38.73))
 
     (let [max-rad ((@tiler-state :params) :max-radius)
+          max-rad (+ max-rad 1.0)
           r (/ max-rad 2)
           mr (/ (- max-rad) 2)]
       (fill 0 255 0)

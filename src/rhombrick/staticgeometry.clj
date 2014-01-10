@@ -649,6 +649,13 @@
                (range (count code)) code)))
 
 
+(defn get-non-connected-idxs [code]
+  (filter #(not= nil %)
+          (map #(if (or (= %2 \-) (= %2 \0) ) %1 nil)
+               (range (count code))
+               code)))
+
+
 (defn get-angle-for-face-idxs [[idx1 idx2]]
   (vec3-angle-between (vec3-normalize ((@current-topology :face-centers) idx1))
                       (vec3-normalize ((@current-topology :face-centers) idx2))))
