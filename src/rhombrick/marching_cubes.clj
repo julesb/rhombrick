@@ -72,14 +72,6 @@
         d (- (vec3-length (vec3-sub pa (vec3-scale ba h))) r)]
     d))
 
-;(defn sd-cell-orig [p topo]
-;  (let [ds (map #(sd-plane-o p (vec3-normalize %) (vec3-length %))
-;                (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))
-;                     (topo :face-centers)))
-;        ;closest-d (first (sort-by #(Math/abs %) ds))]
-;        ;closest-d (first (sort ds))]
-;        closest-d (reduce min ds)]
-;    closest-d))
 
 (defn sd-cell [p topo]
   (->> (topo :face-centers)
@@ -99,18 +91,38 @@
        (map #((topo :face-centers) %))
        (map #(vec3-scale % (/ 1.0 (topo :aabb-radius))))
        (map #(sd-sphere-o p 0.85 (vec3-scale % 2.0)))
-       (reduce #(op-blend %1 %2 0.1))))
+       (reduce #(op-blend %1 %2 0.2))))
        ;(reduce op-union)))
 
 
-;(defn sd-cell2 [p code topo]
-;  (let [closest-fc (map vec3-length 
-;  (let [ds (map #(sd-plane-o p (vec3-normalize %) (vec3-length %))
-;                (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))
-;                     (topo :face-centers)))
-;        closest-d (first (sort ds))]
-;    closest-d)) 
+(def caps-tile-radii {
+   \A 0.03671875,
+   \a 0.03671875,
+   \B 0.0734375,
+   \b 0.0734375,
+   \C 0.146875,
+   \c 0.146875,
+   \D 0.29375,
+   \d 0.29375,
+   \1 0.03671875,
+   \2 0.0734375,
+   \3 0.146875,
+   \4 0.29375,
+   \5 0.34375,
+   \6 0.421875,
+   \7 0.5})
+                      
 
+(defn sd-capsule-tile [p code topo]
+  (let [con-idxs (get-connected-idxs code)
+        fc (->> (get-connected-idxs code)
+                (map #((topo :face-centers) %))
+                (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))))
+        rads (vec (map #(caps-tile-radii (.charAt code %)) con-idxs))
+        cog (vec3-scale (reduce vec3-add fc) (/ 1.0 (count fc)))
+        cog-c (vec3-scale cog 0.5)
+        capsules (map-indexed #(sd-capsule p cog-c %2 (rads %1)) fc)]
+    (reduce #(op-blend %1 %2 0.4) capsules)))
 
 
 (defn sin-combo [xyz a]
@@ -181,15 +193,17 @@
         ;c1 (sd-capsule v [0.6 0.6 0.0] [-0.6 -0.6 0.0] 0.3)
         ;c2 (sd-capsule v [0.0 0.6 0.6] [0.0 -0.6 -0.6] 0.3)
 
+        ;cell (- (sd-smooth-cell v @current-topology 0.1))
+        ;nc-spheres (sd-nonconnected-spheres v code @current-topology)
+        ;dist  (op-subtract nc-spheres cell)
 
-        cell (- (sd-smooth-cell v @current-topology 0.1))
         ;caps (op-blend c1 c2 0.3)
         ;dist (op-blend caps cell 0.1)
         ;tc-planes (sd-tilecode-planes v code @current-topology)
 
-
-        nc-spheres (sd-nonconnected-spheres v code @current-topology)
-        dist  (op-subtract nc-spheres cell)
+        cap-tile (sd-capsule-tile v code @current-topology)
+        dist cap-tile 
+        
         ;dist cell
         ;dist (op-subtract cell nc-spheres ) 
         ;dist (op-intersect cell nc-spheres ) 
