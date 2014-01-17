@@ -231,7 +231,7 @@
   ;:tileset ["1-1---" "1--1-1"] ; hex 
   :seed ""
   :max-iters 1000000
-  :max-radius 3 
+  :max-radius 2
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0

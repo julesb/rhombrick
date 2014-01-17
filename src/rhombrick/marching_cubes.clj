@@ -95,7 +95,7 @@
        ;(reduce op-union)))
 
 
-(def caps-tile-radii {
+(def ^:const capsule-tile-radii {
    \A 0.03671875,
    \a 0.03671875,
    \B 0.0734375,
@@ -118,7 +118,7 @@
         fc (->> (get-connected-idxs code)
                 (map #((topo :face-centers) %))
                 (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))))
-        rads (vec (map #(caps-tile-radii (.charAt code %)) con-idxs))
+        rads (vec (map #(capsule-tile-radii (.charAt code %)) con-idxs))
         cog (vec3-scale (reduce vec3-add fc) (/ 1.0 (count fc)))
         cog-c (vec3-scale cog 0.5)
         capsules (map-indexed #(sd-capsule p cog-c %2 (rads %1)) fc)]
@@ -161,13 +161,13 @@
   (let [fc (->> (get-connected-idxs code)
                 (map #((topo :face-centers) %))
                 (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))))
-        cog (vec3-scale (reduce vec3-add fc) (/ 1.0 (count fc)))
-        cog-dir (vec3-normalize cog)
-        backplane-n (vec3-scale (vec3-normalize (reduce vec3-add fc)) -1.0)
-        con-planes (map #(sd-plane-o p (vec3-normalize %) (vec3-length %)) fc)
-        all-planes (conj con-planes (sd-plane-o p backplane-n 0.0))
+        ;cog (vec3-scale (reduce vec3-add fc) (/ 1.0 (count fc)))
+        ;cog-dir (vec3-normalize cog)
+        ;backplane-n (vec3-scale (vec3-normalize (reduce vec3-add fc)) -1.0)
+        planes (map #(sd-plane-o p (vec3-scale (vec3-normalize %) -1.0) (vec3-length %)) fc)
+        ;all-planes (conj con-planes (sd-plane-o p backplane-n 0.0))
       ]  
-  (reduce min all-planes)))
+  (reduce min planes)))
 ;  (first (sort all-planes))))
 
 ;(defn sd-tilecode-planes [p code topo]
@@ -180,30 +180,61 @@
 
 
 
+(defn soft-field [r a b]
+;  (if (> r b)
+;    0.0
+    (* a
+       (- 1.0
+          (- (+ (/ (* 4.0 (Math/pow r 6.0))
+                   (* 9.0 (Math/pow b 6.0)))
+                (/ (* 17.0 (Math/pow r 4.0))
+                   (* 9.0 (Math/pow b 4.0))))
+             (/ (* 22.0 (Math/pow r 2.0))
+                (* 9.0 (Math/pow b 2.0)))))))
+;)
 
-
+(defn uf-soft-tile [p code topo]
+  (let [a 1.3 ; scale
+        b 3.0 ; max dist field contribution
+        con-idxs (get-connected-idxs code)
+        fc (->> (get-connected-idxs code)
+                (map #((topo :face-centers) %))
+                (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))))
+        ds (map #(vec3-distance p %) fc )
+        ;ds (map #(vec3-distance p %) (conj fc [0.0 0.0 0.0]))
+        fs (map #(soft-field % a b) ds)
+        ;fs (map #(/ 1.0 (vec3-distance-squared p %)) (conj fc [0.0 0.0 0.0]))
+        ]
+    ;(/ (reduce + fs) (count fs))
+    (reduce + fs)
+    )
+)
 
 (defn build-scene [v code]
-  (let [;sphere (sd-sphere-o v 0.5 [0.5 0.0 0.0])
+  (let [;sphere (sd-sphere-o v 0.75 [0.0 0.0 0.0])
         ;box1 (sd-box v [0.5 0.5 0.95])
         ;box2 (sd-box v [0.95 0.5 0.5])
         ;dist (op-blend box1 box2 0.2)
         ;dist (sd-plane v (vec3-normalize [0.0 1.0 1.0]))
-        ;dist (signed-distance-point-to-plane v [0.0 0.0 0.0] [0.0 0.0 1.0])
         ;c1 (sd-capsule v [0.6 0.6 0.0] [-0.6 -0.6 0.0] 0.3)
         ;c2 (sd-capsule v [0.0 0.6 0.6] [0.0 -0.6 -0.6] 0.3)
 
-        ;cell (- (sd-smooth-cell v @current-topology 0.1))
+        ;cell  (sd-smooth-cell v @current-topology 0.1)
         ;nc-spheres (sd-nonconnected-spheres v code @current-topology)
         ;dist  (op-subtract nc-spheres cell)
 
         ;caps (op-blend c1 c2 0.3)
         ;dist (op-blend caps cell 0.1)
-        ;tc-planes (sd-tilecode-planes v code @current-topology)
+        planes (sd-tilecode-planes v code @current-topology)
+        ;dist planes
+        ;dist (op-blend cell planes 0.2)
 
         cap-tile (sd-capsule-tile v code @current-topology)
-        dist cap-tile 
+        dist (op-blend (- cap-tile) planes 0.1)
         
+
+        ;dist (uf-soft-tile v code @current-topology)
+
         ;dist cell
         ;dist (op-subtract cell nc-spheres ) 
         ;dist (op-intersect cell nc-spheres ) 
@@ -268,6 +299,7 @@
       ;dist-cell
       ;(max dist-cell dist-sum)
      0.0 0.0 0.0]))
+
 
 
 
@@ -399,7 +431,7 @@
     (map #(vertex-position % grid isolevel) (tri-table index))))
 
 
-(defn make-tilecode-bezier-blob-surface [isolevel code xdim ydim zdim]
+(defn make-tilecode-surface [isolevel code xdim ydim zdim]
   (let [xstep (/ 2.0 xdim)
         ystep (/ 2.0 ydim)
         zstep (/ 2.0 zdim)
@@ -424,6 +456,7 @@
                          grid (into [] (map (fn [v]
                                               (let [v (scale-vert v offset)
                                                    [n _ _ _] (build-scene v code) ]
+                                                   ;[n _ _ _] (uf-soft-tile v code @current-topology) ]
                                                    ;[n _ _ _] [(sphere-func v 1.0) 1.0 1.0 1.0] ]
                                                    ;[n _ _ _] (if (polyhedron-contains? v (@current-topology :face-centers))
                                                    ;            [1.0 1.0 1.0 1.0]
@@ -441,6 +474,7 @@
                          tris (map #(scale-vert % offset) base-tris)
                          norms (map (fn [v]
                                       (let [[_ nx ny nz] (build-scene v code)]
+                                      ;(let [[_ nx ny nz] (uf-soft-tile v code @current-topology)]
                                       ;(let [[_ nx ny nz] (if (polyhedron-contains? v (@current-topology :face-centers))
                                       ;                     [1.0 1.0 1.0 1.0]
                                       ;                         [0.0 1.0 1.0 1.0])]
@@ -482,7 +516,7 @@
   (reset! tileset-meshes {})
   (doseq [code tileset]
     (print code "...")
-    (swap! tileset-meshes assoc code (make-tilecode-bezier-blob-surface isolevel code xdim ydim zdim))
+    (swap! tileset-meshes assoc code (make-tilecode-surface isolevel code xdim ydim zdim))
     (println "done"))
   )
 
@@ -500,7 +534,7 @@
   (doseq [code (prioritise-tiles ts)]
     (when-not (contains? @tileset-meshes code)
       (print code "...") 
-      (swap! tileset-meshes assoc code (make-tilecode-bezier-blob-surface isolevel code xdim ydim zdim)))
+      (swap! tileset-meshes assoc code (make-tilecode-surface isolevel code xdim ydim zdim)))
     (println "done"))
   )
 
@@ -509,7 +543,7 @@
   (println "make-tileset-meshes" isolevel (ts :tileset-expanded) xdim ydim zdim)
   ;(reset! tileset-meshes {})
   (doseq [code (get-in ts [:params :tileset])]
-    (let [identity-mesh (make-tilecode-bezier-blob-surface isolevel code xdim ydim zdim)]
+    (let [identity-mesh (make-tilecode-surface isolevel code xdim ydim zdim)]
       (doseq [i (range (count symmetries-flattened))]
         (let [ang (first (symmetries-flattened i))
               axis (second (symmetries-flattened i))
@@ -526,9 +560,9 @@
 (defn make-tileset-meshes-p [isolevel tileset xdim ydim zdim ]
   (println "make-tileset-meshes" isolevel tileset xdim ydim zdim)
   (reset! tileset-meshes {})
-  (into {} (pmap #(vec [% (doall (make-tilecode-bezier-blob-surface isolevel % xdim ydim zdim))]) tileset))
+  (into {} (pmap #(vec [% (doall (make-tilecode-surface isolevel % xdim ydim zdim))]) tileset))
 ;    (print code "...")
-;    (swap! tileset-meshes assoc code (make-tilecode-bezier-blob-surface isolevel code xdim ydim zdim))
+;    (swap! tileset-meshes assoc code (make-tilecode-surface isolevel code xdim ydim zdim))
 ;    (println "done"))
   )
 
@@ -542,7 +576,7 @@
 
 
 (defn run-surface-thread [ts]
-  (let [s (make-tilecode-bezier-blob-surface 0.125
+  (let [s (make-tilecode-surface 0.125
                                              ((ts :tiles) [0 0 0])
                                              32 32 32)]
     (reset! test-surface s)

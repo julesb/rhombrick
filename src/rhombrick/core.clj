@@ -354,7 +354,7 @@
           (swap! bezier-box-smooth-shading? not))
     \y #(do
           (make-tileset-meshes @tiler-state
-                               0.0
+                                0.0
                                ;512.0
                                ;(get-tileset-expanded)
                                ;(vec (distinct (vals (@tiler-state :tiles))))
@@ -365,7 +365,7 @@
           ;(if (contains? (@tiler-state :tiles) [0 0 0])
           ;  (do
           ;    (run-surface-thread @tiler-state)
-          ;    ;  (reset! test-surface (make-tilecode-bezier-blob-surface
+          ;    ;  (reset! test-surface (make-tilecode-surface
           ;    ;                            0.125
           ;    ;                            ((@tiler-state :tiles) [0 0 0])
           ;    ;                            32 32 32))
