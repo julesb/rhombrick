@@ -38,6 +38,8 @@
   (cond
     (= (@current-topology :id) :hexagon)
       (vec3-quantize v 6)
+    (= (@current-topology :id) :hexagonal-prism)
+      (vec3-quantize v 6)
     :else
       v) )
 
@@ -233,7 +235,7 @@
   ;:tileset ["1-1---" "1--1-1"] ; hex 
   :seed ""
   :max-iters 1000000
-  :max-radius 2
+  :max-radius 8
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0

@@ -502,6 +502,7 @@
                 [ 0  1  0]
                 [-1  0  0]
                 [ 0 -1  0]]
+    :op-face-idx [2 3 0 1]
     :id :square
     :aabb-radius 1.001
     :verts []
@@ -522,20 +523,8 @@
                  [-1.0 0.0 0.0]
                  [-0.5 0.8660254037844 0.0]
                  [0.5  0.8660254037844 0.0]
-                 
-                 ;[0.5 -0.866025403784439 0]
-                 ;[-0.5 -0.8660254037844385 0]
-                 ;[-1.0 0 0]
-                 ;[-0.5 0.8660254037844387 0]
-                 ;[0.5 0.8660254037844386 0]
-                 ;[1.0 0.0 0]
                 ]
-               ; [1.0 0.0 0]
-               ; [0.5 0.8660254037844386 0]
-               ; [-0.5 0.8660254037844387 0]
-               ; [-1.0 0 0]
-               ; [-0.5 -0.8660254037844385 0]
-               ; [0.5 -0.866025403784439 0]]
+    :op-face-idx [3 4 5 0 1 2]
     :id :hexagon
     :aabb-radius 1.001
     :verts []
@@ -552,6 +541,7 @@
                 [ 0  0 -1]
                 [ 1  0  0]
                 [ 0  1  0]]
+    :op-face-idx [3 4 5 0 1 2]
     :id :cube
     :aabb-radius 1.001
     :verts [[ 1 -1 -1]
@@ -573,8 +563,31 @@
 
   :hexagonal-prism {
     :num-faces 8
-    :symmetry-face-map []
-    :face-centers []
+    :symmetry-face-map [
+                        [0 1 2 3 4 5 6 7]
+                        [1 2 3 4 5 0 6 7]
+                        [2 3 4 5 0 1 6 7]
+                        [3 4 5 0 1 2 6 7]
+                        [4 5 0 1 2 3 6 7]
+                        [5 0 1 2 3 4 6 7]
+                        [0 5 4 3 2 1 7 6]
+                        [5 4 3 2 1 0 7 6]
+                        [4 3 2 1 0 5 7 6]
+                        [3 2 1 0 5 4 7 6]
+                        [2 1 0 5 4 3 7 6]
+                        [1 0 5 4 3 2 7 6]
+                        ]
+    :face-centers [
+                 [1.0 0.0 0.0]
+                 [0.5  -0.8660254037844 0.0]
+                 [-0.5 -0.8660254037844 0.0]
+                 [-1.0 0.0 0.0]
+                 [-0.5 0.8660254037844 0.0]
+                 [0.5  0.8660254037844 0.0]
+                 [0.0 0.0 1.0] ; top
+                 [0.0 0.0 -1.0] ; bot
+                   ]
+    :op-face-idx [3 4 5 0 1 2 7 6]
     :id :hexagonal-prism
     :aabb-radius 1.001
     :verts []
@@ -584,6 +597,7 @@
     :num-faces 12
     :symmetry-face-map rd-symmetry-face-idx-map
     :face-centers rd-neighbour-offsets
+    :op-face-idx [6 7 8 9 10 11 0 1 2 3 4 5]
     :id :rhombic-dodecahedron
     :aabb-radius 2.0
     :verts rd-verts
@@ -593,6 +607,7 @@
     :num-faces 14
     :symmetry-face-map to-symmetry-face-idx-map
     :face-centers to-face-centers
+    :op-face-idx [7 8 9 10 11 12 13 0 1 2 3 4 5 6]
     :id :truncated-octahedron
     :aabb-radius 2.001 
     :verts to-verts
@@ -602,7 +617,8 @@
 
 (def next-topology {:square :hexagon
                     :hexagon :cube
-                    :cube :rhombic-dodecahedron
+                    :cube :hexagonal-prism
+                    :hexagonal-prism :rhombic-dodecahedron 
                     :rhombic-dodecahedron :truncated-octahedron
                     :truncated-octahedron :square
                     })
