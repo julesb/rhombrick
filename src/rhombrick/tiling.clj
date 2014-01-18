@@ -34,9 +34,17 @@
 (defn is-empty? [tiles pos]
   (not (contains? tiles pos)))
 
+(defn quantize-position [v]
+  (cond
+    (= (@current-topology :id) :hexagon)
+      (vec3-quantize v 6)
+    :else
+      v) )
 
 (defn get-neighbour-pos [pos face]
-  (vec3-add pos (vec3-scale ((@current-topology :face-centers) face) 2 )))
+  (quantize-position
+    (vec3-add pos
+              (vec3-scale ((@current-topology :face-centers) face) 2 ))))
   ;(vec3-add pos ((@current-topology :face-centers) face)))
 
 
@@ -50,12 +58,6 @@
   (vec (map #(tiles (get-neighbour-pos pos %)) (range (@current-topology :num-faces)))))
 
 
-(defn quantize-position [v]
-  (cond
-    (= (@current-topology :id) :hexagon)
-      (vec3-quantize v 6)
-    :else
-      v) )
 
 
 (defn make-tile [ts pos facecode]
