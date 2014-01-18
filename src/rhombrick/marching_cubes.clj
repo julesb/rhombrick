@@ -29,12 +29,6 @@
   (+ a (* t (- b a))))
 
 
-
-;(defn clamp [n mn mx]
-;  (cond (> n mx) mx
-;        (< n mn) mn
-;        :else n))
-
 (defn clamp [n mn mx] (min (max n mn) mx))
 
 ; polynomial smooth min (k = 0.1)
@@ -119,7 +113,7 @@
                 (map #((topo :face-centers) %))
                 (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))))
         rads (vec (map #(capsule-tile-radii (.charAt code %)) con-idxs))
-        cog (vec3-scale (reduce vec3-add fc) (/ 1.0 (count fc)))
+        cog [0.0 0.0 0.0] ; (vec3-scale (reduce vec3-add fc) (/ 1.0 (count fc)))
         cog-c (vec3-scale cog 0.5)
         capsules (map-indexed #(sd-capsule p cog-c %2 (rads %1)) fc)]
     (reduce #(op-blend %1 %2 0.4) capsules)))
@@ -133,28 +127,6 @@
     [v s1 s2 s3]
   ))
 
-(defn is-below [p face-center]
-  (if (< (vec3-dot (vec3-sub p face-center) face-center) 0) 1.0 0.0))
-
-
-; input a point and a vector of vertices representing the face centers of a 
-; convex polyhedron. return a vector of length 4. The first number is 0.0 or
-; 1.0 depending on whether the point is contained within the polyhedron. The
-; next three numbers are the components of the face normal closest to
-;  the given point. 
-(defn polyhedron-contains? [xyz face-centers]
-;(def polyhedron-contains? (memoize (fn [xyz face-centers]
-;  (let [closest-f (first (sort-by #(vec3-distance xyz %) face-centers)) ]
-    (if (= (count face-centers)
-           (count (filter #(> % 0) (map #(is-below xyz (vec3-scale % (topo-coord-scales (@current-topology :id))))
-                                        face-centers))))
-           ;(count (filter #(> % 0) (map #(is-below xyz (vec3-scale % 0.5))
-           ;                             face-centers))))
-      true
-      false))
-;)
-      ;(vec (flatten [0.0 (vec3-normalize closest-f)]))
-      ;(vec (flatten [1.0 (vec3-normalize closest-f)])))))
 
 
 (defn sd-tilecode-planes [p code topo]
