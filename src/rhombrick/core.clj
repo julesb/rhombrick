@@ -259,6 +259,7 @@
          (Thread/sleep 100)
          (reset! current-topology (topologies (next-topology (@current-topology :id))))
          (editor/set-tileset (get-random-tileset-1))
+         (editor/set-tileset-topo-id (@current-topology :id))
          (start-tiler (editor/get-tileset-as-set) false)
          (init-tileset-colors (editor/get-tileset-as-set))
           (init-gliders num-gliders)
@@ -303,13 +304,19 @@
           )
 
     \< #(do
+          (cancel-tiler-thread)
+          (Thread/sleep 100)
           (editor/load-prev-library-tileset)
           (start-tiler (editor/get-tileset-as-set) false)
-          (init-tileset-colors (get-in @tiler-state [:params :tileset])))
+          (init-tileset-colors (get-in @tiler-state [:params :tileset]))
+          (init-gliders num-gliders))
     \> #(do
+          (cancel-tiler-thread)
+          (Thread/sleep 100)
           (editor/load-next-library-tileset)
           (start-tiler (editor/get-tileset-as-set) false)
-          (init-tileset-colors (get-in @tiler-state [:params :tileset])))
+          (init-tileset-colors (get-in @tiler-state [:params :tileset]))
+          (init-gliders num-gliders))
     \S #(do
           (editor/save-current-tileset-to-library))
     ;\n #(do

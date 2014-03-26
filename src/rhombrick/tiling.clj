@@ -265,7 +265,7 @@
            } } ]
   {
   :tileset tileset
-  :seed (if (< (count seed) 12) (rand-nth (vec tileset)) seed)
+  :seed (if (< (count seed) (@current-topology :num-faces)) (rand-nth (vec tileset)) seed)
   :max-iters max-iters
   :max-radius max-radius
   :max-tiles max-tiles

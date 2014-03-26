@@ -29,6 +29,7 @@
                            :selected [0 0 0]
                            :selected-tilecode-digit []
                            :tileset (atom default-tileset)
+                           :tileset-topology (@current-topology :id) 
                          })
 
 (def editor-state (atom default-editor-state))
@@ -68,7 +69,9 @@
 
 (defn get-tileset []
   @(@editor-state :tileset))
- 
+
+(defn get-tileset-topo-id []
+  (@editor-state :tileset-topology))
 
 (defn get-tileset-as-set []
   (set (get-tileset)))
@@ -83,17 +86,19 @@
 
 
 (defn set-tileset [tileset]
-  (console/writeline (str "tileset:" tileset))
-  ;(println "set-tileset: " tileset)
+  ;(console/writeline (str "tileset:" tileset))
+  (println "set-tileset: " tileset)
 ;  (let [;tileset-set (distinct tileset)
 ;        num-uniq (count tileset)]
   (reset! (@editor-state :tileset) [])
   (reset! current-tileset-colors {})
   (bbox/bezier-box-cache-reset)
-  (let [col-offset (mod (tileset-to-number tileset) (@current-topology :num-faces))]
+  
+  (let [topo (topologies (@editor-state :tileset-topology))
+        col-offset (mod (tileset-to-number tileset) (topo :num-faces))]
     (doseq [i (range (count tileset))]
       (let [code (tileset i)
-            col-idx (mod (+ i col-offset) (@current-topology :num-faces))
+            col-idx (mod (+ i col-offset) (topo :num-faces))
             col (phi-palette-color col-idx 0) ]
         ;(when-not (set-contains-rotations? (set tileset) code)
         (add-to-tileset code)
@@ -108,6 +113,9 @@
   ; (soft-init-tiler)
   )
 
+
+(defn set-tileset-topo-id [topo-id]
+  (reset! editor-state (assoc @editor-state :tileset-topology topo-id))  )
 
 (defn valid-level? [l]
   (and (>= l 0) (< l 3)))
@@ -196,7 +204,9 @@
 
 (defn load-library-tileset [idx]
   (when (< idx (count @library-tilesets))
-    (set-tileset (@library-tilesets idx))
+    (set-tileset-topo-id ((@library-tilesets idx) 0))
+    (reset! current-topology (topologies (get-tileset-topo-id)))
+    (set-tileset ((@library-tilesets idx) 1))
     ))
 
 
@@ -215,9 +225,10 @@
 
 
 (defn save-current-tileset-to-library []
-  (let [ts (get-tileset)]
-    (save-tileset-to-library ts)
-    (swap! library-tilesets conj ts)))
+  (let [ts (get-tileset)
+        topo-id (get-tileset-topo-id)]
+    (save-tileset-to-library [topo-id ts])
+    (swap! library-tilesets conj [topo-id ts])))
 
 
 (defn remove-from-current-tileset [code]
