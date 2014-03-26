@@ -277,7 +277,7 @@
 
 (defn make-facecode-bezier-box-triangles [^String code steps]
   (let [num-connected (-get-num-connected code)
-        endpoint-pairs (if (< num-connected 5)
+        endpoint-pairs (if (< num-connected 4)
                          (vec (-make-curve-endpoints (get-connected-idxs code)))
                          (vec (filter #(not= 6 (Math/abs (- (% 1) (% 0))))
                                       (-make-curve-endpoints (get-connected-idxs code)))))]

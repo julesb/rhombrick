@@ -17,13 +17,7 @@
                          [1 1 1]
                          [0 1 1]])
 
-(def topo-coord-scales {:square 1.001 
-                       :hexagon 1.0
-                       :cube 1.001
-                       :hexagonal-prism 1.0
-                       :rhombic-dodecahedron 2.0
-                       :truncated-octahedron 2.001
-                        })
+
 
 (defn lerp- [t a b]
   (+ a (* t (- b a))))
@@ -109,14 +103,14 @@
 
 (defn sd-capsule-tile [p code topo]
   (let [con-idxs (get-connected-idxs code)
-        fc (->> (get-connected-idxs code)
+        fc (->> con-idxs
                 (map #((topo :face-centers) %))
                 (map #(vec3-scale % (/ 1.0 (topo :aabb-radius)))))
         rads (vec (map #(capsule-tile-radii (.charAt code %)) con-idxs))
         cog [0.0 0.0 0.0] ; (vec3-scale (reduce vec3-add fc) (/ 1.0 (count fc)))
         cog-c (vec3-scale cog 0.5)
-        capsules (map-indexed #(sd-capsule p cog-c %2 (rads %1)) fc)]
-    (reduce #(op-blend %1 %2 0.4) capsules)))
+        capsules (map-indexed #(sd-capsule p cog-c %2 (* (rads %1) 2.0)) fc)]
+    (reduce #(op-blend %1 %2 0.2) capsules)))
 
 
 (defn sin-combo [xyz a]
@@ -181,38 +175,6 @@
     (reduce + fs)
     )
 )
-
-(defn build-scene [v code]
-  (let [;sphere (sd-sphere-o v 0.75 [0.0 0.0 0.0])
-        ;box1 (sd-box v [0.5 0.5 0.95])
-        ;box2 (sd-box v [0.95 0.5 0.5])
-        ;dist (op-blend box1 box2 0.2)
-        ;dist (sd-plane v (vec3-normalize [0.0 1.0 1.0]))
-        ;c1 (sd-capsule v [0.6 0.6 0.0] [-0.6 -0.6 0.0] 0.3)
-        ;c2 (sd-capsule v [0.0 0.6 0.6] [0.0 -0.6 -0.6] 0.3)
-
-        ;cell  (sd-smooth-cell v @current-topology 0.1)
-        ;nc-spheres (sd-nonconnected-spheres v code @current-topology)
-        ;dist  (op-subtract nc-spheres cell)
-
-        ;caps (op-blend c1 c2 0.3)
-        ;dist (op-blend caps cell 0.1)
-        planes (sd-tilecode-planes v code @current-topology)
-        ;dist planes
-        ;dist (op-blend cell planes 0.2)
-
-        cap-tile (sd-capsule-tile v code @current-topology)
-        dist (op-blend (- cap-tile) planes 0.1)
-        
-
-        ;dist (uf-soft-tile v code @current-topology)
-
-        ;dist cell
-        ;dist (op-subtract cell nc-spheres ) 
-        ;dist (op-intersect cell nc-spheres ) 
-        ]
-    [dist 1.0 1.0 1.0]
-  ))
 
 
 (defn get-points-for-curve [f1-idx f2-idx npoints topo]
@@ -323,7 +285,8 @@
           ;d (/ (- closest-d radius-at-p) 1.0)
           ;field (/ 1.0 (* d d))
           ]
-      [(* (- closest-d radius-at-p) 1.0) (n 0) (n 1) (n 2)]))
+      [(* (- closest-d radius-at-p) 1.0) n]))
+      ;[(* (- closest-d radius-at-p) 1.0) (n 0) (n 1) (n 2)]))
       ;[field (n 0) (n 1) (n 2)]))
 
 ;      (if (< closest-d radius-at-p)
@@ -331,6 +294,41 @@
 ;        [1.0 (n 0) (n 1) (n 2)])))
 ;  )
 ;))
+
+(defn build-scene [v code]
+  (let [;sphere (sd-sphere-o v 0.75 [0.0 0.0 0.0])
+        ;box1 (sd-box v [0.5 0.5 0.95])
+        ;box2 (sd-box v [0.95 0.5 0.5])
+        ;dist (op-blend box1 box2 0.2)
+        ;dist (sd-plane v (vec3-normalize [0.0 1.0 1.0]))
+        ;c1 (sd-capsule v [0.6 0.6 0.0] [-0.6 -0.6 0.0] 0.3)
+        ;c2 (sd-capsule v [0.0 0.6 0.6] [0.0 -0.6 -0.6] 0.3)
+
+        ;cell  (sd-smooth-cell v @current-topology 0.1)
+        ;nc-spheres (sd-nonconnected-spheres v code @current-topology)
+        ;dist  (op-subtract nc-spheres cell)
+
+        [blob-d blob-n] (tilecode-bezier-blob2 v code @current-topology)
+        dist blob-d
+
+        ;caps (op-blend c1 c2 0.3)
+        ;dist (op-blend caps cell 0.1)
+        ;planes (sd-tilecode-planes v code @current-topology)
+        ;dist planes
+        ;dist (op-blend cell planes 0.2)
+
+        ;cap-tile (sd-capsule-tile v code @current-topology)
+        ;dist (op-blend (- cap-tile) planes 0.1)
+
+        ;dist (uf-soft-tile v code @current-topology)
+
+        ;dist cell
+        ;dist (op-subtract cell nc-spheres ) 
+        ;dist (op-intersect cell nc-spheres ) 
+        ]
+    [dist 1.0 1.0 1.0]
+  ))
+
 
 
 (defn make-surface-cache-obj [code dim mesh]
@@ -430,9 +428,6 @@
                                                    [n _ _ _] (build-scene v code) ]
                                                    ;[n _ _ _] (uf-soft-tile v code @current-topology) ]
                                                    ;[n _ _ _] [(sphere-func v 1.0) 1.0 1.0 1.0] ]
-                                                   ;[n _ _ _] (if (polyhedron-contains? v (@current-topology :face-centers))
-                                                   ;            [1.0 1.0 1.0 1.0]
-                                                  ;             [0.0 1.0 1.0 1.0])]
                                                    ;[n _ _ _] (bezier-blob v 0 1 0.12 0.4)]
                                                    ;[n _ _ _] (cell-func v @current-topology)]
                                                    ;[n _ _ _] (tilecode-planes-contain v code @current-topology)]
@@ -445,7 +440,9 @@
                          base-tris (polygonise grid isolevel)
                          tris (map #(scale-vert % offset) base-tris)
                          norms (map (fn [v]
-                                      (let [[_ nx ny nz] (build-scene v code)]
+                                      (let [
+                                            ;[_ nx ny nz] (build-scene v code)]
+                                            [_ nx ny nz] [0.0 1.0 0.0 0.0]]
                                       ;(let [[_ nx ny nz] (uf-soft-tile v code @current-topology)]
                                       ;(let [[_ nx ny nz] (if (polyhedron-contains? v (@current-topology :face-centers))
                                       ;                     [1.0 1.0 1.0 1.0]
@@ -473,14 +470,14 @@
 (def tileset-meshes (atom {}))
 
 
-(defn remove-endcap-triangles [mesh topo]
-  (let [idxs-to-remove (->> (mesh :tris)
-                            (partition 3)
-                            (map-indexed #(vec [%1 %2]))
-                            (filter #(not (polyhedron-contains? (second %) (topo :face-centers)))))]
-                            ;(map first))]
-    idxs-to-remove
-    ))
+;(defn remove-endcap-triangles [mesh topo]
+;  (let [idxs-to-remove (->> (mesh :tris)
+;                            (partition 3)
+;                            (map-indexed #(vec [%1 %2]))
+;                            (filter #(not (polyhedron-contains? (second %) (topo :face-centers)))))]
+;                            ;(map first))]
+;    idxs-to-remove
+;    ))
 
 
 (defn make-tileset-meshes-old [isolevel tileset xdim ydim zdim ]

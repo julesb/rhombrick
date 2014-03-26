@@ -235,7 +235,7 @@
   ;:tileset ["1-1---" "1--1-1"] ; hex 
   :seed ""
   :max-iters 1000000
-  :max-radius 8
+  :max-radius 64
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0
@@ -265,7 +265,7 @@
            } } ]
   {
   :tileset tileset
-  :seed (if (< (count seed) 12) (first tileset) seed)
+  :seed (if (< (count seed) 12) (rand-nth (vec tileset)) seed)
   :max-iters max-iters
   :max-radius max-radius
   :max-tiles max-tiles
