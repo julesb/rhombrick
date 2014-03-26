@@ -89,9 +89,9 @@
             entry-idx (glider :entry-face-idx)
             exit-idx (glider :exit-face-idx)
             t (glider :time)
-            p1 (vec3-scale (co-verts entry-idx) 0.5)
+            p1 ((@current-topology :face-centers) entry-idx)
             p2 (vec3-scale p1 0.5)
-            p4 (vec3-scale (co-verts exit-idx) 0.5)
+            p4 ((@current-topology :face-centers) exit-idx)
             p3 (vec3-scale p4 0.5)
             bx (vec (map #(% 0) [p1 p2 p3 p4]))
             by (vec (map #(% 1) [p1 p2 p3 p4]))
@@ -111,9 +111,9 @@
             entry-idx (glider :entry-face-idx)
             exit-idx (glider :exit-face-idx)
             t (+ (glider :time) (* 2.0 (glider :speed)))
-            p1 (vec3-scale (co-verts entry-idx) 0.5)
+            p1 ((@current-topology :face-centers) entry-idx)
             p2 (vec3-scale p1 0.5)
-            p4 (vec3-scale (co-verts exit-idx) 0.5)
+            p4 ((@current-topology :face-centers) exit-idx)
             p3 (vec3-scale p4 0.5)
             bx (vec (map #(% 0) [p1 p2 p3 p4]))
             by (vec (map #(% 1) [p1 p2 p3 p4]))
@@ -157,7 +157,6 @@
     ;(when (> (count @tiles) 0)
     (when (> (count (@tiler-state :tiles)) 0)
       (doseq [i (range (+ 2 num-gliders))]
-        ;(let [tile (rand-nth (keys @tiles))
         (let [tile (rand-nth (keys (@tiler-state :tiles) ))
               entry-idx (first (get-connected-idxs ((@tiler-state :tiles) tile)))
               path-idxs (choose-glider-path ((@tiler-state :tiles) tile) entry-idx)]
@@ -182,7 +181,7 @@
       (= 0 (count (get-connected-idxs tilecode)))
       (= tilecode "------------")
       (= tilecode nil)
-      (not= (count tilecode) 12)
+      (not= (count tilecode) (@current-topology :num-faces))
       )))
 
 ; _______________________________________________________________________
@@ -206,13 +205,18 @@
 
 (defn update-gliders []
   (doseq [glider @gliders]
-    (let [next-tile-pos (get-neighbour-pos (glider :current-tile)
-                                       (glider :exit-face-idx))
+    (let [exit-idx (glider :exit-face-idx)
+          exit-idx-cl (if (< exit-idx (@current-topology :num-faces))
+                        exit-idx
+                        (- (@current-topology :num-faces) 1))
+
+          next-tile-pos (get-neighbour-pos (glider :current-tile)
+                                       exit-idx-cl) ;(glider :exit-face-idx))
           new-glider-time (+ (glider :time) (glider :speed))]
       (if (>= new-glider-time 1.0)
         ; have crossed tile boundary..
         (let [next-tile-code ((@tiler-state :tiles) next-tile-pos)
-              next-entry-face-idx (rd-connecting-faces (glider :exit-face-idx))
+              next-entry-face-idx ((@current-topology :op-face-idx) exit-idx-cl)
               next-glider-path (choose-glider-path next-tile-code
                                                    next-entry-face-idx )]
           (if (is-traversable? next-tile-code)

@@ -355,10 +355,11 @@
         col (get-tile-color code)]
     (no-fill)
     (stroke (col 0) (col 1) (col 2) 16)
-    (stroke-weight 1)
+    (stroke-weight 8)
     (with-translation pos
-      (scale 0.5)
-      (draw-faces rd-verts rd-faces [(col 0) (col 1) (col 2) 128]))))
+      ;(scale 0.5)
+      (draw-faces (@current-topology :verts) (@current-topology :faces) [(col 0) (col 1) (col 2) 128]))))
+      ;(draw-faces rd-verts rd-faces [(col 0) (col 1) (col 2) 128]))))
    
 
 (defn draw-neighbours [pos]
@@ -658,7 +659,7 @@
         (no-fill))
         )
 
-    (stroke-weight 1)
+    (stroke-weight 4)
     (stroke (col 0) (col 1) (col 2) 192)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))

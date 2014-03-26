@@ -1,5 +1,5 @@
 (ns rhombrick.core
-  (:use [quil.core]
+  (:use [quil.core :exclude [target-frame-rate]]
         [quil.applet]
         [rhombrick.tiling :as tiling]
         [rhombrick.tilecode :as tc]
@@ -261,6 +261,7 @@
          (editor/set-tileset (get-random-tileset-1))
          (start-tiler (editor/get-tileset-as-set) false)
          (init-tileset-colors (editor/get-tileset-as-set))
+          (init-gliders num-gliders)
          ;(swap! max-tiles inc)
          ;(println "max tiles:" @max-tiles)
         )
@@ -358,7 +359,7 @@
                                ;512.0
                                ;(get-tileset-expanded)
                                ;(vec (distinct (vals (@tiler-state :tiles))))
-                               32 32 32 
+                               24 24 24 
                                )
 
 
@@ -572,14 +573,14 @@
     (= @camera-mode 0)
     ; rubber band camera to glider
       (do
-        ;(let [g (vec3-scale (get-glider-pos 1) @model-scale)
-        (let [g (vec3-scale @assemblage-center @model-scale)
+        (let [g (vec3-scale (get-glider-pos 1) @model-scale)
+        ;(let [g (vec3-scale @assemblage-center @model-scale)
               d (dist (@camera-pos 0)
                       (@camera-pos 1)
                       (@camera-pos 2)
                       (g 0) (g 1) (g 2))
               dir (vec3-normalize (vec3-sub g @camera-pos))
-              newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.01)))
+              newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.02)))
               cl-d (dist (@camera-lookat 0)
                          (@camera-lookat 1)
                          (@camera-lookat 2)
@@ -587,10 +588,10 @@
               cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
               new-camera-lookat (vec3-add @camera-lookat 
                                           (vec3-scale cl-dir
-                                                      (* cl-d 0.01)))]
+                                                      (* cl-d 0.15)))]
           (reset! camera-lookat new-camera-lookat)    
           (reset! camera-pos newpos)
-          (camera (newpos 0) (newpos 1) (+ (newpos 2) 10)
+          (camera (newpos 0) (newpos 1) (+ (newpos 2) 0)
                   (new-camera-lookat 0)
                   (new-camera-lookat 1)
                   (new-camera-lookat 2)
@@ -652,7 +653,7 @@
   (let [[mx my] @(state :mouse-position)]
     (push-matrix)
     (scale @model-scale)
-    (rotate (/ (frame-count) 200.0) 0 0 1)
+    ;(rotate (/ (frame-count) 200.0) 0 0 1)
     ;(stroke 0 255 255 128)
     ;(stroke-weight 1)
     ;(no-fill)
@@ -662,7 +663,7 @@
     (lights)
     (when @draw-gliders?
       (push-matrix)
-      (scale 1.0)
+      ;(scale (@current-topology :aabb-radius))
       (draw-gliders (frame-count))
       (pop-matrix)
     )
