@@ -236,7 +236,7 @@
 (defn add-tile-to-facelist [pos]
   (doseq [f (@current-topology :faces)]
     (let [fv (face-idxs-to-verts f)
-          fvw (vec (map #(vec3-add pos (vec3-scale % 1)) fv))]
+          fvw (vec (map #(vec3-add pos % ) fv))]
           ;fvw (vec (map #(vec3-add pos (vec3-scale % 0.5)) fv))]
     (if (not (facelist-contains-rotations? fvw))
       (swap! face-list conj fvw)
@@ -274,14 +274,15 @@
   (doseq [face-verts @face-list]
     (draw-obj face-verts [])))
 
+
 (defn draw-face-list []
-  (fill 32 32 32 128)
+  (fill 32 32 32 64)
   ;(fill 32 32 32 128)
 
   ;(no-fill)
   ;(stroke 0 0 0 192)
   (stroke 64 64 64 255)
-  (stroke-weight 1)
+  (stroke-weight 0.1)
   ;(no-stroke)
   (doseq [face-verts @face-list]
     (cond
@@ -355,7 +356,7 @@
         col (get-tile-color code)]
     (no-fill)
     (stroke (col 0) (col 1) (col 2) 16)
-    (stroke-weight 8)
+    (stroke-weight 0.125)
     (with-translation pos
       ;(scale 0.5)
       (draw-faces (@current-topology :verts) (@current-topology :faces) [(col 0) (col 1) (col 2) 128]))))
@@ -365,7 +366,7 @@
 (defn draw-neighbours [pos]
   (no-fill)
   (stroke 64 64 64 64)
-  (stroke-weight 1)
+  ;(stroke-weight 1)
   (let [ipos (vec (map int pos))]
     (doseq [n (get-neighbours ipos)]
       (with-translation n
@@ -404,7 +405,7 @@
           ;(scale 0.5)
           ;(stroke-weight 1)
           ;(no-stroke)
-          (stroke-weight 1)
+          (stroke-weight 0.0125)
           (stroke 128 128 128 255)
           ;(no-stroke)
           ;(stroke r g b 255)
@@ -489,20 +490,25 @@
                 (rotate el 0 1 0)
                 (box 0.125 thickness thickness)))))))))
 
-(defn draw-empty [_tiles]
-  (fill 0 255 0 16)
+
+(defn draw-empty [ts]
+  (fill 0 255 0 64)
   (stroke 0 255 0 32)
-  (doseq [tile (get-empty-positions _tiles (get-in @tiler-state [:params :max-radius]))]
-    (let [pos tile]
-      (with-translation pos 
-        (scale 0.5)
-        (box 0.2 0.2 0.2)))))
+  (doseq [pos (ts :empty)]
+    ; debugging - highlight empty/tiles conflicts
+    (if (contains? (ts :tiles) pos)
+      (stroke 255 0 0 192)
+      (stroke 0 255 0 32))
+    
+    (with-translation pos 
+      (scale 1.0)
+      (box 0.2 0.2 0.2))))
 
 
 (defn draw-assemblage-center []
   (let [c @assemblage-center]
     (stroke 255 255 255 192)
-    (stroke-weight 1)
+    (stroke-weight 0.1)
     ;(fill 255 255 0 32)
     (no-fill)
     ;(with-translation (find-assemblage-center @tiles)
@@ -651,16 +657,17 @@
 
     (if (= num-connected 1)
       (let [p ((@current-topology :face-centers) (first (get-connected-idxs code)))]
-        (stroke-weight 4) 
+        (stroke-weight 1) 
         (line 0 0 0 (p 0) (p 1) (p 2))
         (fill 255 128 128 128)
         ;(box 0.05125 0.05125 0.05125)
+        (no-stroke)
         (box 0.25 0.25 0.25)
         (no-fill))
         )
 
-    (stroke-weight 4)
-    (stroke (col 0) (col 1) (col 2) 192)
+    (stroke-weight 0.45)
+    (stroke (col 0) (col 1) (col 2) 255)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))
     
@@ -817,7 +824,7 @@
 (defn draw-tiling [ts with-boundaries? with-lines? with-bb-faces? with-bb-lines? boundary-mode]
   (doseq [tile (keys (ts :tiles))]
     (let [pos tile
-          code ((ts :tiles) pos)
+          code (get (ts :tiles) pos)
           ;col [255 255 255 255]
           col (conj (get-tile-color code) 255)
           ;line-col [(col 0) (col 1) (col 2) 255]
@@ -838,10 +845,10 @@
           (draw-facecode-lines code))
         (when with-bb-faces?
           (if @bezier-box-smooth-shading?
-            (draw-facecode-bezier-boxes-n ((ts :tiles) pos) col bezier-steps)
-            (draw-facecode-bezier-boxes ((ts :tiles) pos) col bezier-steps)))
+            (draw-facecode-bezier-boxes-n (get (ts :tiles) pos) col bezier-steps)
+            (draw-facecode-bezier-boxes (get (ts :tiles) pos) col bezier-steps)))
         (when with-bb-lines?
-          (draw-facecode-bezier-box-lines ((ts :tiles) pos) line-col bezier-steps))
+          (draw-facecode-bezier-box-lines (get (ts :tiles) pos) line-col bezier-steps))
         )
       (when with-boundaries?
         (draw-face-boundaries pos code boundary-mode))
