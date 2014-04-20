@@ -88,7 +88,7 @@
     ;(reset! rhomb-tex (load-image "map-15Bsubset.jpg"))
 
     ;(println "texture:" @rhomb-tex)
-    (texture-mode :normalized)
+    ;(texture-mode :normalized)
       
     ;(println "screen pos" (get-location-on-screen))
     ;(println "screen size:" (width) (height))
@@ -156,7 +156,7 @@
                (str "iters: " (@tiler-state :iters) "/" (get-in @tiler-state [:params :max-iters]))
                (str "tiles: " (count (@tiler-state :tiles)) "/" ((@tiler-state :params) :max-tiles)) 
                (str "ips: " (int (/ 1000 @last-iteration-time)))
-               ;(str "empty: " (count @empty-positions)) 
+               (str "empty:" (count (@tiler-state :empty)))
                (str "dead: " (count (@tiler-state :dead)))
                (str "radius: " ((@tiler-state :params) :max-radius))
                ;(str "-------------")
@@ -571,8 +571,9 @@
   (when @draw-gliders?
     (update-gliders))
 
-  (background 32 32 64)
+  (background 16 16 32)
   ;(background 192 192 192)
+;  (background 8 8 8)
 
   (push-matrix)
 
@@ -660,7 +661,7 @@
   (let [[mx my] @(state :mouse-position)]
     (push-matrix)
     (scale @model-scale)
-    ;(rotate (/ (frame-count) 200.0) 0 0 1)
+    (rotate (/ (frame-count) 200.0) 0 0 1)
     ;(stroke 0 255 255 128)
     ;(stroke-weight 1)
     ;(no-fill)
@@ -777,14 +778,14 @@
     ;(draw-tube-anchors 0 6)
 
     (when @draw-empty?
-      (draw-empty (@tiler-state :tiles)))
+      (draw-empty @tiler-state))
 
     ;(lights)
     (when @draw-gliders?
       (let [selected-tile ((get-glider 1) :current-tile)]
         ;(draw-neighbours selected-tile)
         ;(draw-curve-boundary-points selected-tile)
-        (draw-selected-tile selected-tile)
+        ;(draw-selected-tile selected-tile)
         ))
 
     (pop-matrix)
@@ -811,7 +812,7 @@
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info 10 (- (height) 290))
+  (draw-info 10 (- (height) 310))
   (camera)
 
   (when @draw-console?

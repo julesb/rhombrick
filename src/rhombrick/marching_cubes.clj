@@ -295,6 +295,7 @@
 ;  )
 ;))
 
+
 (defn build-scene [v code]
   (let [;sphere (sd-sphere-o v 0.75 [0.0 0.0 0.0])
         ;box1 (sd-box v [0.5 0.5 0.95])
@@ -326,7 +327,8 @@
         ;dist (op-subtract cell nc-spheres ) 
         ;dist (op-intersect cell nc-spheres ) 
         ]
-    [dist 1.0 1.0 1.0]
+    ;[dist 1.0 1.0 1.0]
+    [dist blob-n]
   ))
 
 
@@ -441,8 +443,8 @@
                          tris (map #(scale-vert % offset) base-tris)
                          norms (map (fn [v]
                                       (let [
-                                            ;[_ nx ny nz] (build-scene v code)]
-                                            [_ nx ny nz] [0.0 1.0 0.0 0.0]]
+                                            [_ n] (build-scene v code)]
+                                            ;[_ nx ny nz] [0.0 1.0 0.0 0.0]]
                                       ;(let [[_ nx ny nz] (uf-soft-tile v code @current-topology)]
                                       ;(let [[_ nx ny nz] (if (polyhedron-contains? v (@current-topology :face-centers))
                                       ;                     [1.0 1.0 1.0 1.0]
@@ -454,7 +456,7 @@
                                       ;(let [[_ nx ny nz] (tilecode-planes-contain v code @current-topology)]
 
                                       ;(let [[_ nx ny nz] (spheres-func v 0.4)]
-                                        (normalize nx ny nz)))
+                                        (vec3-normalize n)))
                                     tris)]
                      
                      {:tris tris :norms norms}))
