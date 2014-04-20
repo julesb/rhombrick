@@ -8,6 +8,7 @@
 
 
 (def ^:const facecode-compatible #{
+ ; [\. \-]
   [\- \-]
   [\0 \0]
   [\1 \1]
@@ -124,11 +125,18 @@
 
 
 ; determine if faces are compatible without rotation
-(defn tilecodes-directly-compatible? [outercode innercode]
-  (= (@current-topology :num-faces)
-     (count (filter #(true? %)
-                    (map #(face-digit-compatible? %1 %2) 
-                         innercode outercode)))))
+;(defn tilecodes-directly-compatible? [outercode innercode]
+;  (= (@current-topology :num-faces)
+;     (count (filter true?
+;                    (map #(face-digit-compatible? %1 %2) 
+;                         innercode outercode)))))
+
+(def tilecodes-directly-compatible? (memoize (fn [outercode innercode]
+  (= (count innercode)
+     (count (filter true?
+                    (map face-digit-compatible?
+                         innercode outercode)))))))
+
 
 ;(def tilecodes-directly-compatible? (memoize tilecodes-directly-compatible-fn))
 ;(def tilecodes-directly-compatible-m? (m/lru tilecodes-directly-compatible?
@@ -146,14 +154,17 @@
 
 
 (defn get-neighbour-abutting-face2 [neighbourhood face-idx]
-  (let [op-face-idx ((@current-topology :op-face-idx) face-idx)
-        nb-code (neighbourhood face-idx)]
-    ;(println "nb-code:"nb-code "op-face-idx:" op-face-idx "neighbourhood:" neighbourhood)
-    (if (nil? nb-code) \. (nth nb-code op-face-idx))))
+  (if (>= face-idx (@current-topology :num-faces))
+    \.
+    (let [op-face-idx ((@current-topology :op-face-idx) face-idx)
+          nb-code (neighbourhood face-idx)]
+      ;(println "nb-code:"nb-code "op-face-idx:" op-face-idx "neighbourhood:" neighbourhood)
+      (if (nil? nb-code) \. (nth nb-code op-face-idx)))))
 
 
 (defn get-outer-facecode2 [neighbourhood]
-  (apply str (map #(get-neighbour-abutting-face2 neighbourhood %) (range (@current-topology :num-faces)))))
+  (apply str (map #(get-neighbour-abutting-face2 neighbourhood %)
+                  (range (@current-topology :num-faces)))))
 
 ;(def get-outer-facecode2-m (m/lru get-outer-facecode2-fn
 ;                                :lru/threshold 65536))
@@ -162,28 +173,10 @@
 ; generate all unique rotations of tiles in tileset 
 (defn expand-tiles-preserving-symmetry [tiles]
   (set (flatten (map #(get-code-symmetries %) tiles))))
-  ;(set (flatten (map #(get-code-symmetries-identity-only %) tiles))))
-  ;(set (flatten (map #(get-code-symmetries-2d-fourfold %) tiles))))
 
 
 
-
-(defn find-candidates [neighbourhood tileset dead]
-  (let [outercode (get-outer-facecode2 neighbourhood)]
-    (if (contains? dead outercode)
-      ()
-      (filter #(tilecodes-directly-compatible? outercode %)
-              tileset))))
-
-
-(defn choose-tilecode [neighbourhood tileset dead]
-  (let [candidates (find-candidates neighbourhood tileset dead)]
-    (if (seq candidates)
-      (rand-nth candidates)
-      nil)))
-
-
-(defn make-random-tilecode []
+(defn make-random-tilecode [] 
   (let [code (apply str (map (fn [_] (rand-nth random-tilecode-distribution))
                              (range (@current-topology :num-faces))))]
     (if (= (get-num-connected code) 0)
