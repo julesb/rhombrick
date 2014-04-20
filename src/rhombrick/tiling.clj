@@ -9,7 +9,7 @@
 (def assemblage-center (atom [0 0 0]))
 (def last-iteration-time (atom 0))
 
-(def sonify? true)
+(def sonify? false)
 (when sonify?
   (def OSCPORT2 4242)
   (def client2 (osc-client "localhost" OSCPORT2)))
@@ -118,7 +118,11 @@
 (defn delete-neighbours-ts [ts pos]
   (assoc ts :tiles (delete-neighbours (ts :tiles) pos)))
 
-
+(defn get-empty-neighbours [tiles pos]
+  (->> (get-neighbours pos)
+       (filter #(is-empty? tiles %))
+       )
+  )
 
 
 ;(defn get-empty-neighbours [tiles pos]
@@ -170,6 +174,15 @@
   )
 
 
+(defn find-candidates [neighbourhood tileset dead]
+  (let [outercode (get-outer-facecode2 neighbourhood)]
+    (if (contains? dead outercode)
+      ()
+      (filter #(tilecodes-directly-compatible? outercode %) tileset))
+   )
+)
+
+
 ; this version does not force connectivity
 (defn get-empty-positions-nfc [tiles max-radius]
   (if (= (count tiles) 0)
@@ -186,7 +199,7 @@
   (assoc ts :dead (conj (ts :dead) code)))
 
 (defn add-to-dead-loci-ts2 [ts code]
-  (assoc ts :dead (clojure.set/union (ts :dead) code)))
+  (assoc ts :dead (clojure.set/union (ts :dead) #{code})))
 
 
 (defn get-untileable-neighbours [tiles tileset pos dead]
@@ -245,6 +258,47 @@
     (if (= (count best) 0)
       (find-any-positions-ts ts empty-positions)
       best)))
+
+
+; check if placing tile code at pos creates any dead regions in its
+; neighbourhood
+; false = has dead neighbours
+; true = ok to place tile at pos
+(defn test-tile-at-pos [ts pos code]
+  (let [new-ts (make-tile-2 ts pos code)
+        tiles (new-ts :tiles)
+        tileset (new-ts :tileset-expanded)
+        dead (new-ts :dead)
+        nbs (get-empty-neighbours tiles pos) ]
+    (= (count (->> nbs
+                   (filter #(or ;(contains? dead %)
+                                (contains? dead (get-outer-facecode2 (get-neighbourhood tiles %)))
+                                ;(= (count (find-candidates (get-neighbourhood tiles %) tileset dead)) 0)
+                                ))
+                   ))
+     0))
+  )
+
+
+
+
+
+;(defn choose-tilecode [neighbourhood tileset dead]
+;  ;(println "choose-tilecode " neighbourhood tileset dead)
+;  (let [candidates (find-candidates neighbourhood tileset dead)]
+;    (if (seq candidates)
+;      (rand-nth candidates)
+;      nil)))
+
+(defn choose-tilecode [ts pos]
+  (let [neighbourhood (get-neighbourhood (ts :tiles) pos)
+        candidates (find-candidates neighbourhood (ts :tileset-expanded) (ts :dead))
+        candidates-filtered candidates]
+        ;candidates-filtered (filter #(test-tile-at-pos ts pos %) candidates)]
+    (if (seq candidates)
+      (rand-nth candidates)
+      nil)))
+
 
 
 ; Receive a vector of positions and return the closest to the center
@@ -379,13 +433,6 @@
         tiles))))
 
 
-;(defn scan-empty-status [tiles pos]
-;  (if (contains? tiles pos)
-;    false
-;
-;  )
-
-
 
 ; empty cell bookkeeping for backtracking
 (defn update-empty [ts remaining discarded]
@@ -394,45 +441,32 @@
     (let [nb-positions (->> (map get-neighbours discarded)
                             (apply concat))
           all-positions (apply conj nb-positions discarded)
-          empty-status-all (into {} (map #(vec [% (get-empty-status remaining %)])
+          empty-status (into {} (map #(vec [% (get-empty-status remaining %)])
                                      all-positions))
-          ;empty-status-connected (into {} (map #(vec [% (can-discard-from-empty? remaining %)])
-          ;                           nb-positions))
-          to-add (->> empty-status-all
+          to-add (->> empty-status
                       (filter (fn [s] (true? (val s))))
                       (keys)
-                      ;(filter #(not (contains? remaining %)))
                       (set))
-          to-del (->> empty-status-all
+          to-del (->> empty-status
                       (filter (fn [s] (false? (val s))))
                       (keys)
-                      (set))
-          ]
-  ;    (println "remaining" remaining)
-  ;    (println "discarded" discarded)
-  ;    (println "nb-positions" nb-positions)
-  ;    (println "empty status" empty-status)
-
+                      (set))]
       (-> (ts :empty)
-          ;#(apply conj % to-add)
           (clojure.set/union to-add)
-          (clojure.set/difference to-del)
-          ))))
+          (clojure.set/difference to-del)))))
 
 
-
-(defn backtrack-non-zero-ts-with-discarded [ts]
-  (let [
-        num-tiles (count (ts :tiles))
+; backtrack with empty cell bookkeeping
+(defn backtrack-non-zero-bk [ts]
+  (let [num-tiles (count (ts :tiles))
         bt-num (compute-backtrack-amount 
                 num-tiles
                 (get-in ts [:params :autism])
                 (get-in ts [:params :adhd]))
-        split-point (- num-tiles bt-num )
+        split-point (- num-tiles bt-num)
         [remaining-tiles discarded] (split-at split-point (ts :tiles))]
-    ;(println "tiles:" (count (ts :tiles)) "bt:" bt-num "rem:" (count remaining-tiles) "disc:" (count discarded) "splitp:" split-point)
-    ;(println "backtrack-non-zero-ts-with-discarded" bt-num)
     (if (and (> num-tiles 1)
+             (> split-point 0)
              (< split-point num-tiles))
       (-> ts
           (assoc :tiles (ordered-map remaining-tiles))
@@ -519,17 +553,59 @@
             (-> ts
                 ;(add-to-dead-loci-ts (get-outer-facecode2 new-neighbourhood))
                 (add-to-dead-loci-ts2 (set (get-code-symmetries (get-outer-facecode2 new-neighbourhood))))
-                ;(delete-neighbours-ts new-pos)
-                (backtrack-non-zero-ts-with-discarded)
-                ;(backtrack-non-zero-ts)
+                (backtrack-non-zero-bk)
                 (inc-iters))
-
             ; else add tile and return new state 
-            ;(-> (make-tile ts new-pos new-code) ; normal
-            ;(-> (make-tile ts (vec3-quantize new-pos 5) new-code) ; for hex 
             (-> (make-tile-2 ts new-pos new-code)
                 (inc-iters))))
 
+        (-> ts
+          (assoc :run-status :halted))))))
+
+
+(defn make-backtracking-tiling-iteration5 [ts]
+  (let [{:keys [params tiles dead iters solved]} ts
+        empty-positions (get-empty-positions-2 ts)
+        tileset (ts :tileset-expanded)]
+    (if (zero? (count empty-positions))
+      (-> ts
+          (assoc :run-status :halted)
+          (assoc :solved true))
+      (if-let [positions (choose-positions-ts ts empty-positions)]
+        (let [new-pos (find-closest-to-point positions @assemblage-center)
+              new-neighbourhood (get-neighbourhood tiles new-pos)
+              candidates (find-candidates new-neighbourhood tileset (ts :dead))
+              candidates-strict (filter #(test-tile-at-pos ts new-pos %) candidates)
+              new-code (if (seq candidates-strict)
+                         (rand-nth candidates-strict)
+                         (if (seq candidates) (rand-nth candidates) nil))
+                         
+                        ;(choose-tilecode ts new-pos))
+              ;new-code (if (seq candidates) (rand-nth candidates) nil)
+              ;new-code (choose-tilecode new-neighbourhood tileset dead)
+              ; new-code (choose-tilecode ts new-pos)
+              ]
+          ;(println "candidates" candidates)
+          (if (or (zero? (count candidates))
+                  ;(zero? (count candidates-strict))
+                  ;(nil? new-code) 
+                  )
+          ;(if (nil? new-code)
+            ; no tile will fit, backtrack and return new state
+            (-> ts
+                ;(add-to-dead-loci-ts2 (get-outer-facecode2 new-neighbourhood))
+                (add-to-dead-loci-ts2 (set (get-code-symmetries (get-outer-facecode2 new-neighbourhood))))
+                (backtrack-non-zero-bk)
+                (inc-iters))
+            ; else add tile and return new state 
+            (if (test-tile-at-pos ts new-pos new-code)
+              (-> ts
+                  (make-tile-2 new-pos new-code)
+                  (inc-iters))
+              (-> ts
+                  (backtrack-non-zero-bk)
+                  (inc-iters)
+              ))))
         (-> ts
           (assoc :run-status :halted))))))
 
@@ -553,11 +629,11 @@
   (while (tiler-can-iterate? @tiler-state)
     ;(println "iter")
     (let [iter-start-time (System/nanoTime)]
-      (dosync
-        (swap! tiler-state make-backtracking-tiling-iteration4)
+;      (dosync
+        (swap! tiler-state make-backtracking-tiling-iteration5)
         (update-assemblage-center (@tiler-state :tiles))
         (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
-        )
+;        )
       ))
   (halt-tiler))
 

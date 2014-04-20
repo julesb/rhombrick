@@ -166,8 +166,8 @@
             col-idx (mod i (count colors))
             [r g b a] (if (= (count colors) 12) (colors col-idx) colors)]
         
-        (if (seq colors)
-          (stroke r g b a))
+        ;(if (seq colors)
+        ;  (stroke r g b a))
         ;  (fill (/ (col 0) 3.0) (/ (col 1) 3.0) (/ (col 2) 3.0) 255 ))
         (begin-shape :quads)
         (vertex (v0 0) (v0 1) (v0 2))
@@ -492,17 +492,20 @@
 
 
 (defn draw-empty [ts]
-  (fill 0 255 0 64)
-  (stroke 0 255 0 32)
+  (fill 32 32 255 255)
+  (no-stroke)
+  ;(stroke 0 255 0 32)
   (doseq [pos (ts :empty)]
     ; debugging - highlight empty/tiles conflicts
-    (if (contains? (ts :tiles) pos)
-      (stroke 255 0 0 192)
-      (stroke 0 255 0 32))
+;    (if (contains? (ts :tiles) pos)
+;      (stroke 255 0 0 192)
+;      (stroke 0 255 0 32))
     
     (with-translation pos 
-      (scale 1.0)
-      (box 0.2 0.2 0.2))))
+      (scale 0.5)
+      (draw-faces (@current-topology :verts) (@current-topology :faces) [255 255 0 128])
+      ;(box 0.5 0.5 0.5)
+      )))
 
 
 (defn draw-assemblage-center []
@@ -657,7 +660,7 @@
 
     (if (= num-connected 1)
       (let [p ((@current-topology :face-centers) (first (get-connected-idxs code)))]
-        (stroke-weight 1) 
+        (stroke-weight 0.21) 
         (line 0 0 0 (p 0) (p 1) (p 2))
         (fill 255 128 128 128)
         ;(box 0.05125 0.05125 0.05125)
@@ -666,8 +669,9 @@
         (no-fill))
         )
 
-    (stroke-weight 0.45)
     (stroke (col 0) (col 1) (col 2) 255)
+    ;(stroke-weight 0.45)
+    (stroke-weight 4)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))
     
