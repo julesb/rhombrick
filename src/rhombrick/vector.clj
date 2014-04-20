@@ -115,11 +115,15 @@
    (eps-to-zero (v 1) e)
    (eps-to-zero (v 2) e)])
 
-(defn vec3-quantize [v p]
+;(defn vec3-quantize [v p]
+;  [(myround p (v 0))
+;   (myround p (v 1))
+;   (myround p (v 2))])
+
+(def vec3-quantize (memoize (fn [v p]
   [(myround p (v 0))
    (myround p (v 1))
-   (myround p (v 2))])
-
+   (myround p (v 2))])))
 
 (defn rotate-point [point axis ang]
   (let [[x y z] point
