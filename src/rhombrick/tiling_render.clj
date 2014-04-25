@@ -492,7 +492,7 @@
 
 
 (defn draw-empty [ts]
-  (fill 32 32 255 255)
+  (fill 255 192 0 128)
   (no-stroke)
   ;(stroke 0 255 0 32)
   (doseq [pos (ts :empty)]
@@ -635,6 +635,72 @@
       (draw-curve-with-controls c))))
         
 
+;(def get-bez-anchors-2d (memoize (fn [code topo]
+(defn get-bez-anchors-2d [code topo]
+  (let [con-idxs (vec (get-connected-idxs code))
+        num-idxs (count con-idxs)
+        vs (rotate-vec (topo :verts-2d))
+        rads (->> (map bezier-box-thicknesses code)
+                  (filter #(not (nil? %)))
+                  (map #(* % 0.5))
+                  (vec))
+        dirs (map #(vec3-normalize (vec3-sub (vs %)
+                                             (vs (mod (inc %) (topo :num-faces)))))
+                  con-idxs)
+        dirs-scaled (map vec3-scale dirs rads)
+        dirs-mirrored (vec (map #(vec [% (vec3-scale % -1.0)]) dirs-scaled))
+        ]
+    dirs-mirrored
+    ))
+
+
+(def make-facecode-shape-2d (memoize (fn [code topo res]
+  (let [con-idxs (vec (get-connected-idxs code))
+        num-idxs (count con-idxs)
+        offsets (get-bez-anchors-2d code topo)
+        face-idxs (into [] (map #(vec [(con-idxs %) (con-idxs (mod (inc %) num-idxs))])
+                                (range num-idxs)))
+        controls (map-indexed #(get-bezier-controls-with-offset 
+                                 (%2 0)
+                                 (%2 1)
+                                 ((offsets %1) 1)
+                                 ((offsets (mod (inc %1) num-idxs)) 0))
+                              face-idxs)
+        curves-verts (map #(get-bezier-points % res) controls)
+        ]
+    curves-verts
+  ))
+))
+
+(defn draw-facecode-shape-2d [code topo]
+  (let [curves (make-facecode-shape-2d code topo @bezier-box-resolution)
+        ;col (get-tile-color code)
+        col [255 255 255]
+        col-transp [(col 0) (col 1) (col 2) 100]
+        with-endcaps? false
+        ]
+    ;(no-stroke)
+    (apply stroke col)
+    (stroke-weight 2)
+    (if with-endcaps?
+      (do
+        (apply fill col-transp)
+        (begin-shape)
+        (doseq [curve curves]
+          (doseq [[vx vy vz] curve]
+            (vertex vx vy vz)))
+        (end-shape))
+      (do
+        (no-fill)
+        (doseq [curve curves]
+          (begin-shape)
+          (doseq [[vx vy vz] curve]
+            (vertex vx vy vz))
+          (end-shape))))
+      )
+  )
+
+
 (defn draw-facecode-lines [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (get-num-connected code)
@@ -671,7 +737,7 @@
 
     (stroke (col 0) (col 1) (col 2) 255)
     ;(stroke-weight 0.45)
-    (stroke-weight 4)
+    (stroke-weight 1)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))
     
@@ -796,7 +862,6 @@
   ))
 
 
-
 (defn draw-vert-numbers [verts]
   ;(fill 255 255 255 192)
   ;(let [ps (into [] (map world-to-screen verts))]
@@ -823,8 +888,6 @@
   ))
 
 
-
-
 (defn draw-tiling [ts with-boundaries? with-lines? with-bb-faces? with-bb-lines? boundary-mode]
   (doseq [tile (keys (ts :tiles))]
     (let [pos tile
@@ -834,7 +897,7 @@
           ;line-col [(col 0) (col 1) (col 2) 255]
           line-col col
           ;line-col  [0 0 0 192] ;[192 192 255 192]
-          bezier-steps @bezier-box-resolution]
+          bezier-steps @bbox/bezier-box-resolution]
       (with-translation pos 
         ;(scale 0.5)
         ;(stroke-weight 8)
@@ -853,6 +916,10 @@
             (draw-facecode-bezier-boxes (get (ts :tiles) pos) col bezier-steps)))
         (when with-bb-lines?
           (draw-facecode-bezier-box-lines (get (ts :tiles) pos) line-col bezier-steps))
+
+        (when (or (= (@current-topology :id) :hexagon)
+                  (= (@current-topology :id) :square))    
+          (draw-facecode-shape-2d code @current-topology))
         )
       (when with-boundaries?
         (draw-face-boundaries pos code boundary-mode))

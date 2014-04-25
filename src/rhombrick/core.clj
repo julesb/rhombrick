@@ -6,7 +6,7 @@
         [rhombrick.tiling-render]
         [rhombrick.bezierbox :as bbox]
         [rhombrick.staticgeometry]
-        ;[rhombrick.game :as game]
+        [rhombrick.game :as game]
         [rhombrick.vector]
         [rhombrick.glider]
         [rhombrick.camera]
@@ -156,6 +156,8 @@
                (str "iters: " (@tiler-state :iters) "/" (get-in @tiler-state [:params :max-iters]))
                (str "tiles: " (count (@tiler-state :tiles)) "/" ((@tiler-state :params) :max-tiles)) 
                (str "ips: " (int (/ 1000 @last-iteration-time)))
+               (str "tiles/iter: " (format "%.3f" (double (/ (count (@tiler-state :tiles))
+                                                             (inc (@tiler-state :iters) )))))
                (str "empty:" (count (@tiler-state :empty)))
                (str "dead: " (count (@tiler-state :dead)))
                (str "radius: " ((@tiler-state :params) :max-radius))
@@ -288,6 +290,7 @@
           ;(println "adhd:" @adhd "auti:" @autism)
           )
     \p #(do
+          (cancel-tiler-thread)
           ;(cond 
           ;  (= @tiler-run-state :running) (reset! tiler-run-state :paused)
           ;  (= @tiler-run-state :paused)  (reset! tiler-run-state :running))
@@ -384,31 +387,31 @@
           (swap! draw-tilecode-blobs? not)
           (println "draw-tilecode-blobs:" @draw-tilecode-blobs?)
           )
-;    \Z #(do
-;          (swap! game-mode? not))
+    \Z #(do
+          (swap! game-mode? not))
 ;    \z #(do
 ;          (game/start-game (editor/get-tileset-expanded)))
-;    \u #(do
-;          (osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
-;          (game/game-step (editor/get-tileset-expanded))
-;          )
+    \u #(do
+          (osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
+          (game/game-step @tiler-state)
+          )
 ;    \U #(do
 ;          (reset! game/selected-candidate-idx (int (rand (count @game/candidates))))
 ;          (game/game-step (editor/get-tileset-expanded))
 ;        )
-;    \j #(do
-;          (osc-send client "/rhombrick.game" "backtrack" @game/selected-candidate-idx)
-;          (game/do-backtrack)
-;          (game/update-game-state (editor/get-tileset-expanded))
-;          )
-;    \h #(do
-;          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
-;          (game/prev-candidate)
-;          (update-neighbour-candidates @tiling/tiles (editor/get-tileset-expanded)))
-;    \k #(do
-;          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
-;          (game/next-candidate)
-;          (update-neighbour-candidates @tiling/tiles (editor/get-tileset-expanded)))
+    \j #(do
+          (osc-send client "/rhombrick.game" "backtrack" @game/selected-candidate-idx)
+          (game/do-backtrack)
+          (game/update-game-state @tiler-state)
+          )
+    \h #(do
+          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
+          (game/prev-candidate)
+          (update-neighbour-candidates  @tiler-state))
+    \k #(do
+          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
+          (game/next-candidate)
+          (update-neighbour-candidates  @tiler-state))
 ;    \D #(do
 ;          (osc-send client "/rhombrick.game" "destroy-neighbourhood" @game/selected-candidate-idx)
 ;          (game/destroy-neighbourhood)
@@ -581,8 +584,9 @@
     (= @camera-mode 0)
     ; rubber band camera to glider
       (do
-        (let [g (vec3-scale (get-glider-pos 1) @model-scale)
-        ;(let [g (vec3-scale @assemblage-center @model-scale)
+        ;(let [g (vec3-scale @game/selected-pos @model-scale)
+        ;(let [g (vec3-scale (get-glider-pos 1) @model-scale)
+        (let [g (vec3-scale @assemblage-center @model-scale)
               d (dist (@camera-pos 0)
                       (@camera-pos 1)
                       (@camera-pos 2)
@@ -596,7 +600,7 @@
               cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
               new-camera-lookat (vec3-add @camera-lookat 
                                           (vec3-scale cl-dir
-                                                      (* cl-d 0.15)))]
+                                                      (* cl-d 0.015)))]
           (reset! camera-lookat new-camera-lookat)    
           (reset! camera-pos newpos)
           (camera (newpos 0) (newpos 1) (+ (newpos 2) 0)
@@ -626,31 +630,36 @@
               (do
                 (reset! last-mouse-delta (mouse-delta 0.0001))
                 (.mouseMove robot (/ (width) 2) (/ (height) 2))))))
-;    (= @camera-mode 3)
-;    ; game mode camera
-;      (do
-;        (let [g (vec3-scale @selected-pos @model-scale)
-;              ndir (vec3-normalize (vec3-sub @assemblage-center @selected-pos))
-;              target-pos (vec3-add g (vec3-scale ndir (* @model-scale -5.0 )))
-;              dir-to-target (vec3-normalize (vec3-sub target-pos @camera-pos))
-;              dist-to-target (dist (@camera-pos 0) (@camera-pos 1) (@camera-pos 2)
-;                                   (target-pos 0) (target-pos 1) (target-pos 2))
-;              newpos (vec3-add @camera-pos (vec3-scale dir-to-target (* dist-to-target 0.250)))
-;              cl-d (dist (@camera-lookat 0)
-;                         (@camera-lookat 1)
-;                         (@camera-lookat 2)
-;                       (g 0) (g 1) (g 2))
-;              cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
-;              new-camera-lookat (vec3-add @camera-lookat 
-;                                          (vec3-scale cl-dir
-;                                                      (* cl-d 0.25))) ]
-;          (reset! camera-lookat new-camera-lookat)    
-;          (reset! camera-pos newpos)
-;          (camera (newpos 0) (newpos 1) (+ (newpos 2) 0)
-;                  (new-camera-lookat 0)
-;                  (new-camera-lookat 1)
-;                  (new-camera-lookat 2)
-;                  0 0 -1)))
+    (= @camera-mode 3)
+    ; game mode 2d camera
+      (do
+         ;(let [p (vec3-scale @game/selected-pos @model-scale)
+         (let [p (vec3-scale @assemblage-center @model-scale)
+               target [(p 0) (p 1) 1000.0 ]
+               ;target [(p 0) (p 1) (* 20.0 @model-scale) ]
+               d (vec3-distance @camera-pos target)
+               dir (vec3-normalize (vec3-sub target @camera-pos))
+               newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.05)))
+               cl-d (vec3-distance @camera-lookat p)
+               ;cl-d (dist (@camera-lookat 0)
+               ;           (@camera-lookat 1)
+               ;           (@camera-lookat 2)
+               ;           (p 0) (p 1) (p 2))
+               cl-dir (vec3-normalize (vec3-sub p @camera-lookat))
+               new-camera-lookat (vec3-add @camera-lookat
+                                           (vec3-scale cl-dir
+                                                       (* cl-d 0.05)))
+               ]
+            (reset! camera-lookat new-camera-lookat)
+            (reset! camera-pos newpos)
+            (camera (newpos 0) (newpos 1) (+ (newpos 2) 0)
+                    (new-camera-lookat 0)
+                    (new-camera-lookat 1)
+                    (new-camera-lookat 2)
+                    1 0 0)
+            ;(rotate (/ Math/PI 6.0) 0 0 1)
+           )
+           )
   )
 
   (perspective (radians @camera-fov) 
@@ -658,10 +667,16 @@
                  @camera-near-clip
                  @camera-far-clip)
 
+  ;(ortho)
+  ;(let [w (/ (width) 2)
+  ;      h (/ (height) 2) ]
+  ;  (ortho (- w) w (- h) h -500 500))
+
   (let [[mx my] @(state :mouse-position)]
     (push-matrix)
     (scale @model-scale)
-    (rotate (/ (frame-count) 200.0) 0 0 1)
+    ;(rotate (/ (frame-count) 200.0) 0 0 1)
+
     ;(stroke 0 255 255 128)
     ;(stroke-weight 1)
     ;(no-fill)
@@ -729,8 +744,10 @@
       ;(draw-face-list-textured))
 
     ; game:
-    ;(update-selected-pos-screen)
-    ;(update-neighbour-candidates-screen)
+    (update-selected-pos-screen)
+    (update-neighbour-candidates-screen)
+
+    ;(rotate (/ Math/PI 6.0) 0 0 1)
 
     (draw-tiling @tiler-state
                  true ;(not= @current-boundary-mode :none)
@@ -750,8 +767,8 @@
       (build-face-list)
       (draw-face-list))
 
-;    (when @game-mode?
-;      (game/render))
+    (when @game-mode?
+      (game/render-game @tiler-state))
 
     ;(fill 0 0 0 32)
     (stroke 140 140 140 190)
@@ -812,8 +829,11 @@
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info 10 (- (height) 310))
+  (draw-info 10 (- (height) 330))
   (camera)
+
+  (when @game-mode?
+    (game/render-2d @tiler-state))
 
   (when @draw-console?
     (text-font console-font)
@@ -822,6 +842,8 @@
   (when (> (editor/get-level) 0)
     (text-font editor-font)
     (draw-tileset-editor [20 20] (editor/get-tileset) 64)
+
+
     ;(doseq [i (range (count @face-id-text))]
     ;  (let [f (@face-id-text i)
     ;        t (str (f 0))
