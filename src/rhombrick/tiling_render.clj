@@ -404,9 +404,9 @@
         (with-translation pos
           ;(scale 0.5)
           ;(stroke-weight 1)
-          ;(no-stroke)
-          (stroke-weight 0.0125)
-          (stroke 128 128 128 255)
+          (no-stroke)
+          ;(stroke-weight 0.0125)
+          ;(stroke 128 128 128 255)
           ;(no-stroke)
           ;(stroke r g b 255)
           (assert (and (not (nil? code)) (= (@current-topology :num-faces) (count code))))
@@ -636,67 +636,65 @@
         
 
 ;(def get-bez-anchors-2d (memoize (fn [code topo]
-(defn get-bez-anchors-2d [code topo]
-  (let [con-idxs (vec (get-connected-idxs code))
-        num-idxs (count con-idxs)
-        vs (rotate-vec (topo :verts-2d))
+(defn get-bez-anchor-offsets-2d [code topo]
+  (let [vs (rotate-vec (topo :verts-2d))
         rads (->> (map bezier-box-thicknesses code)
                   (filter #(not (nil? %)))
-                  (map #(* % 0.5))
-                  (vec))
-        dirs (map #(vec3-normalize (vec3-sub (vs %)
-                                             (vs (mod (inc %) (topo :num-faces)))))
-                  con-idxs)
-        dirs-scaled (map vec3-scale dirs rads)
-        dirs-mirrored (vec (map #(vec [% (vec3-scale % -1.0)]) dirs-scaled))
-        ]
-    dirs-mirrored
-    ))
+                  (map #(* % 0.5)))
+        dirs (map #(vec3-normalize
+                     (vec3-sub (vs %)
+                               (vs (mod (inc %) (topo :num-faces)))))
+                  (get-connected-idxs code))]
+    (->> (map vec3-scale dirs rads)
+         (map #(vec [% (vec3-scale % -1.0)]))
+         (vec))))
 
 
 (def make-facecode-shape-2d (memoize (fn [code topo res]
   (let [con-idxs (vec (get-connected-idxs code))
         num-idxs (count con-idxs)
-        offsets (get-bez-anchors-2d code topo)
-        face-idxs (into [] (map #(vec [(con-idxs %) (con-idxs (mod (inc %) num-idxs))])
-                                (range num-idxs)))
-        controls (map-indexed #(get-bezier-controls-with-offset 
-                                 (%2 0)
-                                 (%2 1)
-                                 ((offsets %1) 1)
-                                 ((offsets (mod (inc %1) num-idxs)) 0))
-                              face-idxs)
-        curves-verts (map #(get-bezier-points % res) controls)
-        ]
-    curves-verts
-  ))
-))
+        offsets (get-bez-anchor-offsets-2d code topo)]
+    (->> (range num-idxs)
+         (map #(vec [(con-idxs %) (con-idxs (mod (inc %) num-idxs))])) ;anchor face-idxs
+         (map-indexed #(get-bezier-controls-with-offset
+                         (%2 0)
+                         (%2 1)
+                         ((offsets %1) 1)
+                         ((offsets (mod (inc %1) num-idxs)) 0))) ; controls
+         (map #(get-bezier-points % res))) ; curves verts
+))))
+
+
 
 (defn draw-facecode-shape-2d [code topo]
   (let [curves (make-facecode-shape-2d code topo @bezier-box-resolution)
-        ;col (get-tile-color code)
-        col [255 255 255]
-        col-transp [(col 0) (col 1) (col 2) 100]
+        col (get-tile-color code)
+        line-col [0 0 0 255]
+        ;line-col [255 255 255 255]
+        col-transp [(col 0) (col 1) (col 2) 128]
         with-endcaps? false
         ]
     ;(no-stroke)
-    (apply stroke col)
-    (stroke-weight 2)
-    (if with-endcaps?
+    
+    (stroke-weight 1)
+;    (if with-endcaps?
       (do
         (apply fill col-transp)
+        (no-stroke)
         (begin-shape)
         (doseq [curve curves]
           (doseq [[vx vy vz] curve]
             (vertex vx vy vz)))
         (end-shape))
       (do
+        (apply stroke line-col)
         (no-fill)
         (doseq [curve curves]
           (begin-shape)
           (doseq [[vx vy vz] curve]
             (vertex vx vy vz))
-          (end-shape))))
+          (end-shape)))
+;   )
       )
   )
 
@@ -704,7 +702,7 @@
 (defn draw-facecode-lines [code]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
         num-connected (get-num-connected code)
-        col (get-tile-color code); (rd-face-colors (mod num-connected 12))
+        col (vec3-scale (get-tile-color code) 0.25); (rd-face-colors (mod num-connected 12))
 ;        fill-col (rd-face-colors 
 ;                   (rd-connecting-faces (mod num-connected 12)))
         ]
@@ -736,6 +734,7 @@
         )
 
     (stroke (col 0) (col 1) (col 2) 255)
+    ;(stroke 0 0 0 )
     ;(stroke-weight 0.45)
     (stroke-weight 1)
     (doseq [endpoints endpoint-pairs]
