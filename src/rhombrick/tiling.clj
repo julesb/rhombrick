@@ -578,7 +578,8 @@
               candidates-strict (filter #(test-tile-at-pos ts new-pos %) candidates)
               new-code (if (seq candidates-strict)
                          (rand-nth candidates-strict)
-                         (if (seq candidates) (rand-nth candidates) nil))
+                         (if (seq candidates)
+                           (rand-nth candidates) nil))
                          
                         ;(choose-tilecode ts new-pos))
               ;new-code (if (seq candidates) (rand-nth candidates) nil)
@@ -593,8 +594,8 @@
           ;(if (nil? new-code)
             ; no tile will fit, backtrack and return new state
             (-> ts
-                ;(add-to-dead-loci-ts2 (get-outer-facecode2 new-neighbourhood))
-                (add-to-dead-loci-ts2 (set (get-code-symmetries (get-outer-facecode2 new-neighbourhood))))
+                (add-to-dead-loci-ts2 (get-outer-facecode2 new-neighbourhood))
+                ;(add-to-dead-loci-ts2 (set (get-code-symmetries (get-outer-facecode2 new-neighbourhood))))
                 (backtrack-non-zero-bk)
                 (inc-iters))
             ; else add tile and return new state 
