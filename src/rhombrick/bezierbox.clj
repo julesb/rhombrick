@@ -117,6 +117,18 @@
       [p1 p2 p3 [0 0 0]])))
 
 
+(defn get-shape-2d-bezier-controls-with-offset [f1-idx f2-idx f1-offset f2-offset]
+  "Given two face indices, returns a vec of four 3d bezier control points"
+  "offset is a vector to specify the offset for bezier boxes."
+  (let [p1 (vec3-add ((@current-topology :face-centers) f1-idx) f1-offset)
+        p2 (vec3-sub p1 (vec3-scale ((@current-topology :face-centers) f1-idx) @bezier-box-control-bias))
+        p4 (vec3-add ((@current-topology :face-centers) f2-idx) f2-offset)
+        p3 (vec3-sub p4 (vec3-scale ((@current-topology :face-centers) f2-idx) @bezier-box-control-bias))
+        ]
+    (if (not= f1-idx f2-idx)
+      [p1 p2 p3 p4]
+      [p1 f1-offset f2-offset p4] )))
+
 ;;
 ;; From Processing source code:
 ;;  public float bezierPoint(float a, float b, float c, float d, float t) {
