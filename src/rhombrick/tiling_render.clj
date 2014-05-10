@@ -16,16 +16,18 @@
 ;(def bezier-box-resolution (atom 8))
 ;(def bezier-box-control-bias (atom 0.5))
 (def bezier-box-smooth-shading? (atom false))
-(def bezier-box-line-weight (atom 2))
+(def bezier-box-line-weight (atom 0.2))
 (def face-list (atom #{}))
 (def face-id-text (atom []))
 
 (def trunc-oct-model (get-obj-face-verts (load-obj "data/truncated_octahedron.obj")))
 
 (def shape-2d-cache (atom {}))
+(def inner-shape-2d-cache (atom {}))
 
 (defn shape-2d-cache-reset []
-  (reset! shape-2d-cache {}))
+  (reset! shape-2d-cache {})
+  (reset! inner-shape-2d-cache {}))
 
 
 (defn draw-graph [[x y] w h title data-range data]
@@ -171,7 +173,7 @@
             v3 (verts (vert-idx 3))
             col-idx (mod i (count colors))
             [r g b a] (if (= (count colors) 12) (colors col-idx) colors)]
-        
+
         ;(if (seq colors)
         ;  (stroke r g b a))
         ;  (fill (/ (col 0) 3.0) (/ (col 1) 3.0) (/ (col 2) 3.0) 255 ))
@@ -201,7 +203,7 @@
 
 (defn draw-verts [verts]
   (doseq [i (range (count verts))]
-    (with-translation (verts i) 
+    (with-translation (verts i)
       (box 0.2))
  ))
 
@@ -224,18 +226,18 @@
        0)
     (> (count (filter #(contains? @face-list %)
                       (rotations-vec (vec (reverse face-verts)))))
-       0)   
+       0)
        ))
 
 
 (defn remove-from-facelist [face-verts]
-    (let [face-rots (concat (rotations-vec face-verts) 
+    (let [face-rots (concat (rotations-vec face-verts)
                             (rotations-vec (reverse face-verts)))]
         (doseq [f face-rots]
           (if (contains? @face-list f)
             (swap! face-list disj f)))))
-      
-  
+
+
 
 ; we dont need to check every face in the face list here
 ; only need to check the neighbours.
@@ -261,8 +263,8 @@
 ;  (doseq [tile (@tiler-state :tiles)]
 ;    (let [code (val tile)
 ;          connected (set (get-connected-idxs code))
-;          non-connected (filter #(not (contains? connected %)) code) 
-;          faces (face-idxs-to-verts 
+;          non-connected (filter #(not (contains? connected %)) code)
+;          faces (face-idxs-to-verts
 ;          ]
 ;
 ;  ))
@@ -282,13 +284,14 @@
 
 
 (defn draw-face-list []
-  (fill 32 32 32 64)
+  ;(fill 0 0 0 64)
+  (no-fill)
   ;(fill 32 32 32 128)
 
   ;(no-fill)
   ;(stroke 0 0 0 192)
-  (stroke 64 64 64 255)
-  (stroke-weight 0.075)
+  (stroke 128 128 128 48)
+  (stroke-weight 0.05)
   ;(no-stroke)
   (doseq [face-verts @face-list]
     (cond
@@ -296,14 +299,14 @@
         (let [v0 (face-verts 0)
               v1 (face-verts 1)
               v2 (face-verts 2) ]
-          ;(stroke 40 40 40 190) 
+          ;(stroke 40 40 40 190)
           (begin-shape :triangles)
           ;(texture @rhomb-tex)
           (vertex (v0 0) (v0 1) (v0 2))
           (vertex (v1 0) (v1 1) (v1 2))
           (vertex (v2 0) (v2 1) (v2 2))
           (end-shape)
-          (stroke 40 40 40 128)
+          ;(stroke 40 40 40 128)
           ;(line (v0 0) (v0 1) (v0 2) (v2 0) (v2 1) (v2 2))
           )
       (= 4 (count face-verts))
@@ -311,7 +314,7 @@
               v1 (face-verts 1)
               v2 (face-verts 2)
               v3 (face-verts 3)]
-          ;(stroke 40 40 40 190) 
+          ;(stroke 40 40 40 190)
           (begin-shape :quads)
           ;(texture @rhomb-tex)
           (vertex (v0 0) (v0 1) (v0 2))
@@ -367,7 +370,7 @@
       ;(scale 0.5)
       (draw-faces (@current-topology :verts) (@current-topology :faces) [(col 0) (col 1) (col 2) 128]))))
       ;(draw-faces rd-verts rd-faces [(col 0) (col 1) (col 2) 128]))))
-   
+
 
 (defn draw-neighbours [pos]
   (no-fill)
@@ -508,8 +511,8 @@
 ;    (if (contains? (ts :tiles) pos)
 ;      (stroke 255 0 0 192)
 ;      (stroke 0 255 0 32))
-    
-    (with-translation pos 
+
+    (with-translation pos
       (scale 0.5)
       (draw-faces (@current-topology :verts) (@current-topology :faces) [255 255 0 128])
       ;(box 0.5 0.5 0.5)
@@ -641,7 +644,7 @@
                             f1-offsets f2-offsets))]
     (doseq [c controls]
       (draw-curve-with-controls c))))
-        
+
 
 
 (def shape-2d-thicknesses   { \1 0.333
@@ -685,13 +688,11 @@
 
 ;(def make-facecode-shape-2d (memoize (fn [code topo res]
 (defn make-facecode-shape-2d [code topo res]
-  (println "make-facecode-shape-2d:" code (topo :id res))
+  ;(println "make-facecode-shape-2d:" code (topo :id res))
   (let [con-idxs (vec (get-connected-idxs code))
         num-idxs (count con-idxs)
         offsets (get-bez-anchor-offsets-2d code topo)]
-    (->> ;(range num-idxs)
-         ;(map #(vec [(con-idxs %) (con-idxs (mod (inc %) num-idxs))])) ;anchor face-idxs
-         (get-shape-2d-curve-endpoints con-idxs)
+    (->> (get-shape-2d-curve-endpoints con-idxs)
          (map-indexed #(get-shape-2d-bezier-controls-with-offset
                          (%2 0)
                          (%2 1)
@@ -701,6 +702,19 @@
 ))
 
 
+(defn make-facecode-inner-shape-2d [code topo res]
+  ;(println "make-facecode-shape-2d:" code (topo :id res))
+  (let [con-idxs (vec (get-connected-idxs code))
+        num-idxs (count con-idxs)
+        offsets (get-bez-anchor-offsets-2d code topo)]
+    (->> (get-shape-2d-curve-endpoints con-idxs)
+         (map-indexed #(get-shape-2d-bezier-controls-with-offset
+                         (%2 0)
+                         (%2 1)
+                          [0 0 0] [0 0 0] ))
+         (map #(get-bezier-points % res))) ; curves verts
+))
+
 (defn get-facecode-shape-2d [code topo res]
   (if (contains? @shape-2d-cache [code topo res])
     (@shape-2d-cache [code topo res])
@@ -708,6 +722,15 @@
       (swap! shape-2d-cache assoc [code topo res]
              (make-facecode-shape-2d code topo res))
       (@shape-2d-cache [code topo res]))))
+
+
+(defn get-facecode-inner-shape-2d [code topo res]
+  (if (contains? @inner-shape-2d-cache [code topo res])
+    (@inner-shape-2d-cache [code topo res])
+    (do
+      (swap! inner-shape-2d-cache assoc [code topo res]
+             (make-facecode-inner-shape-2d code topo res))
+      (@inner-shape-2d-cache [code topo res]))))
 
 
 (defn draw-facecode-shape-2d [code topo res]
@@ -720,11 +743,11 @@
         final-vert (first (first curves))
         ]
     ;(no-stroke)
-    
     (stroke-weight 0.05)
-    (apply stroke line-col)
-    (no-fill)
-    ;(apply fill col-transp)
+    (apply stroke col-transp)
+
+    ;(no-fill)
+    (apply fill col)
     ;(no-stroke)
     (begin-shape)
     (doseq [curve curves]
@@ -734,25 +757,51 @@
     (end-shape))
   )
 
+
+(defn draw-facecode-inner-shape-2d [code topo res]
+  (let [curves (get-facecode-inner-shape-2d code topo res)
+        col (get-tile-color code)
+        line-col col ;[0 0 0 255]
+        ;line-col [255 255 255 255]
+        col-transp [(col 0) (col 1) (col 2) 128]
+        op-col (vec (map #(- 255 %) col))
+        with-endcaps? true
+        final-vert (first (first curves))
+        ]
+    (no-stroke)
+    (stroke-weight 0.05)
+    ;(apply stroke op-col)
+    (stroke 0 0 0 192)
+
+    (no-fill)
+    ;(apply fill op-col)
+    ;(no-stroke)
+    (begin-shape)
+    (doseq [curve curves]
+      (doseq [[vx vy vz] curve]
+        (vertex vx vy vz)))
+    (vertex (final-vert 0) (final-vert 1) (final-vert 2))
+    (end-shape))
+  )
+
+
 (defn draw-facecode-shape-outline [code topo res]
   (let [curves (get-facecode-shape-2d code topo res)
         col (get-tile-color code)
         ;line-col [0 0 0 128]
-        line-col [255 255 255 128]
+        line-col [255 255 255 255]
         col-transp [(col 0) (col 1) (col 2) 192]
         ]
     ;(no-stroke)
-    
+
     (stroke-weight 0.05)
-;    (if with-endcaps?
-      (do
-        (apply stroke line-col)
-        (no-fill)
-        (doseq [curve curves]
-          (begin-shape)
-          (doseq [[vx vy vz] curve]
-            (vertex vx vy vz))
-          (end-shape)))
+    (apply stroke line-col)
+    (no-fill)
+    (doseq [curve curves]
+      (begin-shape)
+      (doseq [[vx vy vz] curve]
+        (vertex vx vy vz))
+      (end-shape))
   )
   )
 
@@ -764,13 +813,13 @@
         ;col (vec3-scale (get-tile-color code) 1.0); (rd-face-colors (mod num-connected 12))
         col (get-tile-color code)
         op-col (vec (map #(- 255 %) col))
-;        fill-col (rd-face-colors 
+;        fill-col (rd-face-colors
 ;                   (rd-connecting-faces (mod num-connected 12)))
         ]
     (push-style)
 
     (if (= code nil)
-      (do 
+      (do
         (fill 255 32 32 128)
         ;(no-fill)
         (stroke 255 0 0 192)
@@ -785,7 +834,7 @@
 
     (if (= num-connected 1)
       (let [p ((@current-topology :face-centers) (first (get-connected-idxs code)))]
-        (stroke-weight 0.025) 
+        (stroke-weight 0.125)
         (line 0 0 0 (p 0) (p 1) (p 2))
         (fill 255 128 128 128)
         ;(box 0.05125 0.05125 0.05125)
@@ -795,12 +844,12 @@
         )
 
     (stroke (op-col 0) (op-col 1) (op-col 2) 255)
-    '(stroke 0 0 0 128 )
+    ;(stroke 0 0 0 128 )
     ;(stroke-weight 0.45)
     (stroke-weight 0.05)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))
-    
+
     ;draw tangent vectors
     ;(stroke-weight 1)
     ;(stroke 255 120 120 128)
@@ -910,12 +959,12 @@
     (no-stroke)
     (fill 255 255 0)
     ; mark center
-    (with-translation c 
+    (with-translation c
       (box 0.02 0.02 0.02))
 
     (doseq [i (range npoints)]
       (let [pos (rotate-point xpos (vec3-normalize c) (* i ang-step))]
-        (with-translation pos 
+        (with-translation pos
           (fill (col 0) (col 1) (col 2))
           (box 0.01))))
 
@@ -958,12 +1007,12 @@
           line-col col
           ;line-col  [0 0 0 192] ;[192 192 255 192]
           bezier-steps @bbox/bezier-box-resolution]
-      (with-translation pos 
+      (with-translation pos
         ;(scale 0.5)
         ;(stroke-weight 8)
         ;(stroke 0 0 0 64)
         (no-stroke)
-        
+
         ;(fill 192 192 192 128)
         ;(draw-obj trunc-oct-model [])
 
@@ -983,14 +1032,16 @@
                   (= (@current-topology :id) :square))
           (push-matrix)
           (scale 0.95)
-          ;(draw-facecode-shape-outline code @current-topology @bezier-box-resolution)
           (draw-facecode-shape-2d code @current-topology @bezier-box-resolution)
           (pop-matrix)
+          ;(draw-facecode-inner-shape-2d code @current-topology @bezier-box-resolution)
+          ;(draw-facecode-shape-outline code @current-topology @bezier-box-resolution)
           )
+
         )
       (when with-boundaries?
         (draw-face-boundaries pos code boundary-mode))
-      
+
       )))
 
 
@@ -1005,7 +1056,7 @@
           line-col col
           ;line-col  [0 0 0 192] ;[192 192 255 192]
           bezier-steps (attr :bbox-res)]
-      (with-translation pos 
+      (with-translation pos
         (scale 0.5)
         ;(stroke-weight 8)
         ;(stroke 0 0 0 64)
@@ -1023,7 +1074,7 @@
         )
       (when (not= (attr :boundary-mode) :none)
         (draw-face-boundaries-ts ts pos code (attr :boundary-mode)))
-      
+
       )))
 
 
