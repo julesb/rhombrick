@@ -97,18 +97,25 @@
   (assoc ts :tiles (assoc (ts :tiles) (quantize-position pos) facecode)))
 
 
+(defn get-empty-neighbours [tiles pos]
+  (->> (get-neighbours pos)
+       (filter #(is-empty? tiles %))))
+
+
 (defn make-tile-2 [ts pos facecode]
   (let [qpos (quantize-position pos)
         new-tiles (assoc (ts :tiles) qpos facecode)
-        empty-cn (set (get-empty-connected-neighbours new-tiles qpos))
+        max-rad (get-in ts [:params :max-radius])
+        empty-cn (if (get-in ts [:params :nfc?])
+                   (set (get-empty-neighbours new-tiles qpos))
+                   (get-empty-connected-neighbours new-tiles qpos))
+        empty-cn-within-rad (set (filter #(< (vec3-length %) max-rad) empty-cn))
         tmp-empty (disj (ts :empty) qpos)
-        new-empty (clojure.set/union tmp-empty empty-cn)
+        new-empty (clojure.set/union tmp-empty empty-cn-within-rad)
         ]
-  (-> ts
-    (assoc :tiles (ordered-map new-tiles))
-    (assoc :empty new-empty)
-    ;(assoc :empty (disj (ts :empty) qpos))
-      )))
+    (-> ts
+      (assoc :tiles (ordered-map new-tiles))
+      (assoc :empty new-empty))))
 
 
 (defn delete-neighbours [tiles pos]
@@ -118,11 +125,6 @@
 (defn delete-neighbours-ts [ts pos]
   (assoc ts :tiles (delete-neighbours (ts :tiles) pos)))
 
-(defn get-empty-neighbours [tiles pos]
-  (->> (get-neighbours pos)
-       (filter #(is-empty? tiles %))
-       )
-  )
 
 
 ;(defn get-empty-neighbours [tiles pos]
@@ -132,7 +134,7 @@
 ;       (filter #(< (vec3-length %) @assemblage-max-radius))
 ;    ))
 
-; true = yes, valid empty tile
+; true = yes, valid empty position
 ; false = not empty
 (defn get-empty-status [tiles pos]
   (and
@@ -144,6 +146,15 @@
          (not= 0)
          )))
 
+(defn get-empty-status-nfc [tiles pos]
+  (and
+    (not (contains? tiles pos))
+    (->> (range (@current-topology :num-faces))
+         (map #(not (is-empty? tiles (get-neighbour-pos pos %))))
+         (filter true?)
+         (count)
+         (not= 0)
+         )))
 
 
 (defn get-empty-positions [tiles max-radius]
@@ -348,13 +359,14 @@
   ;:tileset ["----1A---a--"] ; rd
   :tileset ["111111"] ; cube
   ;:tileset ["---1" "-1-1" "--11"] ; sq
-  ;:tileset ["1-1---" "1--1-1"] ; hex 
+  ;:tileset ["1-1---" "1--1-1"] ; hex
   :seed ""
   :max-iters 1000000
   :max-radius 64
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0
+  :nfc? true
   })
 
 
@@ -371,14 +383,15 @@
 
 
 (defn make-params
-  [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism best-of]
-      :or {tileset (default-params :tileset) 
+  [& {:keys [tileset seed max-iters max-radius max-tiles adhd autism best-of nfc?]
+      :or {tileset (default-params :tileset)
            seed (default-params :seed)
            max-iters (default-params :max-iters)
            max-radius (default-params :max-radius)
            max-tiles (default-params :max-tiles)
            adhd (default-params :adhd)
            autism (default-params :autism)
+           nfc? (default-params :nfc?)
            } } ]
   {
   :tileset tileset
@@ -388,6 +401,7 @@
   :max-tiles max-tiles
   :adhd adhd
   :autism autism
+  :nfc? nfc?
   :tileset-number (tileset-to-number tileset)
   } )
 
@@ -399,7 +413,10 @@
         (assoc :tileset-expanded (expand-tiles-preserving-symmetry (params :tileset)))
         (assoc :params params)
         (assoc :tiles (ordered-map (quantize-position [0 0 0]) (params :seed)))
-        (assoc :empty (set (get-empty-connected-neighbours {[0 0 0] (params :seed)} [0 0 0])))
+        (assoc :empty (if (params :nfc?)
+                        (set (get-empty-neighbours {[0 0 0] (params :seed)} [0 0 0]))
+                        (set (get-empty-connected-neighbours {[0 0 0] (params :seed)} [0 0 0]))))
+        ;(assoc :empty (set (get-empty-connected-neighbours {[0 0 0] (params :seed)} [0 0 0])))
       )))
 
 
@@ -438,14 +455,17 @@
 (defn update-empty [ts remaining discarded]
   (if (zero? (count remaining))
     #{(quantize-position [0 0 0])}
-    (let [nb-positions (->> (map get-neighbours discarded)
+    (let [max-rad (get-in ts [:params :max-radius])
+          nb-positions (->> (map get-neighbours discarded)
                             (apply concat))
           all-positions (apply conj nb-positions discarded)
-          empty-status (into {} (map #(vec [% (get-empty-status remaining %)])
+          empty-fn (if (get-in ts [:params :nfc?]) get-empty-status-nfc get-empty-status)
+          empty-status (into {} (map #(vec [% (empty-fn remaining %)])
                                      all-positions))
           to-add (->> empty-status
                       (filter (fn [s] (true? (val s))))
                       (keys)
+                      (filter #(< (vec3-length %) max-rad))
                       (set))
           to-del (->> empty-status
                       (filter (fn [s] (false? (val s))))
@@ -459,11 +479,11 @@
 ; backtrack with empty cell bookkeeping
 (defn backtrack-non-zero-bk [ts]
   (let [num-tiles (count (ts :tiles))
-        bt-num (compute-backtrack-amount 
+        bt-num (compute-backtrack-amount
                 num-tiles
                 (get-in ts [:params :autism])
                 (get-in ts [:params :adhd]))
-        split-point (- num-tiles bt-num)
+        split-point (- num-tiles bt-num )
         [remaining-tiles discarded] (split-at split-point (ts :tiles))]
     (if (and (> num-tiles 1)
              (> split-point 0)
@@ -555,7 +575,7 @@
                 (add-to-dead-loci-ts2 (set (get-code-symmetries (get-outer-facecode2 new-neighbourhood))))
                 (backtrack-non-zero-bk)
                 (inc-iters))
-            ; else add tile and return new state 
+            ; else add tile and return new state
             (-> (make-tile-2 ts new-pos new-code)
                 (inc-iters))))
 
@@ -572,33 +592,23 @@
           (assoc :run-status :halted)
           (assoc :solved true))
       (if-let [positions (choose-positions-ts ts empty-positions)]
-        (let [new-pos (find-closest-to-point positions @assemblage-center)
+        (let [;new-pos (rand-nth (vec empty-positions))
+              new-pos (find-closest-to-point positions @assemblage-center)
               new-neighbourhood (get-neighbourhood tiles new-pos)
               candidates (find-candidates new-neighbourhood tileset (ts :dead))
               candidates-strict (filter #(test-tile-at-pos ts new-pos %) candidates)
               new-code (if (seq candidates-strict)
                          (rand-nth candidates-strict)
                          (if (seq candidates)
-                           (rand-nth candidates) nil))
-                         
-                        ;(choose-tilecode ts new-pos))
-              ;new-code (if (seq candidates) (rand-nth candidates) nil)
-              ;new-code (choose-tilecode new-neighbourhood tileset dead)
-              ; new-code (choose-tilecode ts new-pos)
-              ]
-          ;(println "candidates" candidates)
-          (if (or (zero? (count candidates))
-                  ;(zero? (count candidates-strict))
-                  ;(nil? new-code) 
-                  )
-          ;(if (nil? new-code)
+                           (rand-nth candidates) nil))]
+          (if (zero? (count candidates))
             ; no tile will fit, backtrack and return new state
             (-> ts
                 (add-to-dead-loci-ts2 (get-outer-facecode2 new-neighbourhood))
                 ;(add-to-dead-loci-ts2 (set (get-code-symmetries (get-outer-facecode2 new-neighbourhood))))
                 (backtrack-non-zero-bk)
                 (inc-iters))
-            ; else add tile and return new state 
+            ; else add tile and return new state
             (if (test-tile-at-pos ts new-pos new-code)
               (-> ts
                   (make-tile-2 new-pos new-code)
@@ -656,6 +666,7 @@
                                     ;:max-radius @assemblage-max-radius
                                     ;:adhd @adhd
                                     ;:autism @autism
+                                    :nfc? true
                                     )) ]
     (if soft-start?
       (reset! tiler-state (assoc ts :dead (@tiler-state :dead)))
@@ -672,13 +683,13 @@
 ;
 ; 1. Place a random tile in the center of the grid
 ;
-; 2. Make a list of empty locations in the grid with abutting non-empty 
-; edges. If there are no such locations, halt. 
+; 2. Make a list of empty locations in the grid with abutting non-empty
+; edges. If there are no such locations, halt.
 ;
-; Otherwise, if there are any sites where only either one or zero 
+; Otherwise, if there are any sites where only either one or zero
 ; types of tile could be added, restrict the list to just these sites.
 ; From the list, choose the location closest to the center of the
-; assemblage. 
+; assemblage.
 
 ; 3. If there is no tile that fits at that location, or if it can be
 ; determined that for any tile that might be added the assemblage will
