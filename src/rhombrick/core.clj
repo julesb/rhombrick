@@ -20,6 +20,9 @@
   (:import java.awt.event.KeyEvent))
 
 (import processing.core.PImage)
+(import processing.core.PShape)
+;(import processing.core.PShader)
+
 (import java.awt.Robot)
 (def robot (new java.awt.Robot))
 
@@ -30,8 +33,8 @@
 
 (def keys-down (atom #{}))
 
-(def mousewarp-pos (atom [716 356])) ; 1440x800
-;(def mousewarp-pos (atom [946 506])) ; 1900x1100
+;(def mousewarp-pos (atom [716 356])) ; 1440x800
+(def mousewarp-pos (atom [946 506])) ; 1900x1100
 (def last-mouse-delta (atom [0 0]))
 
 (def my-applet (atom nil))
@@ -47,6 +50,7 @@
 (def draw-console? (atom false))
 (def draw-graphs? (atom false))
 (def draw-empty? (atom true))
+(def draw-info? (atom true))
 (def tiler-auto-seed? (atom false))
 
 (def boundary-mode-idx (atom 1))
@@ -75,7 +79,7 @@
 ;    [x y]))
 
 ; _______________________________________________________________________
-; Rendering and events 
+; Rendering and events
 
 
 ; _______________________________________________________________________
@@ -84,27 +88,27 @@
 (defn setup []
     ;(reset! rhomb-tex (load-image "cave_texture_01-512x512.png"))
     ;(reset! rhomb-tex (load-image "testpattern4po6.png"))
-    (reset! rhomb-tex (load-image "gradient.jpg"))
+    ;(reset! rhomb-tex (load-image "gradient.jpg"))
     ;(reset! rhomb-tex (load-image "map-15Bsubset.jpg"))
 
     ;(println "texture:" @rhomb-tex)
     ;(texture-mode :normalized)
-      
+
     ;(println "screen pos" (get-location-on-screen))
     ;(println "screen size:" (width) (height))
     ;(println "frame:" (.getLocation (.frame @my-applet)))
     ;(.mouseMove robot 0 0)
     ;(.mouseMove robot (/ (width) 2) (/ (height) 2))
-    
+
     (smooth)
     (frame-rate 60)
     (update-camera)
     (println "setting font")
     ;(text-font (load-font "FreeMono-16.vlw"))
     ;(text-font (load-font "ScalaSans-Caps-32.vlw"))
-    (def console-font (load-font "FreeMono-16.vlw"))
-    (def editor-font (load-font "AmericanTypewriter-24.vlw"))
-    (text-font (load-font "AmericanTypewriter-24.vlw"))
+    (def console-font (load-font "data/FreeMono-16.vlw"))
+    (def editor-font (load-font "data/AmericanTypewriter-24.vlw"))
+    (text-font (load-font "data/AmericanTypewriter-24.vlw"))
     (set-state! :mouse-position (atom [0 0]))
 
     (println "initialising tiler")
@@ -154,7 +158,7 @@
                (str "run state:" (@tiler-state :run-status))
                (str "solved:" (@tiler-state :solved))
                (str "iters: " (@tiler-state :iters) "/" (get-in @tiler-state [:params :max-iters]))
-               (str "tiles: " (count (@tiler-state :tiles)) "/" ((@tiler-state :params) :max-tiles)) 
+               (str "tiles: " (count (@tiler-state :tiles)) "/" ((@tiler-state :params) :max-tiles))
                (str "ips: " (int (/ 1000 @last-iteration-time)))
                (str "tiles/iter: " (format "%.3f" (double (/ (count (@tiler-state :tiles))
                                                              (inc (@tiler-state :iters) )))))
@@ -215,14 +219,14 @@
          ;(init-tileset-colors (get-in @tiler-state [:params :tileset]))
          (init-gliders num-gliders)
          )
-   \R #(do 
+   \R #(do
          (editor/set-tileset (vec (distinct (normalize-tileset (get-random-tileset-1)))))
          (start-tiler (editor/get-tileset-as-set) false)
          (init-tileset-colors (get-in @tiler-state [:params :tileset]))
          (println "random tileset:" (editor/get-tileset-as-set))
          (init-gliders num-gliders)
          )
-   \- #(do 
+   \- #(do
          (swap! camera-fov - 1)
          (update-camera))
    \= #(do
@@ -268,8 +272,8 @@
          ;(swap! max-tiles inc)
          ;(println "max tiles:" @max-tiles)
         )
-    \t #(do 
-          
+    \t #(do
+
          ;(swap! max-tiles dec)
          ;(println "max tiles:" @max-tiles)
         )
@@ -291,7 +295,7 @@
           )
     \p #(do
           (cancel-tiler-thread)
-          ;(cond 
+          ;(cond
           ;  (= @tiler-run-state :running) (reset! tiler-run-state :paused)
           ;  (= @tiler-run-state :paused)  (reset! tiler-run-state :running))
           )
@@ -341,26 +345,33 @@
           (swap! draw-bezier-box-faces? not))
     \e #(do
           (swap! draw-empty? not))
+    \i #(do
+          (swap! draw-info? not))
     \_ #(do
           (when (> @bezier-box-resolution 1)
             (swap! bezier-box-resolution dec)
+            (shape-2d-cache-reset)
             (bezier-box-cache-reset)))
     \+ #(do
           (when (< @bezier-box-resolution 32)
             (swap! bezier-box-resolution inc)
-            (bezier-box-cache-reset)))
+            (shape-2d-cache-reset)
+            (bezier-box-cache-reset)
+            ))
     \; #(do
           (swap! bezier-box-control-bias (fn [n] (- n 0.01)))
           (bezier-box-cache-reset)
+          (shape-2d-cache-reset)
           (println "bezierbox control bias:" @bezier-box-control-bias))
     \' #(do
           (swap! bezier-box-control-bias (fn [n] (+ n 0.01)))
           (bezier-box-cache-reset)
+          (shape-2d-cache-reset)
           (println "bezierbox control bias:" @bezier-box-control-bias))
     \* #(do
-          (swap! bezier-box-line-weight inc))
+          (swap! bezier-box-line-weight (fn [w] (+ w 0.01))))
     \& #(do
-          (swap! bezier-box-line-weight dec))
+          (swap! bezier-box-line-weight (fn [w] (- w 0.01))))
     \M #(do
           (swap! bezier-box-smooth-shading? not))
     \y #(do
@@ -369,7 +380,7 @@
                                ;512.0
                                ;(get-tileset-expanded)
                                ;(vec (distinct (vals (@tiler-state :tiles))))
-                               24 24 24 
+                               24 24 24
                                )
 
 
@@ -455,7 +466,7 @@
   (doseq [k @keys-down]
     (when (contains? key-movement-map k)
       ((key-movement-map k)))))
-    
+
 
 (defn key-typed []
   (let [keychar (raw-key)]
@@ -499,19 +510,19 @@
 (defn mouse-released []
   ;(println "mouse-released")
   (update-ui-state :mouse-down false))
-  
+
 ; _______________________________________________________________________
 
 
 (defn draw-horizon []
   (stroke 0 255 0 128)
-  (stroke-weight 1)
+  (stroke-weight 0.025)
   (ellipse 0 0 200 200))
 
 (defn draw-assemblage-radius []
   (let [rad (* ((@tiler-state :params) :max-radius) 2)]
     (stroke 255 0 0 128)
-    (stroke-weight 1)
+    (stroke-weight 0.025)
     (ellipse 0 0 rad rad)))
 
 
@@ -522,7 +533,7 @@
 ;            (= @tiler-run-state :halted))
 ;      (editor/set-tileset (get-random-tileset))
 ;      (init-tiler (editor/get-tileset-as-set))
-;      (println "random tileset:" (editor/get-tileset-as-set)) 
+;      (println "random tileset:" (editor/get-tileset-as-set))
 ;      ;(make-backtracking-tiling-iteration2 @tiles (editor/get-tileset-as-set))
 ;      (init-gliders num-gliders)))
 
@@ -570,12 +581,12 @@
 
 ;  (when @tiler-auto-seed?
 ;    (auto-seed-tiler))
-   
+
   (when @draw-gliders?
     (update-gliders))
 
-  (background 16 16 32)
-  ;(background 192 192 192)
+  (background 64 64 64 )
+;  (background 16 24 32)
 ;  (background 8 8 8)
 
   (push-matrix)
@@ -598,10 +609,10 @@
                          (@camera-lookat 2)
                        (g 0) (g 1) (g 2))
               cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
-              new-camera-lookat (vec3-add @camera-lookat 
+              new-camera-lookat (vec3-add @camera-lookat
                                           (vec3-scale cl-dir
                                                       (* cl-d 0.015)))]
-          (reset! camera-lookat new-camera-lookat)    
+          (reset! camera-lookat new-camera-lookat)
           (reset! camera-pos newpos)
           (camera (newpos 0) (newpos 1) (+ (newpos 2) 0)
                   (new-camera-lookat 0)
@@ -662,7 +673,7 @@
            )
   )
 
-  (perspective (radians @camera-fov) 
+  (perspective (radians @camera-fov)
                  @camera-aspect-ratio
                  @camera-near-clip
                  @camera-far-clip)
@@ -690,7 +701,7 @@
       (draw-gliders (frame-count))
       (pop-matrix)
     )
-    
+
     (draw-axes)
 ;    (push-matrix)
 ;    (rotate-x (/ (frame-count) 200.1))
@@ -702,7 +713,7 @@
 ;    (let [n (vec3-normalize [-0.5 0.5 0.0])]
 ;      (directional-light 255 64 64 (n 0) (n 1) (n 2)))
 ;    (pop-matrix)
-   
+
     (push-matrix)
 ;    (rotate-z (/ (frame-count) 40.1))
 ;    (rotate-x (/ (frame-count) 41.231))
@@ -732,10 +743,11 @@
     ;(light-falloff 1.0 0.2 0.0)
     ;(ambient-light 64 64 64)
 
-    ;(hint :disable-depth-test) 
+    ;(hint :disable-depth-test)
     ;(draw-tiling)
     ; (hint :enable-depth-test)
     (no-fill)
+
     (draw-horizon)
     (draw-assemblage-radius)
 
@@ -743,11 +755,13 @@
     ;  (draw-face-list))
       ;(draw-face-list-textured))
 
+    (if (= (@current-topology :id) :hexagon)
+      (rotate (/ Math/PI 6.0) 0 0 1))
+
     ; game:
     (update-selected-pos-screen)
     (update-neighbour-candidates-screen)
 
-    ;(rotate (/ Math/PI 6.0) 0 0 1)
 
     (draw-tiling @tiler-state
                  true ;(not= @current-boundary-mode :none)
@@ -755,8 +769,8 @@
                  @draw-bezier-box-faces?
                  @draw-bezier-box-lines?
                  @current-boundary-mode)
-    
-    (draw-assemblage-center)
+
+    ;(draw-assemblage-center)
 
 
     (when @draw-tilecode-blobs?
@@ -787,9 +801,9 @@
     (draw-face-idx-numbers [0 0 0] false)
 
 
-    (reset! anchor-verts-screen
-            (vec (map (fn [vs] (vec (map world-to-screen vs)))
-                      (make-tube-anchors-for-topology @current-topology 4))))
+;    (reset! anchor-verts-screen
+;            (vec (map (fn [vs] (vec (map world-to-screen vs)))
+;                      (make-tube-anchors-for-topology @current-topology 4))))
 
     ;(draw-tubes 4)
     ;(draw-tube-anchors 0 6)
@@ -807,7 +821,7 @@
 
     (pop-matrix)
   )
-  
+
 ;  (fill 255)
 ;  (stroke 0 0 0)
 ;  (stroke-weight 1)
@@ -823,13 +837,15 @@
 ;    (draw-verts to-face-centers))
 
   (pop-matrix)
-  
+
   ; 2d hud stuff
   ;(hint :disable-depth-test)
   ;(camera)
   ;(ortho)
   (hint :disable-depth-test)
-  (draw-info 10 (- (height) 330))
+  (when @draw-info?
+    (draw-info 10 (- (height) 330)))
+
   (camera)
 
   (when @game-mode?
@@ -882,12 +898,12 @@
 
 
 (defn -main [& args]
-  (defsketch rhombrick 
+  (defsketch rhombrick
     :title "rhombrick"
-    :setup setup 
+    :setup setup
     :draw draw
-    ;:size [1900 1100]
-    :size [1440 800]
+    :size [1900 1100]
+    ;:size [1440 800]
     :renderer :opengl
     :key-typed key-typed
     :key-pressed key-pressed
@@ -901,3 +917,5 @@
 ;(sketch-start rhombrick)
 
 ;(reset! my-applet rhombrick)
+
+;(-main)
