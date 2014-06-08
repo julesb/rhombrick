@@ -25,20 +25,35 @@
   [ 0  2  0]
 ])
 
-(def ^:const rd-faces [
-               [0 10 1 11]
-               [5 8 1 10]
-               [4 13 5 10]
-               [6 8 5 13]
-               [7 13 4 12]
-               [0 12 4 10]
-               [0 11 3 12]
-               [1 8 2 11]
-               [6 9 2 8]
-               [7 9 6 13]
-               [7 12 3 9]
-               [3 11 2 9]
-])
+; anticlockwise
+;(def ^:const rd-faces [
+;               [0 10 1 11]
+;               [5 8 1 10]
+;               [4 13 5 10]
+;               [6 8 5 13]
+;               [7 13 4 12]
+;               [0 12 4 10]
+;               [0 11 3 12]
+;               [1 8 2 11]
+;               [6 9 2 8]
+;               [7 9 6 13]
+;               [7 12 3 9]
+;               [3 11 2 9]
+;])
+
+(def ^:const rd-faces
+[[11 1 10 0]
+ [10 1 8 5]
+ [10 5 13 4]
+ [13 5 8 6]
+ [12 4 13 7]
+ [10 4 12 0]
+ [12 3 11 0]
+ [11 2 8 1]
+ [8 2 9 6]
+ [13 6 9 7]
+ [9 3 12 7]
+ [9 2 11 3]])
 
 ;(def rd-face-colors [
 ;                  [255   0   0] ;  0 red
@@ -59,13 +74,13 @@
 ;                  [255   0   0] ;  0 red
 ;                  [255 128   0] ;  1 orange
 ;                  [255 255   0] ;  2 yellow
-;                  [128 255   0] ;  3 light green 
+;                  [128 255   0] ;  3 light green
 ;                  [  0 255   0] ;  4 green
 ;                  [  0 255 128] ;  5 purple
 ;                  [  0 255 255] ;  9 cyan
 ;                  [  0 128 255] ; 10 light-blue
 ;                  [  0   0 255] ; 11 blue
-;                  [128   0 255] ;  6 red-blue 
+;                  [128   0 255] ;  6 red-blue
 ;                  [255   0 255] ;  7 magenta
 ;                  [255   0 128] ;  8 pink
 ;                  ])
@@ -84,7 +99,7 @@
 [74,70,51],
 [191,131,64]]
 
-  
+
 )
 
 
@@ -112,8 +127,8 @@
 ; Vertices  12
 ;
 ; Being the dual of the rhombic dodecahedron, this
-; gives us the vertices of the centers of the 
-; faces of said polyhedron and are also used to 
+; gives us the vertices of the centers of the
+; faces of said polyhedron and are also used to
 ; calculate face normals.
 
 (def ^:const co-verts [
@@ -123,7 +138,7 @@
                        [ 0  1  1]
                        [ 0  1 -1]
                        [ 1  0 -1]
-                       
+
                        [-1  1  0]
                        [-1  0 -1]
                        [-1 -1  0]
@@ -242,28 +257,44 @@
  [5 11 10]
 ])
 
-(def to-faces [
- [10 11 12 13]
- [1 18 21 14 17 23]
- [18 19 20 21]
- [2 3 4 5]
- [0 23 17 16 7 6]
- [0 6 9 10 13 22]
- [1 22 13 12 19 18]
- [14 15 16 17]
- [11 10 9 8 5 4]
- [6 7 8 9]
- [0 22 1 23]
- [20 19 12 11 4 3]
- [14 15 2 3 20 21]
- [16 15 2 5 8 7]
-])
+; anti-clockwise
+;(def to-faces [
+; [10 11 12 13]
+; [1 18 21 14 17 23]
+; [18 19 20 21]
+; [2 3 4 5]
+; [0 23 17 16 7 6]
+; [0 6 9 10 13 22]
+; [1 22 13 12 19 18]
+; [14 15 16 17]
+; [11 10 9 8 5 4]
+; [6 7 8 9]
+; [0 22 1 23]
+; [20 19 12 11 4 3]
+; [14 15 2 3 20 21]
+; [16 15 2 5 8 7]
+;])
 
-
+; clockwise
+(def to-faces
+  [[13 12 11 10]
+ [23 17 14 21 18 1]
+ [21 20 19 18]
+ [5 4 3 2]
+ [6 7 16 17 23 0]
+ [22 13 10 9 6 0]
+ [18 19 12 13 22 1]
+ [17 16 15 14]
+ [4 5 8 9 10 11]
+ [9 8 7 6]
+ [23 1 22 0]
+ [3 4 11 12 19 20]
+ [21 20 3 2 15 14]
+ [7 8 5 2 15 16]])
 
 
 ; edge-centered cubic lattice logic
-; 
+;
 ; V        V % 2
 ; ==============
 ; 0 0 0 ,  0 0 0
@@ -686,7 +717,7 @@
     :face-centers to-face-centers
     :op-face-idx [7 8 9 10 11 12 13 0 1 2 3 4 5 6]
     :id :truncated-octahedron
-    :aabb-radius 2.001 
+    :aabb-radius 2.001
     :verts to-verts
     :faces to-faces}
   })
@@ -695,7 +726,7 @@
 (def next-topology {:square :hexagon
                     :hexagon :cube
                     :cube :hexagonal-prism
-                    :hexagonal-prism :rhombic-dodecahedron 
+                    :hexagonal-prism :rhombic-dodecahedron
                     :rhombic-dodecahedron :truncated-octahedron
                     :truncated-octahedron :square
                     })
@@ -723,7 +754,7 @@
 
 
 
-; obsolete 
+; obsolete
 ; 2d fourfold chiral symmetry hack - tiles can only rotate mutiples of 90°
 ; around the Z axis. Symmetry Indices: 0 1 5 15
 ;(defn get-code-symmetries-2d-fourfold [code]
