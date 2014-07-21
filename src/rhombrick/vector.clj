@@ -17,7 +17,7 @@
 (defn vec2-scale [v s]
   [(* (v 0) s) (* (v 1) s)])
 
-(defn vec2-length [[x y]] 
+(defn vec2-length [[x y]]
   (Math/sqrt (+ (* x x) (* y y))))
 
 (defn vec2-normalize [[x y]]
@@ -126,26 +126,28 @@
    (myround p (v 2))])))
 
 (defn rotate-point [point axis ang]
-  (let [[x y z] point
-        [u v w] axis
-        ux (* u x) uy (* u y) uz (* u z)
-        vx (* v x) vy (* v y) vz (* v z)
-        wx (* w x) wy (* w y) wz (* w z)
-        sa (Math/sin ang)
-        ca (Math/cos ang)
-        xn (+ (* u (+ ux vy wz))
-              (* ca (- (* x (+ (* v v) (* w w)))
-                       (* u (+ vy wz))))
-              (* sa (+ (- wy) vz)))
-        yn (+ (* v (+ ux vy wz))
-              (* ca (- (* y (+ (* u u) (* w w)))
-                       (* v (+ ux wz))))
-              (* sa (- wx uz)))
-        zn (+ (* w (+ ux vy wz))
-              (* ca (- (* z (+ (* u u) (* v v)))
-                       (* w (+ ux vy))))
-              (* sa (+ (- vx) uy))) ]
-    [xn yn zn]))
+  (if (= ang 0.0)
+    point
+    (let [[x y z] point
+          [u v w] axis
+          ux (* u x) uy (* u y) uz (* u z)
+          vx (* v x) vy (* v y) vz (* v z)
+          wx (* w x) wy (* w y) wz (* w z)
+          sa (Math/sin ang)
+          ca (Math/cos ang)
+          xn (+ (* u (+ ux vy wz))
+                (* ca (- (* x (+ (* v v) (* w w)))
+                         (* u (+ vy wz))))
+                (* sa (+ (- wy) vz)))
+          yn (+ (* v (+ ux vy wz))
+                (* ca (- (* y (+ (* u u) (* w w)))
+                         (* v (+ ux wz))))
+                (* sa (- wx uz)))
+          zn (+ (* w (+ ux vy wz))
+                (* ca (- (* z (+ (* u u) (* v v)))
+                         (* w (+ ux vy))))
+                (* sa (+ (- vx) uy))) ]
+      [xn yn zn])))
 
 
 
