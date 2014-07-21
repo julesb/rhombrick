@@ -7,6 +7,8 @@
         [rhombrick.camera]
         [rhombrick.obj-loader]
         [rhombrick.bezierbox :as bbox]
+        ;[rhombrick.jigsaw]
+        [rhombrick.tile-shape-2d]
         [clojure.math.combinatorics]))
 
 
@@ -22,12 +24,6 @@
 
 (def trunc-oct-model (get-obj-face-verts (load-obj "data/truncated_octahedron.obj")))
 
-(def shape-2d-cache (atom {}))
-(def inner-shape-2d-cache (atom {}))
-
-(defn shape-2d-cache-reset []
-  (reset! shape-2d-cache {})
-  (reset! inner-shape-2d-cache {}))
 
 
 (defn draw-graph [[x y] w h title data-range data]
@@ -132,9 +128,9 @@
       (= ncons 4)
         [80 80 80]
       (and (= ncons 6) (= (count (filter #(= \A %) code)) 3))
-        [0 0 0]
+        [255 255 255]
       (and (= ncons 6) (= (count (filter #(= \B %) code)) 3))
-        [255 255 255])))
+        [0 0 0])))
 
 
 (defn init-tileset-colors-ca [tileset]
@@ -207,16 +203,6 @@
       (box 0.2))
  ))
 
-(defn rotate-vec [v]
-  (vec (concat (rest v) [(first v)])))
-
-
-(defn rotations-vec [v]
-    (loop [n (count v)
-           accum [v]]
-      (if (> n 1)
-        (recur (dec n) (conj accum (rotate-vec (last accum))))
-        (vec accum))))
 
 
 (defn facelist-contains-rotations? [face-verts]
@@ -646,109 +632,26 @@
       (draw-curve-with-controls c))))
 
 
-
-(def shape-2d-thicknesses   { \1 0.333
-                              \2 0.5
-                              \3 0.75
-                              \4 0.9
-                              \5 1.375
-                              \6 1.6875
-                              \7 2.0
-                             \a 0.333
-                             \A 0.333
-                             \b 0.5
-                             \B 0.5
-                             \c 0.75
-                             \C 0.75
-                             \d 0.9
-                             \D 0.9
-                             })
-
-;(def get-bez-anchors-2d (memoize (fn [code topo]
-(defn get-bez-anchor-offsets-2d [code topo]
-  (let [vs (rotate-vec (topo :verts-2d))
-        rads (->> (map shape-2d-thicknesses code)
-                  (filter #(not (nil? %)))
-                  (map #(* % 0.5)))
-        dirs (map #(vec3-normalize
-                     (vec3-sub (vs %)
-                               (vs (mod (inc %) (topo :num-faces)))))
-                  (get-connected-idxs code))]
-    (->> (map vec3-scale dirs rads)
-         (map #(vec [% (vec3-scale % -1.0)]))
-         (vec))))
-
-
-(defn get-shape-2d-curve-endpoints [con-idxs]
-  (if (= (count con-idxs) 1)
-    (list [(first con-idxs) (first con-idxs)])
-    (map #(vec [(con-idxs %) (con-idxs (mod (inc %) (count con-idxs)))])
-         (range (count con-idxs)))))
-
-
-;(def make-facecode-shape-2d (memoize (fn [code topo res]
-(defn make-facecode-shape-2d [code topo res]
-  ;(println "make-facecode-shape-2d:" code (topo :id res))
-  (let [con-idxs (vec (get-connected-idxs code))
-        num-idxs (count con-idxs)
-        offsets (get-bez-anchor-offsets-2d code topo)]
-    (->> (get-shape-2d-curve-endpoints con-idxs)
-         (map-indexed #(get-shape-2d-bezier-controls-with-offset
-                         (%2 0)
-                         (%2 1)
-                         ((offsets %1) 1)
-                         ((offsets (mod (inc %1) num-idxs)) 0))) ; controls
-         (map #(get-bezier-points % res))) ; curves verts
-))
-
-
-(defn make-facecode-inner-shape-2d [code topo res]
-  ;(println "make-facecode-shape-2d:" code (topo :id res))
-  (let [con-idxs (vec (get-connected-idxs code))
-        num-idxs (count con-idxs)
-        offsets (get-bez-anchor-offsets-2d code topo)]
-    (->> (get-shape-2d-curve-endpoints con-idxs)
-         (map-indexed #(get-shape-2d-bezier-controls-with-offset
-                         (%2 0)
-                         (%2 1)
-                          [0 0 0] [0 0 0] ))
-         (map #(get-bezier-points % res))) ; curves verts
-))
-
-(defn get-facecode-shape-2d [code topo res]
-  (if (contains? @shape-2d-cache [code topo res])
-    (@shape-2d-cache [code topo res])
-    (do
-      (swap! shape-2d-cache assoc [code topo res]
-             (make-facecode-shape-2d code topo res))
-      (@shape-2d-cache [code topo res]))))
-
-
-(defn get-facecode-inner-shape-2d [code topo res]
-  (if (contains? @inner-shape-2d-cache [code topo res])
-    (@inner-shape-2d-cache [code topo res])
-    (do
-      (swap! inner-shape-2d-cache assoc [code topo res]
-             (make-facecode-inner-shape-2d code topo res))
-      (@inner-shape-2d-cache [code topo res]))))
-
-
 (defn draw-facecode-shape-2d [code topo res]
   (let [curves (get-facecode-shape-2d code topo res)
         col (get-tile-color code)
-        line-col col ;[0 0 0 255]
+        line-col [0 0 0 255]
         ;line-col [255 255 255 255]
-        col-transp [(col 0) (col 1) (col 2) 240]
+        mono-col [255 255 255 255]
+        col-transp [(col 0) (col 1) (col 2) 128]
         with-endcaps? true
         final-vert (first (first curves))
         ]
-    ;(no-stroke)
-    (stroke-weight 0.05)
-    (apply stroke col-transp)
+    (no-stroke)
+    (stroke-weight 0.0125)
+    ;(apply stroke col-transp)
+    (apply stroke line-col)
 
     ;(no-fill)
-    (apply fill col)
-    ;(no-stroke)
+    (apply fill col-transp)
+    ;(apply fill mono-col)
+    ;(apply fill col)
+
     (begin-shape)
     (doseq [curve curves]
       (doseq [[vx vy vz] curve]
@@ -757,9 +660,39 @@
     (end-shape))
   )
 
+(defn draw-jigsaw-shape-2d [code topo res]
+  (let [curves (get-facecode-shape-2d code topo res)
+        col (get-tile-color code)
+        line-col [0 0 0 255]
+        ;line-col [255 255 255 255]
+        mono-col [255 255 255 255]
+        col-transp [(col 0) (col 1) (col 2) 128]
+        with-endcaps? true
+        final-vert (first (first curves))
+        ]
+    ;(no-stroke)
+    (stroke-weight 0.025)
+    ;(apply stroke col-transp)
+    (apply stroke line-col)
+
+    ;(no-fill)
+    (apply fill col-transp)
+    ;(apply fill mono-col)
+    ;(apply fill col)
+
+    (begin-shape)
+    ;(doseq [curve curves]
+      (doseq [[vx vy vz] curves]
+        (vertex vx vy vz))
+    ;)
+    (vertex (final-vert 0) (final-vert 1) (final-vert 2))
+    (end-shape))
+  )
+
 
 (defn draw-facecode-inner-shape-2d [code topo res]
-  (let [curves (get-facecode-inner-shape-2d code topo res)
+  (let [;curves (make-jigsaw-piece code topo res)
+        curves (get-facecode-inner-shape-2d code topo res)
         col (get-tile-color code)
         line-col col ;[0 0 0 255]
         ;line-col [255 255 255 255]
@@ -769,7 +702,7 @@
         final-vert (first (first curves))
         ]
     (no-stroke)
-    (stroke-weight 0.05)
+    (stroke-weight 0.025)
     ;(apply stroke op-col)
     (stroke 0 0 0 192)
 
@@ -791,12 +724,14 @@
         ;line-col [0 0 0 128]
         line-col [255 255 255 255]
         col-transp [(col 0) (col 1) (col 2) 192]
+         op-col (vec (map #(- 255 %) col))
         ]
     ;(no-stroke)
 
-    (stroke-weight 0.05)
+    (stroke-weight 0.1)
     (apply stroke line-col)
     (no-fill)
+    ;(apply fill op-col)
     (doseq [curve curves]
       (begin-shape)
       (doseq [[vx vy vz] curve]
@@ -843,10 +778,10 @@
         (no-fill))
         )
 
-    (stroke (op-col 0) (op-col 1) (op-col 2) 255)
-    ;(stroke 0 0 0 128 )
+    ;(stroke (op-col 0) (op-col 1) (op-col 2) 255)
+    (stroke 64 64 64 255 )
     ;(stroke-weight 0.45)
-    (stroke-weight 0.05)
+    (stroke-weight 0.015)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))
 
@@ -1031,10 +966,11 @@
         (when (or (= (@current-topology :id) :hexagon)
                   (= (@current-topology :id) :square))
           (push-matrix)
-          (scale 0.95)
+          (scale 1.0)
+          ;(draw-jigsaw-shape-2d code @current-topology @bezier-box-resolution)
           (draw-facecode-shape-2d code @current-topology @bezier-box-resolution)
           (pop-matrix)
-          ;(draw-facecode-inner-shape-2d code @current-topology @bezier-box-resolution)
+          (draw-facecode-inner-shape-2d code @current-topology @bezier-box-resolution)
           ;(draw-facecode-shape-outline code @current-topology @bezier-box-resolution)
           )
 
