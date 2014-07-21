@@ -2,7 +2,8 @@
   (:use [rhombrick.marching-cubes-tables]
         [rhombrick.vector]
         [rhombrick.staticgeometry]
-        [rhombrick.bezierbox]))
+        [rhombrick.bezierbox]
+        [ordered.set]))
 
 
 
@@ -99,7 +100,7 @@
    \5 0.34375,
    \6 0.421875,
    \7 0.5})
-                      
+
 
 (defn sd-capsule-tile [p code topo]
   (let [con-idxs (get-connected-idxs code)
@@ -116,7 +117,7 @@
 (defn sin-combo [xyz a]
   (let [s1 (+ 0.5 (* 0.5 (Math/sin (* (xyz 0) 13.00135))))
         s2 (+ 0.5 (* 0.5 (Math/sin (* (xyz 1) 21.00181))))
-        s3 (+ 0.5 (* 0.5 (Math/sin (* (xyz 2) 8.00132)))) 
+        s3 (+ 0.5 (* 0.5 (Math/sin (* (xyz 2) 8.00132))))
         v  (+ s1 s2 s3)]
     [v s1 s2 s3]
   ))
@@ -132,7 +133,7 @@
         ;backplane-n (vec3-scale (vec3-normalize (reduce vec3-add fc)) -1.0)
         planes (map #(sd-plane-o p (vec3-scale (vec3-normalize %) -1.0) (vec3-length %)) fc)
         ;all-planes (conj con-planes (sd-plane-o p backplane-n 0.0))
-      ]  
+      ]
   (reduce min planes)))
 ;  (first (sort all-planes))))
 
@@ -208,10 +209,13 @@
 
 
 
+(def sd-bezier-tube (memoize (fn [p controls r1 r2 res]
+  (let [points (get-bezier-points controls res)
+        radii (map #(lerp- (* % (/ 1.0 res)) r1 r2) (range (inc res)))]
+    (reduce op-union (map #(sd-sphere-o p %2 %1) points radii))))))
 
 
-
-; bounding sphere radii : 
+; bounding sphere radii :
 ;   trunc-oct: 2.449489742783178
 ;   rhomb-dodeca: 2.0
 ;   cube: 1.7320508075688772
@@ -221,12 +225,12 @@
         curve-points (get-points-for-curve f1-idx f2-idx 16 @current-topology)
         ;;dists (map #(let [d (- (vec3-distance xyz %) rad)] (/ 1.0 (* d d)))
         ;;           curve-points)
-        
+
         dists (map #(/ 1.0 (vec3-distance-squared xyz %)) curve-points)
         dist-sum (/ 256.0(reduce + dists))
         ;dist-inv (/ 1.0 (reduce + dists))
         ;dist-avg (/ (reduce + dists) (count dists))
-        
+
         ;dist-cell ((cell-func xyz @current-topology) 0)
         ]
      [dist-sum
@@ -242,7 +246,7 @@
   (if (> (vec3-length xyz) 1.224744871391589)
           ;(not (polyhedron-contains? (vec3-scale xyz 0.9375) (topo :face-centers))))
     [999.0 0.0 0.0 0.0]
-    (let [curve-res 16 
+    (let [curve-res 16
           endpoint-pairs (vec (-make-curve-endpoints (get-connected-idxs code)))
           curves-points (map-indexed #(vec [%1 (get-points-for-curve (%2 0) (%2 1) curve-res topo) ])
                                      endpoint-pairs)
@@ -250,7 +254,7 @@
           closest-data (first (sort-by #((% 1) 1) closest-per-curve))
           closest-idx (first closest-data)
           [closest-p closest-d closest-n closest-t] (second closest-data)
-          r1 (bezier-box-thicknesses (.charAt code (first (endpoint-pairs closest-idx)))) 
+          r1 (bezier-box-thicknesses (.charAt code (first (endpoint-pairs closest-idx))))
           r2 (bezier-box-thicknesses (.charAt code (second (endpoint-pairs closest-idx))))
           radius-at-p (lerp- closest-t (/ r1 4.0) (/ r2 4.0))
           n closest-n]
@@ -263,11 +267,9 @@
 ;;))
 
 
-(defn tilecode-bezier-blob2 [p code topo]
-;  (if ;(> (vec3-length xyz) 1.224744871391589)
-;      (not (polyhedron-contains? (vec3-scale xyz 1.0) (topo :face-centers)))
-;    [999.0 0.0 0.0 0.0]
-    (let [curve-res 16 
+;(defn tilecode-bezier-blob2 [p code topo]
+(def tilecode-bezier-blob2 (memoize (fn [p code topo]
+    (let [curve-res 64
           xyz (vec3-scale p (topo :aabb-radius))
           endpoint-pairs (vec (-make-curve-endpoints (get-connected-idxs code)))
           curves-points (map-indexed #(vec [%1 (get-points-for-curve (%2 0) (%2 1) curve-res topo) ])
@@ -275,10 +277,10 @@
           closest-per-curve (map-indexed #(vec [%1 (find-closest-point xyz (%2 1))]) curves-points)
           closest-data (first (sort-by #((% 1) 1) closest-per-curve))
           closest-idx (first closest-data)
-          ;field-strengths (map #(/ 1.0 (* (% 1) (% 1))) closest-per-curve) 
+          ;field-strengths (map #(/ 1.0 (* (% 1) (% 1))) closest-per-curve)
 
           [closest-p closest-d closest-n closest-t] (second closest-data)
-          r1 (bezier-box-thicknesses (.charAt code (first (endpoint-pairs closest-idx)))) 
+          r1 (bezier-box-thicknesses (.charAt code (first (endpoint-pairs closest-idx))))
           r2 (bezier-box-thicknesses (.charAt code (second (endpoint-pairs closest-idx))))
           radius-at-p (/ (lerp- closest-t r1 r2) 1.0)
           n closest-n
@@ -286,6 +288,7 @@
           ;field (/ 1.0 (* d d))
           ]
       [(* (- closest-d radius-at-p) 1.0) n]))
+))
       ;[(* (- closest-d radius-at-p) 1.0) (n 0) (n 1) (n 2)]))
       ;[field (n 0) (n 1) (n 2)]))
 
@@ -312,6 +315,10 @@
         [blob-d blob-n] (tilecode-bezier-blob2 v code @current-topology)
         dist blob-d
 
+        ;controls [[-0.8 -0.8 -0.8] [ -0.8 -0.8 0.5] [0.8 0.8 -0.5] [0.8 0.8 0.8]]
+        ;bez-tube (sd-bezier-tube v controls 0.19 0.12 64)
+        ;dist bez-tube
+
         ;caps (op-blend c1 c2 0.3)
         ;dist (op-blend caps cell 0.1)
         ;planes (sd-tilecode-planes v code @current-topology)
@@ -324,11 +331,11 @@
         ;dist (uf-soft-tile v code @current-topology)
 
         ;dist cell
-        ;dist (op-subtract cell nc-spheres ) 
-        ;dist (op-intersect cell nc-spheres ) 
+        ;dist (op-subtract cell nc-spheres )
+        ;dist (op-intersect cell nc-spheres )
         ]
-    ;[dist 1.0 1.0 1.0]
-    [dist blob-n]
+    [dist 1.0 1.0 1.0]
+    ;[dist blob-n]
   ))
 
 
@@ -438,7 +445,7 @@
                                                    ;[n _ _ _] (spheres-func v 0.4)]
                                                 n))
                                             grid-vertices))
-                         
+
                          base-tris (polygonise grid isolevel)
                          tris (map #(scale-vert % offset) base-tris)
                          norms (map (fn [v]
@@ -458,9 +465,9 @@
                                       ;(let [[_ nx ny nz] (spheres-func v 0.4)]
                                         (vec3-normalize n)))
                                     tris)]
-                     
+
                      {:tris tris :norms norms}))
-                 
+
                  grid-indices)]
 
     {:tris (mapcat :tris surface)
@@ -504,7 +511,7 @@
   (reset! tileset-meshes {})
   (doseq [code (prioritise-tiles ts)]
     (when-not (contains? @tileset-meshes code)
-      (print code "...") 
+      (print code "...")
       (swap! tileset-meshes assoc code (make-tilecode-surface isolevel code xdim ydim zdim)))
     (println "done"))
   )
@@ -536,6 +543,32 @@
 ;    (swap! tileset-meshes assoc code (make-tilecode-surface isolevel code xdim ydim zdim))
 ;    (println "done"))
   )
+
+
+
+(defn make-indexed-faces [intris outverts outfaces]
+  (if (zero? (count intris))
+    {:verts outverts
+     :faces outfaces}
+    (let [tri (first intris)
+          outverts-set (into (ordered-set) outverts)
+          new-verts (vec (filter #(not (contains? outverts-set %)) tri))
+          new-face (vec (map #(if (not (contains? outverts-set %))
+                                (+ (count outverts) (.indexOf new-verts %))
+                                (.indexOf outverts %)) tri))]
+      (recur (vec (rest intris))
+             (vec (concat outverts-set new-verts))
+             (conj outfaces new-face)))))
+
+    ; for each triangle in surface
+    ;   for each vert i in triangle
+    ;     if vert[i] already in outverts?
+    ;       faceidx = index in outverts
+    ;     else
+    ;       faceidx = (count outverts)
+    ;       add vert to outverts
+    ;   add vert idxs for triangle to outfaces
+
 
 
 (defn cancel-surface-thread []
