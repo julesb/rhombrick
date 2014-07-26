@@ -146,8 +146,8 @@
 ;    (vec (map #(rotate-point % [0.0 0.0 1.0] ang)
 ;              like-compatible-connector))))
 
-(defn rotate-connector [i conn-verts]
-  (let [ang (* (- i) (/ (* 2.0 Math/PI) 6.0))]
+(defn rotate-connector [i conn-verts topo]
+  (let [ang (* (- i) (/ (* 2.0 Math/PI) (topo :num-faces)))]
     (vec (map #(rotate-point % [0.0 0.0 1.0] ang)
               conn-verts))))
 
@@ -166,7 +166,8 @@
         face-centers (into {} (map #(vec [% ((topo :face-centers) %)]) con-idxs))
         ;conns-rotated (into {} (vec (map #(vec [% (rotate-connector %)]) con-idxs)))
         conns-rotated (into {} (vec (map #(vec [% (rotate-connector % (get-connector-verts-for-digit
-                                                                        (.charAt code %)))]) con-idxs)))
+                                                                        (.charAt code %))
+                                                                      topo)]) con-idxs)))
 
         conns-scaled (into {} (map #(vec [% (scale-connector-verts (conns-rotated %)
                                                                    (* 0.5 (shape-2d-thicknesses (.charAt code %)))
