@@ -49,8 +49,46 @@
    ])
 ;))
 
+(def tol jigsaw-tolerance)
 
-(def opposite-compatible-connector-yin
+;(defn apply-tolerance [verts]
+;  (vec (map #(vec3-add (vec3-scale (vec3-normalize %) (- tol)) %) verts)))
+
+
+(def like-compatible-tolerances
+  [
+   [(- tol) tol 0.0]
+   [(- tol) tol 0.0]
+   [(- tol) (- tol) 0.0]
+   [tol (- tol) 0.0]
+   [tol (- tol) 0.0]
+   [tol (- tol) 0.0]
+   [tol (- tol) 0.0]
+   [(- tol) (- tol) 0.0]
+   [(- tol) tol 0.0]
+   [(- tol) tol 0.0]
+   ])
+
+(def yang-tolerances
+  [
+   [(- tol) (- tol) 0.0]
+   [tol (- tol) 0.0]
+   [tol (- tol) 0.0]
+   [(- tol) (- tol) 0.0]
+   [(- tol) tol 0.0]
+   [tol tol 0.0]
+   [tol tol 0.0]
+   [(- tol) tol 0.0]
+   ])
+
+(def yin-tolerances
+  (vec (map #(vec3-scale % 1.0)
+    (reverse yang-tolerances))))
+
+
+yin-tolerances
+
+(def opposite-compatible-connector-yang
   [
    ;[0.0 1.0 0.0]
    [0.0 0.25 0.0]
@@ -64,34 +102,45 @@
    ;[0.0 -1.0 0.0]
    ])
 
-(def opposite-compatible-connector-yang
+(def opposite-compatible-connector-yin
   (vec (map #(vec3-scale % -1.0)
     (reverse
-  [
-   ;[0.0 1.0 0.0]
-   [0.0 0.25 0.0]
-   [0.5 0.25 0.0]
-   [0.5 0.5 0.0]
-   [1.0 0.5 0.0]
-   [1.0 -0.5 0.0]
-   [0.5 -0.5 0.0]
-   [0.5 -0.25 0.0]
-   [0.0 -0.25 0.0]
-   ;[0.0 -1.0 0.0]
-   ])))
-)
+     opposite-compatible-connector-yang))))
+
 
 (defn get-connector-verts-for-digit [digit]
   (if (face-digit-like-compatible? digit)
     like-compatible-connector
+    ;(vec (map vec3-add like-compatible-connector like-compatible-tolerances))
     (if (contains? #{\a \b \c \d} digit)
       opposite-compatible-connector-yin
-      opposite-compatible-connector-yang)))
+      opposite-compatible-connector-yang
+      ;(vec (map vec3-add opposite-compatible-connector-yin yin-tolerances))
+      ;(vec (map vec3-add opposite-compatible-connector-yang yang-tolerances))
+      )))
+
+
+(defn get-connector-verts-for-digit-orig [digit]
+  (if (face-digit-like-compatible? digit)
+    (vec (map vec3-add like-compatible-connector like-compatible-tolerances))
+    (if (contains? #{\a \b \c \d} digit)
+      (vec (map vec3-add opposite-compatible-connector-yin yin-tolerances))
+      (vec (map vec3-add opposite-compatible-connector-yang yang-tolerances))
+      )))
+
+
+(defn get-tolerance-offsets [digit]
+  (if (face-digit-like-compatible? digit)
+    like-compatible-tolerances
+    (if (contains? #{\a \b \c \d} digit)
+      yin-tolerances
+      yang-tolerances)))
 
 
 ;(def get-bez-anchors-2d (memoize (fn [code topo]
 (defn get-bez-anchor-offsets-2d [code topo]
   (let [vs (rotate-vec (topo :verts-2d))
+;  (let [vs (rotate-vec (apply-tolerance(topo :verts-2d)))
         rads (->> (map shape-2d-thicknesses code)
                   (filter #(not (nil? %)))
                   (map #(* % 0.5)))
@@ -118,7 +167,7 @@
         num-idxs (count con-idxs)
         offsets (get-bez-anchor-offsets-2d code topo)]
     (->> (get-shape-2d-curve-endpoints con-idxs)
-         (map-indexed #(get-shape-2d-bezier-controls-with-offset
+         (map-indexed #(get-shape-2d-bezier-controls-with-offset-and-tolerance
                          (%2 0)
                          (%2 1)
                          ((offsets %1) 1)
@@ -160,14 +209,41 @@
   ))
 
 
+
+
 (defn make-jigsaw-piece [code topo res]
   (let [curves (make-facecode-shape-2d code topo res)
         con-idxs (get-connected-idxs code)
         face-centers (into {} (map #(vec [% ((topo :face-centers) %)]) con-idxs))
+        conns (into {} (vec (map #(vec [% (get-connector-verts-for-digit (.charAt code %))]) con-idxs)))
+        tolerance-offsets (into {} (map #(vec [% (get-tolerance-offsets (.charAt code %))])
+                                        con-idxs))
+        conns-scaled (into {} (map #(vec [% (scale-connector-verts (conns %)
+                                                                   (* 0.5 (shape-2d-thicknesses (.charAt code %)))                    )])
+                                   con-idxs))
+        conns-tol (into {} (map #(vec [% (map vec3-add (conns-scaled %) (tolerance-offsets %))])
+                                con-idxs))
+        conns-rotated (into {} (vec (map #(vec [% (rotate-connector % (conns-tol %) topo)]) con-idxs)))
+        conns-tr (map #(translate-connector-verts (conns-rotated %) (face-centers %))
+                      con-idxs)
+        shape (vec (interleave  conns-tr curves))
+        ]
+    shape
+    ))
+
+
+(defn make-jigsaw-piece-orig [code topo res]
+  (let [curves (make-facecode-shape-2d code topo res)
+        con-idxs (get-connected-idxs code)
+        face-centers (into {} (map #(vec [% ((topo :face-centers) %)]) con-idxs))
         ;conns-rotated (into {} (vec (map #(vec [% (rotate-connector %)]) con-idxs)))
-        conns-rotated (into {} (vec (map #(vec [% (rotate-connector % (get-connector-verts-for-digit
-                                                                        (.charAt code %))
-                                                                      topo)]) con-idxs)))
+
+        conns (into {} (vec (map #(vec [% (get-connector-verts-for-digit (.charAt code %))]) con-idxs)))
+
+        tolerance-offsets (into {} (map #(vec [% (get-tolerance-offsets (.charAt code %))])
+                                        con-idxs))
+
+        conns-rotated (into {} (vec (map #(vec [% (rotate-connector % (conns %) topo)]) con-idxs)))
 
         conns-scaled (into {} (map #(vec [% (scale-connector-verts (conns-rotated %)
                                                                    (* 0.5 (shape-2d-thicknesses (.charAt code %)))
@@ -181,6 +257,7 @@
     ;(apply concat shape)
     shape
     ))
+
 
 
 (defn get-facecode-shape-2d [code topo res]

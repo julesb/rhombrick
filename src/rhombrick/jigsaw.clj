@@ -13,8 +13,10 @@
 (reset! current-topology (topologies :hexagon))
 
 
+; "d-4-D-" "d--D--"
+
 (def piece
-  (->> (make-jigsaw-piece "4-4---" @current-topology 32)
+  (->> (make-jigsaw-piece "d--D--" @current-topology 32)
        (apply concat)
        (map #(vec [(% 0) (% 1)]))
        (vec)))
@@ -30,15 +32,15 @@
 (defn do-tiling  [ts topo]
   (let [tiles (ts :tiles)
         tile-fn (fn [pos code]
-                  (color (vec3-scale (get-tile-color code) (/ 1.0 255.0))
+                  ;(color (vec3-scale (get-tile-color code) (/ 1.0 255.0))
                          (translate pos
-                    (scale [15 15 0]
-                      ;(extrude-linear {:height 0.25}
+                    (scale [1 1 1]
+                      (extrude-linear {:height 0.25}
                         (polygon (get-piece-verts-2d code topo 8))
-                       ;)
-                             ))))]
-    (map #(tile-fn (key %) (val %)) tiles)))
-    ;(union (map #(tile-fn (key %) (val %)) tiles))))
+                       )
+                             )))]
+    ;(map #(tile-fn (key %) (val %)) tiles)))
+    (union (map #(tile-fn (key %) (val %)) tiles))))
 
 
 (defn make-sheet [width-mm height-mm nrows ncols tile-radius-mm margin]
@@ -57,20 +59,19 @@
     ))
 
 
-(def sheet (make-sheet 600 300 10 20 40 5))
+(def sheet (make-sheet 295 210 10 20 5 5))
 
 (def tile
   ;(difference
-    (color [1.0 0.0 0.0]
-      (scale [20 20 0]
-      ;(extrude-linear {:height 0.2}
+      (scale [20 20 1]
+      (extrude-linear {:height 5.0}
              ;(sphere 10)
              (polygon piece)
-      ;       )
-           ))
+             )
+           )
     ;                )
-    ;(with-fs 0.01 (cylinder 0.45 0.5))
-  ; )
+   ;   (with-fs 0.01 (cylinder 8 10)
+   ;)
   )
 
 
@@ -78,9 +79,9 @@
 
 ;tiles
 
-;(spit "tiles.scad" (write-scad tiles))
-(spit "sheet.scad" (write-scad sheet))
-(spit "piece.scad" (write-scad tile))
+(spit "tiles.scad" (write-scad tiles))
+;(spit "sheet.scad" (write-scad sheet))
+;(spit "piece.scad" (write-scad tile))
 
 
 ;(set-tileset ["--CC-C" "2-CC-C" "-2CC-C" "c-c-c-" "2-2---" "22----" "2-2-2-"])

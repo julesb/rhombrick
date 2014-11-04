@@ -44,9 +44,17 @@
       v) )
 
 (defn get-neighbour-pos [pos face]
-  (quantize-position
-    (vec3-add pos
-              (vec3-scale ((@current-topology :face-centers) face) 2 ))))
+  (if (= (@current-topology :id) :hexagon)
+    (quantize-position
+      (vec3-add pos
+                (vec3-scale ((@current-topology :face-centers-ideal) face) 2 ))))
+    (quantize-position
+      (vec3-add pos
+                (vec3-scale ((@current-topology :face-centers) face) 2 ))))
+
+
+
+
   ;(vec3-add pos ((@current-topology :face-centers) face)))
 
 
@@ -72,11 +80,11 @@
        ;(filter #(< (vec3-length %) @assemblage-max-radius))
     ))
 
-(defn get-occupied-neighbours [tiles pos]
-  (->> (get-neighbours tiles pos)
-       (filter #(not (is-empty? tiles %)))
-       ;(filter #(< (vec3-length %) @assemblage-max-radius))
-    ))
+;(defn get-occupied-neighbours [tiles pos]
+;  (->> (get-neighbours tiles pos)
+;       (filter #(not (is-empty? tiles %)))
+;       ;(filter #(< (vec3-length %) @assemblage-max-radius))
+;    ))
 
 (defn get-occupied-connected-neighbours [tiles pos]
   (->> (get-connected-neighbours tiles pos)
@@ -113,6 +121,10 @@
         tmp-empty (disj (ts :empty) qpos)
         new-empty (clojure.set/union tmp-empty empty-cn-within-rad)
         ]
+    ;(when sonify?
+    ;  (osc-send client2
+    ;            "/rhombrick.tiling" "make-tile"
+    ;            (int (mod (tilecode-to-number facecode) 21))))
     (-> ts
       (assoc :tiles (ordered-map new-tiles))
       (assoc :empty new-empty))))
@@ -362,12 +374,13 @@
   ;:tileset ["1-1---" "1--1-1"] ; hex
   :seed ""
   :max-iters 1000000
-  :max-radius 64
+  :max-radius 4
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0
   :nfc? true
   })
+
 
 
 (def default-state {
@@ -485,6 +498,10 @@
                 (get-in ts [:params :adhd]))
         split-point (- num-tiles bt-num )
         [remaining-tiles discarded] (split-at split-point (ts :tiles))]
+    ;(when sonify?
+    ;      (osc-send client2
+    ;                "/rhombrick.tiling" "backtrack"
+    ;                (int (mod (tilecode-to-number (val (last (take split-point (ts :tiles)) ))) 21))))
     (if (and (> num-tiles 1)
              (> split-point 0)
              (< split-point num-tiles))
@@ -594,6 +611,7 @@
       (if-let [positions (choose-positions-ts ts empty-positions)]
         (let [;new-pos (rand-nth (vec empty-positions))
               new-pos (find-closest-to-point positions @assemblage-center)
+              ;new-pos (find-closest-to-center positions)
               new-neighbourhood (get-neighbourhood tiles new-pos)
               candidates (find-candidates new-neighbourhood tileset (ts :dead))
               candidates-strict (filter #(test-tile-at-pos ts new-pos %) candidates)
@@ -666,7 +684,7 @@
                                     ;:max-radius @assemblage-max-radius
                                     ;:adhd @adhd
                                     ;:autism @autism
-                                    :nfc? true
+                                    :nfc? false
                                     )) ]
     (if soft-start?
       (reset! tiler-state (assoc ts :dead (@tiler-state :dead)))

@@ -35,14 +35,14 @@
 
 (defn get-bezier-anchor-offsets-rotated [f-idx]
   (let [o (bezier-anchor-offsets f-idx)]
-    (vec [(vec3-bisect (o 0) (o 1)) 
+    (vec [(vec3-bisect (o 0) (o 1))
               (vec3-bisect (o 1) (o 2))
               (vec3-bisect (o 2) (o 3))
               (vec3-bisect (o 3) (o 0))])))
 
 
 ; this is hideous and horrible but as long as it spits out the right numbers
-; it will do, since it will only be used for precomputing triangle strip data 
+; it will do, since it will only be used for precomputing triangle strip data
 (defn get-bezier-anchor-offsets [f1-idx f2-idx]
   (let [f1-center ((@current-topology :face-centers) f1-idx)
         f2-center ((@current-topology :face-centers) f2-idx)
@@ -117,7 +117,42 @@
       [p1 p2 p3 [0 0 0]])))
 
 
-(defn get-shape-2d-bezier-controls-with-offset [f1-idx f2-idx f1-offset f2-offset]
+(defn get-shape-2d-bezier-controls-with-offset [f1-idx f2-idx f1-offset f2-offset & tweak?]
+  "Given two face indices, returns a vec of four 3d bezier control points"
+  "offset is a vector to specify the offset for bezier boxes."
+  (let [idx-diff (Math/abs (- f1-idx f2-idx))
+        p1 (vec3-add ((@current-topology :face-centers) f1-idx) f1-offset)
+        p2 (vec3-sub p1 (vec3-scale ((@current-topology :face-centers) f1-idx) @bezier-box-control-bias))
+        p4 (vec3-add ((@current-topology :face-centers) f2-idx) f2-offset)
+        p3 (if tweak?
+             (vec3-sub p4 (vec3-scale ((@current-topology :face-centers) f2-idx) @bezier-box-control-bias))
+             (vec3-sub p4 (vec3-scale ((@current-topology :face-centers) f2-idx) @bezier-box-control-bias)))
+          ]
+      (if (not= f1-idx f2-idx)
+        [p1 p2 p3 p4]
+        [p1 f1-offset f2-offset p4] )))
+
+(defn get-shape-2d-bezier-controls-with-offset-and-tolerance [f1-idx f2-idx f1-offset f2-offset & tweak?]
+  "Given two face indices, returns a vec of four 3d bezier control points"
+  "offset is a vector to specify the offset for bezier boxes."
+  (let [idx-diff (Math/abs (- f1-idx f2-idx))
+        p1 (vec3-add ((@current-topology :face-centers) f1-idx) f1-offset)
+        p2 (vec3-sub p1 (vec3-scale ((@current-topology :face-centers) f1-idx) @bezier-box-control-bias))
+        p4 (vec3-add ((@current-topology :face-centers) f2-idx) f2-offset)
+        p3 (if tweak?
+             (vec3-sub p4 (vec3-scale ((@current-topology :face-centers) f2-idx) @bezier-box-control-bias))
+             (vec3-sub p4 (vec3-scale ((@current-topology :face-centers) f2-idx) @bezier-box-control-bias)))
+        f1-norm (vec3-normalize ((@current-topology :face-centers-ideal) f1-idx))
+        f2-norm (vec3-normalize ((@current-topology :face-centers-ideal) f2-idx))
+        p1-with-tol (vec3-sub p1 (vec3-scale f1-norm (* jigsaw-tolerance 1.0)))
+        p4-with-tol (vec3-sub p4 (vec3-scale f2-norm (* jigsaw-tolerance 1.0)))
+          ]
+      (if (not= f1-idx f2-idx)
+        [p1-with-tol p2 p3 p4-with-tol]
+        [p1 f1-offset f2-offset p4] )))
+
+
+(defn get-shape-2d-bezier-controls-with-offset-orig [f1-idx f2-idx f1-offset f2-offset]
   "Given two face indices, returns a vec of four 3d bezier control points"
   "offset is a vector to specify the offset for bezier boxes."
   (let [p1 (vec3-add ((@current-topology :face-centers) f1-idx) f1-offset)
@@ -128,6 +163,7 @@
     (if (not= f1-idx f2-idx)
       [p1 p2 p3 p4]
       [p1 f1-offset f2-offset p4] )))
+
 
 ;;
 ;; From Processing source code:
