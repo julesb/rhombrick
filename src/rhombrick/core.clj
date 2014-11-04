@@ -5,6 +5,7 @@
         [rhombrick.tilecode :as tc]
         [rhombrick.tiling-render]
         [rhombrick.bezierbox :as bbox]
+        [rhombrick.tile-shape-2d]
         [rhombrick.staticgeometry]
         [rhombrick.game :as game]
         [rhombrick.vector]
@@ -65,6 +66,7 @@
 (def to-verts-screen (atom []))
 (def anchor-verts-screen (atom []))
 ;(def test-surface (atom {}))
+(def rendering? (atom true))
 
 
 ; _______________________________________________________________________
@@ -214,6 +216,7 @@
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
          (println "restart tileset:" (editor/get-tileset-as-set))
+         (shape-2d-cache-reset)
          (start-tiler (editor/get-tileset-as-set) false)
          (init-tileset-colors (editor/get-tileset-as-set))
          ;(init-tileset-colors (get-in @tiler-state [:params :tileset]))
@@ -299,6 +302,13 @@
           ;  (= @tiler-run-state :running) (reset! tiler-run-state :paused)
           ;  (= @tiler-run-state :paused)  (reset! tiler-run-state :running))
           )
+    \P #(do
+          (if @rendering?
+            (no-loop)
+            (start-loop))
+          (swap! rendering? not)
+          )
+
     \( #(do
           (reset! tiler-state
                   (assoc @tiler-state :params
@@ -380,7 +390,7 @@
                                ;512.0
                                ;(get-tileset-expanded)
                                ;(vec (distinct (vals (@tiler-state :tiles))))
-                               24 24 24
+                               32 32 32
                                )
 
 
@@ -585,8 +595,9 @@
   (when @draw-gliders?
     (update-gliders))
 
-  (background 64 64 64 )
-;  (background 16 24 32)
+;  (background 255 255 255 )
+;  (background 64 64 64 )
+  (background 16 24 32)
 ;  (background 8 8 8)
 
   (push-matrix)
@@ -595,9 +606,9 @@
     (= @camera-mode 0)
     ; rubber band camera to glider
       (do
-        ;(let [g (vec3-scale @game/selected-pos @model-scale)
+        (let [g (vec3-scale @game/selected-pos @model-scale)
         ;(let [g (vec3-scale (get-glider-pos 1) @model-scale)
-        (let [g (vec3-scale @assemblage-center @model-scale)
+        ;(let [g (vec3-scale @assemblage-center @model-scale)
               d (dist (@camera-pos 0)
                       (@camera-pos 1)
                       (@camera-pos 2)
@@ -702,7 +713,7 @@
       (pop-matrix)
     )
 
-    (draw-axes)
+    ;(draw-axes)
 ;    (push-matrix)
 ;    (rotate-x (/ (frame-count) 200.1))
 ;    (rotate-y (/ (frame-count) 180.73))
@@ -755,8 +766,9 @@
     ;  (draw-face-list))
       ;(draw-face-list-textured))
 
-    (if (= (@current-topology :id) :hexagon)
-      (rotate (/ Math/PI 6.0) 0 0 1))
+;    (if (= (@current-topology :id) :hexagon)
+;      (rotate (+ (/ Math/PI 3.0) (/ Math/PI 2.0))
+;              0 0 1))
 
     ; game:
     (update-selected-pos-screen)
@@ -902,9 +914,10 @@
     :title "rhombrick"
     :setup setup
     :draw draw
-    :size [1900 1100]
-    ;:size [1440 800]
-    :renderer :opengl
+    ;:size [1900 1100]
+    :size [1440 800]
+    ;:renderer :opengl
+    :renderer :p3d
     :key-typed key-typed
     :key-pressed key-pressed
     :key-released key-released
@@ -915,7 +928,374 @@
 ;(reset! frame ((current-applet) meta :target-obj deref))
 
 ;(sketch-start rhombrick)
+;(sketch-stop rhombrick)
 
 ;(reset! my-applet rhombrick)
 
+
 ;(-main)
+
+
+(get-tileset)
+
+(set-tileset ["---b13B-----"])
+
+(set-tileset ["dD-4D-" "d44---"])
+
+(set-tileset ["d-4-D-" "d--D--"])
+
+;(set-tileset ["--BB-B" "3-BB-B" "-3BB-B" "b-b-b-" "3-3---" "33----" "3-3-3-"])
+
+;(set-tileset ["--CC-C" "3-CC-C" "-3CC-C" "c-c-c-" "3-3---" "33----" "3-3-3-"])
+;(set-tileset ["--DD-D" "3-DD-D" "-3DD-D" "d-d-d-" "3-3---" "33----" "3-3-3-"])
+(set-tileset ["-33B3D" "-dbB3b" "-33D-d" "----33"])
+;(set-tileset ["----44"]);
+(set-tileset ["----12" "----23" "----31"])
+
+(set-tileset ["-c--12" "-C--23" "-2--31"])
+
+(set-tileset ["4b3c2d" "4B3C2D" "4-b---" "3-c---" "2-d---"  "B--4--" "C--4--" "D--4--" "4-c-d-"])
+
+(set-tileset ["1a--A1"])
+
+
+(set-tileset [
+              "d-d-d-"
+              ;"d1d1d1"
+
+              "D1-C-1"
+              ;"c--B--"
+              ;"b--2--"
+              "c--B--"
+              "b--2--"
+
+
+              ;"411d11"
+
+              "111111"
+              ;"11111-"
+
+              "1aaa1-"
+              ;"AAaa--"
+              ;"aaAA--"
+              ;"aA----"
+              ;"aa----"
+              "A--1--"
+              ;"a--1--"
+
+              ;"a-A---"
+              ;"Aa----"
+              ;"aA----"
+
+              ;"A--A--"
+              ;"a--a--"
+              ;"a-A-a-"
+              ;"A-a-a-"
+
+              ;"A-a-1-"
+              ;"A-1-1-"
+              ;"A-----"
+              ;"111-1-"
+              ;"11-11-"
+              "1111--"
+              ;"1-1-1-"
+              ;"1--1--"
+              ;"111---"
+              ;"1-1---"
+              ;"11----"
+              ;"1-----"
+              ])
+
+
+(set-tileset [;"--d4-4"
+              "11d4-4"
+
+              ;"-433-D"
+              "1433-D"
+              "3--3--"
+
+              "111111"
+              "11111-"
+              "1111--"
+              "111---"
+              "11----"
+              ;"1-----"
+              ])
+
+; hex stars
+(set-tileset [
+              "aaaaaa"
+              "1A1-b-"
+              ;"1A1-B-"
+              "2B2-c-"
+              ;"2B2-C-"
+              "3C3-d-"
+              ;"3C3-D-"
+
+
+              ;"1--1--"
+              "2--2--"
+              "3--3--"
+              ;"4114--"
+              ;"3113--"
+
+              ;"111111"
+              ;"11111-"
+              ;"1111--"
+              ;"111---"
+              ;"11----"
+              ;"1-----"
+
+              ;"a-----"
+              "b-----"
+              ;"A--a--"
+              ;"B--b--"
+              ;"b-----"
+              ;"33----"
+              ;"3-----"
+              ;"4--4--"
+              ;"4-4---"
+              ;"44----"
+              ;"4-----"
+              ;"4D4---"
+              ;"4d4---"
+
+              ;"3c3-3-"
+              ;"A--1--"
+              ;"B--2--"
+              ;"C--3--"
+              "D--4--"
+              ;"d--4--"
+              ;"dDddDd"
+              ;"dDd-D-"
+              ;"dDd---"
+              ;"d-D-d-"
+              ;"D-d-D-"
+
+
+])
+
+
+(set-tileset [
+              "d-d-D-"
+              "D-D-d-"
+              ;"D--4--"
+              "d-D---"
+              "DDD---"
+              "ddDD--"
+              "dDdDd-"
+              "dddddd"
+              "DDDDDD"
+              ])
+
+; inside to outside pattern
+(set-tileset ["aaaaaa"
+              "b--A--"
+              "c--B--"
+
+              "1A1-b-"
+              "2B2-c-"
+              "3C3-d-"
+              ;"4D4-4-"
+              "2--2--"
+              "2112--"
+              ;"C-----"
+              "cCc---"
+              ;"3C3---"
+              ;"dDddDd"
+              "d-d-D-"
+              ;"D-D-d-"
+              "D--4--"
+              ;"4--4--"
+              ;"3113--"
+              ;"4114--"
+              ;"3--3--"
+              ;"b-1-1-"
+              ;"111111"
+              ;"11111-"
+              ;"1111--"
+              ;"111---"
+              ;"11----"
+              ;"1-----"
+
+              ])
+
+
+; hex 4321 pattern
+(set-tileset ["--cC-D"
+              "d-b-b1"
+
+              ;"D--4--"
+              ;"d11411"
+              ;"d13413"
+              ;"d33433"
+              ;"d-----"
+
+
+              "BB3223"
+              ;"BB3--3"
+
+              "3-3---"
+              "3-13--"
+              ;"2--2--"
+              "2222--"
+              "22222-"
+              "222222"
+              "222-2-"
+              ;"22----"
+              ;"2-2---"
+              "2-2-11"
+              "2-2-1-"
+              "2-2--1"
+
+              ;"2-2--1"
+              ;"212---"
+              ;"2-2---"
+
+;              "111111"
+;              "11111-"
+;              "1111--"
+;              "111---"
+;              "11----"
+              ;"1-----"
+;              "1-1---"
+;              "1-11-1"
+
+;              "1-1-1-"
+              ])
+
+
+
+(set-tileset ["--cC-D"
+              ;"D-d-3-"
+              ;"d-d-d-"
+              ;"D-----"
+              "d-b-b-"
+              "BB3--3"
+              ;"BB3--3"
+              ;"3-3---"
+              ;"3--3--"
+              "3-----"])
+
+; worms in hexagons
+(set-tileset [;"--aA-d"
+              "--cC-D"
+              ;"--cC1D"
+
+              ;"---D-C"
+              ;"--c--D"
+              ;"-----D"
+
+              ;"d11411"
+              ;"d13413"
+              ;"d33433"
+
+              ;"d--4--" ; extender
+              ;"4--4--" ; extender
+
+
+
+              ;"1-----"
+              ;"3-----"
+              ;"4-----"
+
+              "d-b-b1"
+              ;"d--4-1"
+
+              "BB----"
+              ;"BB3--3"
+              "BB3113"
+              ;"BB-22-"
+
+              "111111"
+              "1--1--"
+              ;"1-----"
+              "11----"
+              ;"1-1---"
+              "1-1-1-"
+              "1111--"
+              ;"222---"
+              "2--2--"
+              "2-2---"
+              ;"2-1-1-"
+              ;"2-2-2-"
+              ;"222-2-"
+              ;"222222"
+
+              ;"BB3333"
+              ;"3333--"
+              ;"333---"
+              ;"3-3-3-"
+              ;"3-----"
+              "3-3---"
+              "3-13--"
+              ;"33-3--"
+              ])
+
+
+(set-tileset ["--cC-D"
+              "d-b-b1"
+              "BB----"
+
+              "1-----"])
+
+
+
+;@shape-2d-cache
+
+
+(set-tileset ["4c4c4c" "c-C-C-" "4--4--" "C-----" "C--5--" "555555" ]  )
+
+(set-tileset ["4c4c4c"  "d-D-C-" "4--4--"
+              "bbbbbb" "B--C--"
+              "C-2-2-" "c-2-2-"
+              "4c4---" "c4c---"
+              "cc-cc-"
+              "c-----"
+              "C-----"
+
+              ]
+
+             )
+
+(set-tileset ["4c4c4c" "c-c-c-" "c-C-C-" "4--4--"  "CC-CC-"])
+
+
+(set-tileset ["--d4-4"
+              "-433-D"
+              ;"-43c--"
+              ;"--C3-D"
+              ])
+;(get-facecode-shape-2d "3-3-3-" @current-topology 4)
+
+
+(set-tileset ["3-33--" "33----"])
+
+(set-tileset ["ccCC--" "cC-c-C"
+              "ccCCaa" "cCacaC"
+              ;"A-A-A-"
+              ;"AA----"
+              "A--1--"
+              "a--1--"
+              "1-1-1-"
+              "1-----"
+
+              ])
+
+
+(set-tileset ["4-4-4-" "-44d-D"])
+
+(set-tileset ca-rule-110)
+
+(init-tileset-colors-ca (get-tileset))
+
+
+
+
+
+
+
+
+
+
+
