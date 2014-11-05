@@ -58,26 +58,29 @@
 
 
 
-
+(comment
 
 ;(def mesh (->> (mc/make-tilecode-surface 0.0 "-2---2-----1-3" 32 32 32)
-(def mesh (->> (mc/make-tilecode-surface 0.0 "-2--2----2-2" 32 32 32)
+(def mesh (->> (mc/make-tilecode-surface 0.0 "---b13B-----" 24 24 24)
                :tris
                (partition 3)
                vec
                (#(mc/make-indexed-faces % [] []))))
 
-
-
-(def tile-surface (intersection
+(def tile-surface ;(intersection
                     (scale [50 50 50]
                       (polyhedron (mesh :verts) (mesh :faces)))
-                    (scale [25 25 25]
-                      (polyhedron geom/rd-verts geom/rd-faces :convexity 8))
+                    ;(scale [25 25 25]
+                    ;  (polyhedron geom/rd-verts geom/rd-faces :convexity 8))
                     ;(with-fa 0.01 (sphere 40))
 
-                   )
+                   ;)
   )
+)
+
+
+
+
 
 
 ;(def tile
@@ -91,7 +94,8 @@
 ; (count (mesh :faces))
 
 
-(spit "rhombrick.scad" (write-scad tile-surface))
+;(spit "rhombrick.scad" (write-scad tile-surface))
+;(spit "rhombrick-carved.scad" (write-scad carved-tile))
 
 ; (spit "rhombrick.scad" (write-scad primitives))
 ; (spit "rhombrick.scad" (write-scad (bezier-tube-test)))
