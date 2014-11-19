@@ -27,6 +27,10 @@
         [(/ x l) (/ y l)])))
 
 
+(defn vec2-equal? [v1 v2]
+  (and (= (v1 0) (v2 0))
+       (= (v2 1) (v2 1))))
+
 (defn vec3-add [[v1x v1y v1z] [v2x v2y v2z]]
   [(+ v1x v2x) (+ v1y v2y) (+ v1z v2z)])
 
@@ -186,3 +190,25 @@
 ;        sb (/ sn sd)
 ;        b (vec3-add p (vec3-scale pn sb))]
 ;    (dist p b)))
+
+
+; http://paulbourke.net/geometry/lineline2d/"
+
+(defn line-intersection [x1 y1 x2 y2 x3 y3 x4 y4]
+  ;(println x1 y1 x2 y2 x3 y3 x4 y4)
+  (when (and (not (vec2-equal? [x1 y1] [x2 y2]))
+             (not (vec2-equal? [x3 y3] [x4 y4])))
+    (let [ua (/ (- (* (- x4 x3) (- y1 y3))
+                   (* (- y4 y3) (- x1 x3)))
+                (- (* (- y4 y3) (- x2 x1))
+                   (* (- x4 x3) (- y2 y1))))
+          ub (/ (- (* (- x2 x1) (- y1 y3))
+                   (* (- y2 y1) (- x1 x3)))
+                (- (* (- y4 y3) (- x2 x1))
+                   (* (- x4 x3) (- y2 y1))))]
+    (when (and (>= ua 0.0)
+               (<= ua 1.0)
+               (>= ub 0.0)
+               (<= ub 1.0))
+      [(+ x1 (* ua (- x2 x1)))
+       (+ y1 (* ua (- y2 y1)))]))))
