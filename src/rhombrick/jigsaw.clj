@@ -8,6 +8,7 @@
         [rhombrick.tile-shape-2d]
         [rhombrick.tiling-render :only [get-tile-color]]
         [rhombrick.vector]
+        [ordered.map]
         ))
 
 
@@ -21,6 +22,45 @@
        (apply concat)
        (map #(vec [(% 0) (% 1)]))
        (vec)))
+
+
+(defn gcode-moveto
+  ([x y]
+    (format "G1 X%.4f Y%.4f" x y))
+  ([[x y z]]
+    (format "G1 X%.4f Y%.4f Z%.4f" x y z)))
+
+
+(defn tile-gcode [pos code topo scale speed]
+  (let [zlift 5.0
+        travel-speed-mult 4
+        verts (->> (apply concat (make-jigsaw-piece code topo 8))
+                   (map #(vec3-scale % scale))
+                   (map #(vec3-add (vec3-scale pos scale) %)))
+        draw-verts (rest (map #(gcode-moveto (% 0) (% 1)) verts))]
+    (doseq [v verts]
+      (if (> (vec3-length v) 120.0)
+        (println v "is out of radius")))
+
+    (apply str (interpose "\n"
+      (concat [(str "G1 F" (* speed travel-speed-mult))]
+              [(gcode-moveto [((first verts) 0) ((first verts) 1) zlift])] ; above first point
+              [(gcode-moveto [((first verts) 0) ((first verts) 1) 0.0])] ; touch paper at first point
+              [(str "G1 F" speed)]
+              draw-verts
+              [(gcode-moveto ((first verts) 0) ((first verts) 1))] ; back to the first point
+              [(str "G1 F" (* speed travel-speed-mult))]
+              [(gcode-moveto [((first verts) 0) ((first verts) 1) zlift])] ; above first point
+              )))))
+
+
+(defn do-tiling-gcode [tiles topo scale speed]
+  (let [tile-fn (fn [pos code]
+                  (apply str (tile-gcode pos code topo scale speed) "\n"))
+        ;tiles-sorted (into ordered-map (clojure.core/sort-by #(vec3-length (key %))
+        ;                                                      tiles))
+        ]
+    (concat (map #(tile-fn (key %) (val %)) tiles))))
 
 
 (defn get-piece-verts-2d [code topo res ]
@@ -68,6 +108,14 @@
     (union (map #(tile-fn (key %) (val %)) tiles))))
 
 
+
+
+
+(def tiling-gcode (apply str (do-tiling-gcode (@tiler-state :tiles) @current-topology 3.0 1500)))
+(spit "tiling-gcode.gcode" tiling-gcode)
+
+
+
 (defn make-sheet [width-mm height-mm nrows ncols tile-radius-mm margin]
   ;(let [tiles (@tiler-state :tiles)
   (let [tiles (into {} (map #(vec [%1 (make-normal-random-tilecode)])
@@ -109,6 +157,7 @@
 
 
 (def tiles (scale [10 10 5] (do-tiling (@tiler-state :tiles) @current-topology)))
+
 
 
 
