@@ -33,7 +33,7 @@
 
 (defn tile-gcode [pos code topo scale speed]
   (let [zlift 5.0
-        travel-speed-mult 4
+        travel-speed (* speed 4)
         verts (->> (apply concat (make-jigsaw-piece code topo 8))
                    (map #(vec3-scale % scale))
                    (map #(vec3-add (vec3-scale pos scale) %)))
@@ -43,24 +43,39 @@
         (println v "is out of radius")))
 
     (apply str (interpose "\n"
-      (concat [(str "G1 F" (* speed travel-speed-mult))]
+      (concat [(str "G1 F" travel-speed)]
               [(gcode-moveto [((first verts) 0) ((first verts) 1) zlift])] ; above first point
               [(gcode-moveto [((first verts) 0) ((first verts) 1) 0.0])] ; touch paper at first point
               [(str "G1 F" speed)]
               draw-verts
               [(gcode-moveto ((first verts) 0) ((first verts) 1))] ; back to the first point
-              [(str "G1 F" (* speed travel-speed-mult))]
+              [(str "G1 F" travel-speed)]
               [(gcode-moveto [((first verts) 0) ((first verts) 1) zlift])] ; above first point
               )))))
 
 
+(defn sort-xy [tiles]
+  (->> tiles
+       (into [])
+       (clojure.core/sort-by #((key %) 0))
+       (clojure.core/sort-by #((key %) 1))
+       (ordered-map)))
+
+
 (defn do-tiling-gcode [tiles topo scale speed]
-  (let [tile-fn (fn [pos code]
-                  (apply str (tile-gcode pos code topo scale speed) "\n"))
-        ;tiles-sorted (into ordered-map (clojure.core/sort-by #(vec3-length (key %))
-        ;                                                      tiles))
-        ]
-    (concat (map #(tile-fn (key %) (val %)) tiles))))
+  (let [tile-fn (fn [pos code] (apply str (tile-gcode pos code topo scale speed) "\n"))
+        tiles-sorted (sort-xy tiles)]
+    (concat
+      ;["G28\n"]
+      (map #(tile-fn (key %) (val %)) tiles-sorted))))
+
+
+(defn write-split-tiling-gcode [ts topo]
+  (doseq [tiles (group-by #(get-tile-color (val %)) (ts :tiles))]
+    (let [fname (apply str "tiling-gcode" (key tiles) ".gcode")]
+      (println "writing" (count (vals tiles)) "tiles to file" fname)
+      (spit fname (apply str (do-tiling-gcode (val tiles) topo 3.5 1500))))))
+
 
 
 (defn get-piece-verts-2d [code topo res ]
@@ -110,9 +125,10 @@
 
 
 
+(write-split-tiling-gcode @tiler-state @current-topology)
 
-(def tiling-gcode (apply str (do-tiling-gcode (@tiler-state :tiles) @current-topology 3.0 1500)))
-(spit "tiling-gcode.gcode" tiling-gcode)
+;(def tiling-gcode (apply str (do-tiling-gcode (@tiler-state :tiles) @current-topology 3.5 1500)))
+;(spit "tiling-gcode.gcode" tiling-gcode)
 
 
 
@@ -131,10 +147,8 @@
                                     [x y]))))))]
     (do-tiling {:tiles tiles} @current-topology)))
 
+;(def sheet (make-sheet 295 210 10 20 5 5))
 
-
-
-(def sheet (make-sheet 295 210 10 20 5 5))
 
 (def tile
   (union
@@ -156,7 +170,7 @@
 
 
 
-(def tiles (scale [10 10 5] (do-tiling (@tiler-state :tiles) @current-topology)))
+;(def tiles (scale [10 10 5] (do-tiling (@tiler-state :tiles) @current-topology)))
 
 
 
@@ -170,7 +184,8 @@
                       (do-tiling (val tiles) topo)))))))
 
 
-(write-split-tiling @tiler-state @current-topology)
+;(write-split-tiling @tiler-state @current-topology)
+
 ;(spit "tiles.scad" (write-scad tiles))
 ;(spit "sheet.scad" (write-scad sheet))
 ;(spit "piece-spheretop.scad" (write-scad (tile-spheretop "4-D-d-" @current-topology)))
