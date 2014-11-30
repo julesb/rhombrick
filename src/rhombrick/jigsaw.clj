@@ -31,6 +31,22 @@
     (format "G1 X%.4f Y%.4f Z%.4f" x y z)))
 
 
+; tool change routine:
+;G1 Z200 F7800
+;M117 (Change pen [1 2 3])
+;G1 Z200 F7800
+;G4 P5000; pause
+
+(def gcode-wait-tool-change
+  (apply str
+    (concat ;["G1 Z200 F7800\n"] ; move up 200mm
+            ;["M117 change pen\n"]
+            ;["M226\n"] ; gcode initiated pause
+            ["G1 Z200 F7800\n"]
+            ["G4 P120000\n"]))
+)
+
+
 (defn tile-gcode [pos code topo scale speed]
   (let [zlift 5.0
         travel-speed (* speed 4)
@@ -70,6 +86,15 @@
       (map #(tile-fn (key %) (val %)) tiles-sorted))))
 
 
+; write muticolor tiling to single gcode file with pauses for tool/pen change
+(defn write-tiling-gcode-with-toolchange [ts topo fname]
+  (spit fname (apply str
+               (->> (group-by #(get-tile-color (val %)) (ts :tiles))
+                    (map #(apply str (do-tiling-gcode (val %) topo 3.5 1500)))
+                    (interpose gcode-wait-tool-change)))))
+
+
+; write muticolor tiling to separate gcode file per color
 (defn write-split-tiling-gcode [ts topo]
   (doseq [tiles (group-by #(get-tile-color (val %)) (ts :tiles))]
     (let [fname (apply str "tiling-gcode" (key tiles) ".gcode")]
@@ -114,22 +139,12 @@
     (polygon (get-piece-verts-2d code topo 8))))
 
 
-
 (defn do-tiling  [tiles topo]
   (let [tile-fn (fn [pos code]
                   (color (vec3-scale (get-tile-color code) (/ 1.0 255.0))
                      (translate pos
                         (tile-simple code topo))))]
     (union (map #(tile-fn (key %) (val %)) tiles))))
-
-
-
-
-(write-split-tiling-gcode @tiler-state @current-topology)
-
-;(def tiling-gcode (apply str (do-tiling-gcode (@tiler-state :tiles) @current-topology 3.5 1500)))
-;(spit "tiling-gcode.gcode" tiling-gcode)
-
 
 
 (defn make-sheet [width-mm height-mm nrows ncols tile-radius-mm margin]
@@ -168,11 +183,7 @@
           (with-fn 6 (cylinder [4.75 2] 2))))
   ))
 
-
-
 ;(def tiles (scale [10 10 5] (do-tiling (@tiler-state :tiles) @current-topology)))
-
-
 
 
 (defn write-split-tiling [ts topo]
@@ -183,6 +194,12 @@
                     (scale [10 10 5]
                       (do-tiling (val tiles) topo)))))))
 
+
+;(write-tiling-gcode-with-toolchange @tiler-state @current-topology "tiling-with-tc.gcode")
+;(write-split-tiling-gcode @tiler-state @current-topology)
+
+(def tiling-gcode (apply str (do-tiling-gcode (@tiler-state :tiles) @current-topology 3.5 1500)))
+(spit "tiling-gcode.gcode" tiling-gcode)
 
 ;(write-split-tiling @tiler-state @current-topology)
 
