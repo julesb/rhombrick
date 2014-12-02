@@ -8,6 +8,7 @@
         [rhombrick.tile-shape-2d]
         [rhombrick.tiling-render :only [get-tile-color]]
         [rhombrick.vector]
+        [rhombrick.plotter-gcode :as plotter]
         [ordered.map]
         ))
 
@@ -24,50 +25,13 @@
        (vec)))
 
 
-(defn gcode-moveto
-  ([x y]
-    (format "G1 X%.4f Y%.4f" x y))
-  ([[x y z]]
-    (format "G1 X%.4f Y%.4f Z%.4f" x y z)))
-
-
-; tool change routine:
-;G1 Z200 F7800
-;M117 (Change pen [1 2 3])
-;G1 Z200 F7800
-;G4 P5000; pause
-
-(def gcode-wait-tool-change
-  (apply str
-    (concat ;["G1 Z200 F7800\n"] ; move up 200mm
-            ;["M117 change pen\n"]
-            ;["M226\n"] ; gcode initiated pause
-            ["G1 Z200 F7800\n"]
-            ["G4 P120000\n"]))
-)
-
-
-(defn tile-gcode [pos code topo scale speed]
-  (let [zlift 5.0
-        travel-speed (* speed 4)
-        verts (->> (apply concat (make-jigsaw-piece code topo 8))
-                   (map #(vec3-scale % scale))
-                   (map #(vec3-add (vec3-scale pos scale) %)))
-        draw-verts (rest (map #(gcode-moveto (% 0) (% 1)) verts))]
-    (doseq [v verts]
-      (if (> (vec3-length v) 120.0)
-        (println v "is out of radius")))
-
-    (apply str (interpose "\n"
-      (concat [(str "G1 F" travel-speed)]
-              [(gcode-moveto [((first verts) 0) ((first verts) 1) zlift])] ; above first point
-              [(gcode-moveto [((first verts) 0) ((first verts) 1) 0.0])] ; touch paper at first point
-              [(str "G1 F" speed)]
-              draw-verts
-              [(gcode-moveto ((first verts) 0) ((first verts) 1))] ; back to the first point
-              [(str "G1 F" travel-speed)]
-              [(gcode-moveto [((first verts) 0) ((first verts) 1) zlift])] ; above first point
-              )))))
+(defn tile-gcode [pos code topo scale]
+  (let [vs (->> (apply concat (make-jigsaw-piece code topo 8))
+                (map #(vec3-scale % scale))
+                (map #(vec3-add (vec3-scale pos scale) %))
+                vec)
+        verts (conj vs (first vs))]
+    (plotter/line-sequence verts)))
 
 
 (defn sort-xy [tiles]
@@ -78,28 +42,25 @@
        (ordered-map)))
 
 
-(defn do-tiling-gcode [tiles topo scale speed]
-  (let [tile-fn (fn [pos code] (apply str (tile-gcode pos code topo scale speed) "\n"))
+(defn do-tiling-gcode [tiles topo scale]
+  (let [tile-fn (fn [pos code] (tile-gcode pos code topo scale))
         tiles-sorted (sort-xy tiles)]
-    (concat
-      ;["G28\n"]
-      (map #(tile-fn (key %) (val %)) tiles-sorted))))
+    (plotter/gcodify (map #(tile-fn (key %) (val %)) tiles-sorted))))
 
 
 ; write muticolor tiling to single gcode file with pauses for tool/pen change
 (defn write-tiling-gcode-with-toolchange [ts topo fname]
   (spit fname (apply str
                (->> (group-by #(get-tile-color (val %)) (ts :tiles))
-                    (map #(apply str (do-tiling-gcode (val %) topo 3.5 1500)))
-                    (interpose gcode-wait-tool-change)))))
-
+                    (map #(apply str (do-tiling-gcode (val %) topo 3.5)))
+                    (interpose plotter/wait-tool-change)))))
 
 ; write muticolor tiling to separate gcode file per color
-(defn write-split-tiling-gcode [ts topo]
-  (doseq [tiles (group-by #(get-tile-color (val %)) (ts :tiles))]
-    (let [fname (apply str "tiling-gcode" (key tiles) ".gcode")]
-      (println "writing" (count (vals tiles)) "tiles to file" fname)
-      (spit fname (apply str (do-tiling-gcode (val tiles) topo 3.5 1500))))))
+;(defn write-split-tiling-gcode [ts topo]
+;  (doseq [tiles (group-by #(get-tile-color (val %)) (ts :tiles))]
+;    (let [fname (apply str "tiling-gcode" (key tiles) ".gcode")]
+;      (println "writing" (count (vals tiles)) "tiles to file" fname)
+;      (spit fname (apply str (do-tiling-gcode (val tiles) topo 3.5 1500))))))
 
 
 
@@ -198,7 +159,7 @@
 ;(write-tiling-gcode-with-toolchange @tiler-state @current-topology "tiling-with-tc.gcode")
 ;(write-split-tiling-gcode @tiler-state @current-topology)
 
-(def tiling-gcode (apply str (do-tiling-gcode (@tiler-state :tiles) @current-topology 3.5 1500)))
+(def tiling-gcode (do-tiling-gcode (@tiler-state :tiles) @current-topology 4.0))
 (spit "tiling-gcode.gcode" tiling-gcode)
 
 ;(write-split-tiling @tiler-state @current-topology)
