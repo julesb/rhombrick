@@ -4,9 +4,10 @@
         [scad-clj.model]
         [rhombrick.tiling]
         [rhombrick.tilecode]
+        [rhombrick.bezierbox]
         [rhombrick.staticgeometry :as geom]
         [rhombrick.tile-shape-2d]
-        [rhombrick.tiling-render :only [get-tile-color]]
+        [rhombrick.tiling-render :only [get-tile-color make-curve-endpoints]]
         [rhombrick.vector]
         [rhombrick.plotter-gcode :as plotter]
         [ordered.map]
@@ -23,6 +24,21 @@
        (apply concat)
        (map #(vec [(% 0) (% 1)]))
        (vec)))
+
+
+(defn get-curve-points [pos scale f1-idx f2-idx npoints scaletopo]
+  (let [step (double (/ 1.0 npoints))]
+    (->> (map #(get-bezier-point-3d f1-idx f2-idx (* % step)) (range (inc npoints)))
+         (map #(vec3-scale % scale))
+         (map #(vec3-add % (vec3-scale pos scale)))
+         vec)))
+
+
+(defn tile-lines-gcode [pos code topo scale]
+  (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
+        curves-verts (map #(get-curve-points pos scale (% 0) (% 1) 8 topo) endpoint-pairs) ]
+    (plotter/gcodify
+      (map plotter/line-sequence curves-verts))))
 
 
 (defn tile-gcode [pos code topo scale]
@@ -44,6 +60,12 @@
 
 (defn do-tiling-gcode [tiles topo scale]
   (let [tile-fn (fn [pos code] (tile-gcode pos code topo scale))
+        tiles-sorted (sort-xy tiles)]
+    (plotter/gcodify (map #(tile-fn (key %) (val %)) tiles-sorted))))
+
+
+(defn do-tiling-lines-gcode [tiles topo scale]
+  (let [tile-fn (fn [pos code] (tile-lines-gcode pos code topo scale))
         tiles-sorted (sort-xy tiles)]
     (plotter/gcodify (map #(tile-fn (key %) (val %)) tiles-sorted))))
 
@@ -159,7 +181,10 @@
 ;(write-tiling-gcode-with-toolchange @tiler-state @current-topology "tiling-with-tc.gcode")
 ;(write-split-tiling-gcode @tiler-state @current-topology)
 
-(def tiling-gcode (do-tiling-gcode (@tiler-state :tiles) @current-topology 4.0))
+(def tiling-lines-gcode (do-tiling-lines-gcode (@tiler-state :tiles) @current-topology 5.0))
+(spit "tiling-lines-gcode.gcode" tiling-lines-gcode)
+
+(def tiling-gcode (do-tiling-gcode (@tiler-state :tiles) @current-topology 5.0))
 (spit "tiling-gcode.gcode" tiling-gcode)
 
 ;(write-split-tiling @tiler-state @current-topology)
