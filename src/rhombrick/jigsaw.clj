@@ -34,22 +34,6 @@
          vec)))
 
 
-(defn tile-lines-gcode [pos code topo scale]
-  (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
-        curves-verts (map #(get-curve-points pos scale (% 0) (% 1) 8 topo) endpoint-pairs) ]
-    (plotter/gcodify
-      (map plotter/line-sequence curves-verts))))
-
-
-(defn tile-gcode [pos code topo scale]
-  (let [vs (->> (apply concat (make-jigsaw-piece code topo 8))
-                (map #(vec3-scale % scale))
-                (map #(vec3-add (vec3-scale pos scale) %))
-                vec)
-        verts (conj vs (first vs))]
-    (plotter/line-sequence verts)))
-
-
 (defn sort-xy [tiles]
   (->> tiles
        (into [])
@@ -58,16 +42,51 @@
        (ordered-map)))
 
 
-(defn do-tiling-gcode [tiles topo scale]
-  (let [tile-fn (fn [pos code] (tile-gcode pos code topo scale))
-        tiles-sorted (sort-xy tiles)]
-    (plotter/gcodify (map #(tile-fn (key %) (val %)) tiles-sorted))))
 
 
-(defn do-tiling-lines-gcode [tiles topo scale]
-  (let [tile-fn (fn [pos code] (tile-lines-gcode pos code topo scale))
-        tiles-sorted (sort-xy tiles)]
-    (plotter/gcodify (map #(tile-fn (key %) (val %)) tiles-sorted))))
+(defn tile-lines-gcode [pos code topo scale]
+  (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
+        curves-verts (map #(get-curve-points pos scale (% 0) (% 1) 32 topo) endpoint-pairs) ]
+    (plotter/gcodify
+      (map plotter/line-sequence curves-verts))))
+
+
+(defn tile-outline-gcode [pos code topo scale]
+  (let [curves (get-facecode-shape-2d code topo 32)
+        curve-fn (fn [vs]
+                   (->> vs
+                        (map #(vec3-scale % scale))
+                        (map #(vec3-add (vec3-scale pos scale) %))
+                        plotter/line-sequence)) ]
+    (plotter/gcodify (map curve-fn curves))))
+
+
+(defn tile-innershape-gcode [pos code topo scale]
+  (let [curves (get-facecode-inner-shape-2d code topo 32)
+        curve-fn (fn [vs]
+                   (->> vs
+                        (map #(vec3-scale % scale))
+                        (map #(vec3-add (vec3-scale pos scale) %))
+                        plotter/line-sequence)) ]
+    (plotter/gcodify (map curve-fn curves))))
+
+
+(defn tile-gcode [pos code topo scale]
+  ;(let [vs (->> (apply concat (make-jigsaw-piece code topo 32))
+  (let [vs (->> (apply concat (get-facecode-shape-2d code topo 32))
+                (map #(vec3-scale % scale))
+                (map #(vec3-add (vec3-scale pos scale) %))
+                vec)
+        verts (conj vs (first vs))]
+    (plotter/line-sequence verts)))
+
+
+(defn make-tiling-gcode [tiles topo scale tile-fn]
+  (->> tiles
+       sort-xy
+       (map #(tile-fn (key %) (val %) topo scale))
+       plotter/gcodify))
+
 
 
 ; write muticolor tiling to single gcode file with pauses for tool/pen change
@@ -181,11 +200,19 @@
 ;(write-tiling-gcode-with-toolchange @tiler-state @current-topology "tiling-with-tc.gcode")
 ;(write-split-tiling-gcode @tiler-state @current-topology)
 
-(def tiling-lines-gcode (do-tiling-lines-gcode (@tiler-state :tiles) @current-topology 5.0))
+(def gcode-scale 3.75)
+
+(def tiling-gcode (make-tiling-gcode (@tiler-state :tiles) @current-topology gcode-scale tile-gcode))
+(spit "tiling-gcode.gcode" tiling-gcode)
+
+(def tiling-lines-gcode (make-tiling-gcode (@tiler-state :tiles) @current-topology gcode-scale tile-lines-gcode))
 (spit "tiling-lines-gcode.gcode" tiling-lines-gcode)
 
-(def tiling-gcode (do-tiling-gcode (@tiler-state :tiles) @current-topology 5.0))
-(spit "tiling-gcode.gcode" tiling-gcode)
+(def tiling-outline-gcode (make-tiling-gcode (@tiler-state :tiles) @current-topology gcode-scale tile-outline-gcode))
+(spit "tiling-outline-gcode.gcode" tiling-outline-gcode)
+
+(def tiling-innershape-gcode (make-tiling-gcode (@tiler-state :tiles) @current-topology gcode-scale tile-innershape-gcode))
+(spit "tiling-innershape-gcode.gcode" tiling-innershape-gcode)
 
 ;(write-split-tiling @tiler-state @current-topology)
 
