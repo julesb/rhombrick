@@ -42,7 +42,8 @@
 (defn parse-face-line [line]
   (->> (rest (clojure.string/split line #" "))
        (map parse-face-token)
-       (map first) ; only using face index, ignore others
+       ;(map #(vec [:fidx (first %) :tidx (second %)]))
+       ;(map first) ; only using face index, ignore others
        (vec)))
 
 
@@ -113,9 +114,21 @@
 (defn get-verts [verts face]
   (vec (map #(verts %) face)))
 
+(defn get-verts-with-texcoords [verts texcoords face]
+  (vec (map #(vec (concat (verts (% 0)) (texcoords (% 1))))
+            face)))
 
 (defn get-obj-face-verts [obj]
   (->> (obj :face)
-       (map #(get-verts (obj :vertex) %))
+       (map #(get-verts (obj :vertex) (% 0)))
        (vec)))
 
+(defn get-obj-face-verts-tc [obj]
+  (if (> (count (obj :texture-coordinate)) 0)
+    (->> (obj :face)
+         (map #(get-verts-with-texcoords (obj :vertex) (obj :texture-coordinate) %))
+         (vec))
+    (->> (obj :face)
+         (map #(get-verts (obj :vertex) %))
+         (vec))
+    ))
