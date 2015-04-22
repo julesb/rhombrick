@@ -8,6 +8,11 @@
         ))
 
 
+(def connector-rad 0.75)
+(def pin-rad 0.1)
+(def pin-off 0.2)
+(def pin-height 0.51)
+
 (def connector-lc
   (let [rad 10
         pin-rad 2.5
@@ -27,27 +32,19 @@
           (cylinder pin-rad 5.1))))))
 
 
-(defn make-connector-lc [obj]
-  (let [rad 0.75
-        pin-rad 0.05
-        pin-off 0.125
-        pin-height 0.51]
-    (with-fs 0.01
-    (rotate (/ Math/PI 2.0) [0 1 0]
-    (rotate (/ Math/PI 4.0) [0 0 1]
-      (difference
-        (union
-          obj
-          (translate [0.0 (- pin-off) 0.0]
-            (cylinder pin-rad pin-height))
-          (translate [0.0 pin-off 0.0]
-            (cylinder pin-rad pin-height)))
-        (translate [pin-off 0.0 -0.0]
-            (cylinder pin-rad pin-height))
-        (translate [(- pin-off) 0 -0.0]
-          (cylinder pin-rad pin-height)))))))
-)
+(def connector-lc-holes
+  (with-fn 32 (union
+    (translate [pin-off 0.0 -0.0]
+      (cylinder pin-rad pin-height))
+    (translate [(- pin-off) 0 -0.0]
+      (cylinder pin-rad pin-height)))))
 
+(def connector-lc-pins
+  (with-fn 32 (union
+    (translate [0.0 (- pin-off) 0.0]
+      (cylinder pin-rad pin-height))
+    (translate [0.0 pin-off 0.0]
+      (cylinder pin-rad pin-height)))))
 
 
 (def connector-oc-yin
@@ -75,13 +72,45 @@
       (translate [0 pin-off -2.5]
         (cylinder pin-rad 5.1)))))
 
+
+(defn all-pins [code topo]
+  (let [con-idxs (geom/get-connected-idxs code)
+        con-fn #(let [pos ((topo :face-centers) %)
+                      axis (vec3-normalize pos)
+                      az (Math/atan2 (axis 1) (axis 0))
+                      el (- (Math/asin (axis 2)))]
+                  (translate pos
+                     (rotate az [0.0 0.0 1.0]
+                       (rotate el [0.0 1.0 0.0]
+                        (rotate (/ Math/PI 2.0) [0 1 0]
+                        (rotate (/ Math/PI 4.0) [0 0 1]
+                         connector-lc-pins))))))]
+    (union
+      (map con-fn con-idxs))))
+
+
+(defn all-holes [code topo]
+  (let [con-idxs (geom/get-connected-idxs code)
+        con-fn #(let [pos ((topo :face-centers) %)
+                      axis (vec3-normalize pos)
+                      az (Math/atan2 (axis 1) (axis 0))
+                      el (- (Math/asin (axis 2)))]
+                  (translate pos
+                     (rotate az [0.0 0.0 1.0]
+                       (rotate el [0.0 1.0 0.0]
+                        (rotate (/ Math/PI 2.0) [0 1 0]
+                        (rotate (/ Math/PI 4.0) [0 0 1]
+                         connector-lc-holes))))))]
+    (union
+      (map con-fn con-idxs))))
+
+
 (def connectors-test
   (union
    (translate [-25 0 0] connector-lc)
    (translate [0 0 0] connector-oc-yin)
    (translate [25 0 0] connector-oc-yang)
    (translate [0 0 -9.5] (cube 50 1 1))))
-
 
 
 (defn vert-has-connected-faces? [vert-idx code]
@@ -97,28 +126,13 @@
               (map #(translate % (with-fs 0.1 (sphere 1.25)))))))
 
 
-(defn get-connector [f-idx code topo obj]
-  (let [pos ((topo :face-centers) f-idx)
-        axis (vec3-normalize pos)
-        az (Math/atan2 (axis 1) (axis 0))
-        el (- (Math/asin (axis 2)))]
-
-    (translate pos
-    (rotate az [0.0 0.0 1.0]
-      (rotate el [0.0 1.0 0.0]
-          (make-connector-lc
-            (with-fn 30 (cylinder 0.25 0.0125))
-           )))
-  )))
-
-
 (defn add-connectors [code topo obj]
   (let [con-idxs (get-connected-idxs code)
-        connectors (union (map #(get-connector % code topo obj) con-idxs))
-        ]
-    (union obj connectors)
-    )
-  )
+        pins (all-pins code topo)
+        holes (all-holes code topo)]
+    (difference
+      (union obj pins)
+      holes)))
 
 
 (defn make-carved-tile [code topo]
@@ -128,9 +142,12 @@
     (add-connectors code topo
       (difference
        (polyhedron geom/rd-verts geom/rd-faces :convexity 8)
-       (map #(translate % (with-fs 0.1 (sphere 1.75))) sphere-positions)
-       (map #(translate % (with-fs 0.1 (sphere 0.75))) (topo :verts))
+       ;(map #(translate % (with-fs 0.1 (sphere 1.6))) sphere-positions)
+       (map #(translate % (with-fs 0.1 (sphere 0.7))) (topo :verts))
        (carve-verts code)
+        (translate [-0.25 -0.5 0]
+       (scale [1.0 1.0 1.0]
+              (polyhedron geom/rd-verts geom/rd-faces :convexity 8)))
        ))))
 
 

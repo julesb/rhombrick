@@ -79,7 +79,7 @@
   (->> (get-non-connected-idxs code)
        (map #((topo :face-centers) %))
        (map #(vec3-scale % (/ 1.0 (topo :aabb-radius))))
-       (map #(sd-sphere-o p 0.85 (vec3-scale % 2.0)))
+       (map #(sd-sphere-o p 0.5 (vec3-scale % 2.0)))
        (reduce #(op-blend %1 %2 0.2))))
        ;(reduce op-union)))
 
@@ -280,9 +280,9 @@
           ;field-strengths (map #(/ 1.0 (* (% 1) (% 1))) closest-per-curve)
 
           [closest-p closest-d closest-n closest-t] (second closest-data)
-          r1 (bezier-box-thicknesses (.charAt code (first (endpoint-pairs closest-idx))))
-          r2 (bezier-box-thicknesses (.charAt code (second (endpoint-pairs closest-idx))))
-          radius-at-p (/ (lerp- closest-t r1 r2) 1.0)
+          r1 (bezier-blob-thicknesses (.charAt code (first (endpoint-pairs closest-idx))))
+          r2 (bezier-blob-thicknesses (.charAt code (second (endpoint-pairs closest-idx))))
+          radius-at-p (/ (lerp- closest-t r1 r2) 1.5)
           n closest-n
           ;d (/ (- closest-d radius-at-p) 1.0)
           ;field (/ 1.0 (* d d))
@@ -313,7 +313,8 @@
         ;dist  (op-subtract nc-spheres cell)
 
         [blob-d blob-n] (tilecode-bezier-blob2 v code @current-topology)
-        dist blob-d
+        ;dist blob-d
+        dist (op-intersect  (sd-cell v @current-topology) blob-d)
 
         ;controls [[-0.8 -0.8 -0.8] [ -0.8 -0.8 0.5] [0.8 0.8 -0.5] [0.8 0.8 0.8]]
         ;bez-tube (sd-bezier-tube v controls 0.19 0.12 64)
@@ -325,6 +326,7 @@
         ;dist planes
         ;dist (op-blend cell planes 0.2)
 
+        ;planes (sd-tilecode-planes v code @current-topology)
         ;cap-tile (sd-capsule-tile v code @current-topology)
         ;dist (op-blend (- cap-tile) planes 0.1)
 
@@ -334,8 +336,8 @@
         ;dist (op-subtract cell nc-spheres )
         ;dist (op-intersect cell nc-spheres )
         ]
-    [dist 1.0 1.0 1.0]
-    ;[dist blob-n]
+    ;[dist [1.0 1.0 1.0]]
+    [dist blob-n]
   ))
 
 

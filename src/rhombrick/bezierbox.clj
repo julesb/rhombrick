@@ -28,6 +28,22 @@
                              \D 1.175
                              })
 
+(def bezier-blob-thicknesses { \1 0.146875
+                              \2 0.2
+                              \3 0.4
+                              \4 0.8
+                              \5 0.9
+                              \6 0.9
+                              \7 0.9
+                             \a 0.146875
+                             \A 0.146875
+                             \b 0.2
+                             \B 0.2
+                             \c 0.4
+                             \C 0.4
+                             \d 0.6
+                             \D 0.6
+                             })
 
 (defn -get-num-connected [code]
   (count (filter #(and (not= \- %) (not= \0 %)) code)))
@@ -142,7 +158,7 @@
         p3 (vec3-add ((@current-topology :face-centers) f2-idx) f2-offset)
         p4 (vec3-sub p3 (vec3-scale f2-norm 2.0))
         i (if (or (= f1-idx f2-idx)
-                  (= 3 (Math/abs (- f1-idx f2-idx)))
+                  (= (Math/abs (- f1-idx f2-idx)) (/ (@current-topology :num-faces) 2))
                   (= p1 p4)
                   (= p1 p2)
                   (= p3 p4))
@@ -173,7 +189,8 @@
                                              (vec3-scale p4-with-tol 0.5))
                                    1.0)
                        intersect)
-        fix-amount (* -0.5 @bezier-box-control-bias)
+;        fix-amount 0.025 ; (* -0.5 @bezier-box-control-bias)
+        fix-amount (- 0.025 @bezier-box-control-bias -0.5)
         ;fix-amount -0.25
 
         p1-fx (vec3-add p1-with-tol (vec3-scale f1-norm fix-amount))
@@ -186,7 +203,9 @@
         p3-fx (vec3-add p4-fx (vec3-scale p4-cnr-dir (* p4-cnr-dist 0.5))) ]
       (if (not= f1-idx f2-idx)
         [p1-fx p2-fx p3-fx p4-fx]
-        [p1-fx f1-offset f2-offset p4-fx] )))
+        [p1 f1-offset f2-offset p4] )))
+        ;[p1-fx p2-fx p3-fx p4-fx]
+        ;[p1-fx f1-offset f2-offset p4-fx] )))
 
 
 (defn get-shape-2d-bezier-controls-with-offset-orig [f1-idx f2-idx f1-offset f2-offset]
@@ -272,10 +291,11 @@
 
 
 (defn get-bezier-strip [c1 c2 steps]
+  (into []
   (map #(let [t (* % (/ 1 steps))]
          [(get-bezier-point c1 t)
           (get-bezier-point c2 t)])
-       (range (inc steps))))
+       (range (inc steps)))))
 
 
 (defn get-face-normal [[v0 v1 v2]]

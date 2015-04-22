@@ -13,7 +13,7 @@
 ;(def current-tileset-colors {})
 
 (def button-color {
-                   :fill [8 0 128 96]
+                   :fill [8 0 128 240]
                    :stroke [0 0 0 0]
                    :fill-hot [128 128 255 192]
                    :stroke-hot [0 0 192 192]
@@ -307,7 +307,7 @@
 (defn draw-tile-button [[x y] code bscale parent-idx]
   (let [bx (+ x (/ bscale 2))
         by (+ y (/ bscale 2))
-        col (conj (get-tile-color code) 192)
+        col (conj (get-tile-color code) 240)
         face-col [64 64 64 190]
         ]
     (stroke-weight 1)
@@ -315,13 +315,17 @@
       (do
         (println "button pressed:" code)))
     (with-translation [bx by]
-      (scale (/ bscale 5))
+      (scale (/ bscale 3))
       (no-fill)
       (stroke-weight 1)
-      (draw-faces-lite (@current-topology :verts) (@current-topology :faces) face-col)
+      ;(draw-faces-lite (@current-topology :verts) (@current-topology :faces) face-col)
+      (if (or (= (@current-topology :id) :hexagon)
+              (= (@current-topology :id) :square))
+      (draw-jigsaw-shape-2d code @current-topology 16)
       (draw-facecode-bezier-boxes code col 8)
       ;(scale 2)
-      (draw-face-boundaries [0 0 0] code :all))))
+      ;(draw-face-boundaries [0 0 0] code :all)
+      ))))
 
 
 (defn draw-tile-editor [[x y] code bscale parent-idx]
@@ -372,8 +376,8 @@
         (when (and (> level 0) (= i selected))
           (draw-selected [tx ty] bscale [255 255 255 255]))
         (when (and (> level 0) (= i selected))
-          (draw-tile-editor preview-pos code preview-scale i)
-          (draw-selected preview-pos preview-scale [255 255 255 255])
+          ;(draw-tile-editor preview-pos code preview-scale i)
+          ;(draw-selected preview-pos preview-scale [255 255 255 255])
           ;(draw-rotational-symmetries rotations-pos code rotations-scale)
           ;(draw-rotations rotations-pos code rotations-scale)))))
           ))))

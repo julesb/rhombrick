@@ -44,7 +44,8 @@
       v) )
 
 (defn get-neighbour-pos [pos face]
-  (if (= (@current-topology :id) :hexagon)
+  (if (or (= (@current-topology :id) :hexagon)
+          (= (@current-topology :id) :square))
     (quantize-position
       (vec3-add pos
                 (vec3-scale ((@current-topology :face-centers-ideal) face) 2 ))))
@@ -374,7 +375,7 @@
   ;:tileset ["1-1---" "1--1-1"] ; hex
   :seed ""
   :max-iters 1000000
-  :max-radius 4
+  :max-radius 32 
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0

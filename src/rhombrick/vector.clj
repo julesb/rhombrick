@@ -107,6 +107,14 @@
 
 (defn vec3-min [v1 v2] [(min (v1 0) (v2 0)) (min (v1 1) (v2 1)) (min (v1 2) (v2 2))])
 
+
+
+(defn vec3-equal? [v1 v2]
+  (and (= (v1 0) (v2 0))
+       (= (v1 1) (v2 1))
+       (= (v1 2) (v2 2))
+       ))
+
 (defn myround [s n]
   (double (.setScale (bigdec n) s java.math.RoundingMode/HALF_EVEN)))
 
@@ -180,6 +188,11 @@
       (- dist))))
 
 
+(defn vec3-format [v]
+  (str "[" (format "%.2f" (v 0))
+       " " (format "%.2f" (v 1))
+       " " (format "%.2f" (v 2))
+       "]"))
 
 ;; p=point, pv=point on plane, pn=plane normal
 ;(defn distance-point-to-plane [p pv pn]

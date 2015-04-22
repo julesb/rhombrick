@@ -30,7 +30,8 @@
   (let [step (double (/ 1.0 npoints))]
     (->> (map #(get-bezier-point-3d f1-idx f2-idx (* % step)) (range (inc npoints)))
          (map #(vec3-scale % scale))
-         (map #(vec3-add % (vec3-scale pos scale)))
+         (map #(vec3-add % pos))
+         ;(map #(vec3-add % (vec3-scale pos scale)))
          vec)))
 
 
@@ -42,59 +43,64 @@
        (ordered-map)))
 
 
-
-
 (defn tile-lines-gcode [pos code topo scale]
   (let [endpoint-pairs (make-curve-endpoints (get-connected-idxs code))
-        curves-verts (map #(get-curve-points pos scale (% 0) (% 1) 32 topo) endpoint-pairs) ]
+        curves-verts (map #(get-curve-points pos scale (% 0) (% 1) 16 topo) endpoint-pairs) ]
     (plotter/gcodify
       (map plotter/line-sequence curves-verts))))
 
 
 (defn tile-outline-gcode [pos code topo scale]
-  (let [curves (get-facecode-shape-2d code topo 32)
+  (let [curves (get-facecode-shape-2d code topo 16)
         curve-fn (fn [vs]
                    (->> vs
                         (map #(vec3-scale % scale))
-                        (map #(vec3-add (vec3-scale pos scale) %))
+                        (map #(vec3-add % pos))
                         plotter/line-sequence)) ]
     (plotter/gcodify (map curve-fn curves))))
 
 
 (defn tile-innershape-gcode [pos code topo scale]
-  (let [curves (get-facecode-inner-shape-2d code topo 32)
+  (let [curves (get-facecode-inner-shape-2d code topo 16)
         curve-fn (fn [vs]
                    (->> vs
                         (map #(vec3-scale % scale))
-                        (map #(vec3-add (vec3-scale pos scale) %))
+                        (map #(vec3-add % pos))
                         plotter/line-sequence)) ]
     (plotter/gcodify (map curve-fn curves))))
 
 
 (defn tile-gcode [pos code topo scale]
-  ;(let [vs (->> (apply concat (make-jigsaw-piece code topo 32))
-  (let [vs (->> (apply concat (get-facecode-shape-2d code topo 32))
+  (let [vs (->> (apply concat (make-jigsaw-piece code topo 32))
+  ;(let [vs (->> (apply concat (get-facecode-shape-2d code topo 16))
                 (map #(vec3-scale % scale))
-                (map #(vec3-add (vec3-scale pos scale) %))
+                (map #(vec3-add % pos))
                 vec)
         verts (conj vs (first vs))]
     (plotter/line-sequence verts)))
 
 
+(defn tile-fill-gcode [pos code topo scale]
+  (let [num-steps 4
+        scale-step (/ scale num-steps) ]
+    (plotter/gcodify (map #(tile-gcode pos code topo (* % scale-step))
+                          (range 1 num-steps)))))
+
+
 (defn make-tiling-gcode [tiles topo scale tile-fn]
   (->> tiles
        sort-xy
-       (map #(tile-fn (key %) (val %) topo scale))
+       (map #(tile-fn (vec3-scale (key %) scale) (val %) topo scale))
        plotter/gcodify))
 
 
 
 ; write muticolor tiling to single gcode file with pauses for tool/pen change
-(defn write-tiling-gcode-with-toolchange [ts topo fname]
-  (spit fname (apply str
-               (->> (group-by #(get-tile-color (val %)) (ts :tiles))
-                    (map #(apply str (do-tiling-gcode (val %) topo 3.5)))
-                    (interpose plotter/wait-tool-change)))))
+;(defn write-tiling-gcode-with-toolchange [ts topo fname]
+;  (spit fname (apply str
+;               (->> (group-by #(get-tile-color (val %)) (ts :tiles))
+;                    (map #(apply str (do-tiling-gcode (val %) topo 3.5)))
+;                    (interpose plotter/wait-tool-change)))))
 
 ; write muticolor tiling to separate gcode file per color
 ;(defn write-split-tiling-gcode [ts topo]
@@ -200,10 +206,13 @@
 ;(write-tiling-gcode-with-toolchange @tiler-state @current-topology "tiling-with-tc.gcode")
 ;(write-split-tiling-gcode @tiler-state @current-topology)
 
-(def gcode-scale 3.75)
+(def gcode-scale 4.1)
 
 (def tiling-gcode (make-tiling-gcode (@tiler-state :tiles) @current-topology gcode-scale tile-gcode))
 (spit "tiling-gcode.gcode" tiling-gcode)
+
+(def tiling-fill-gcode (make-tiling-gcode (@tiler-state :tiles) @current-topology gcode-scale tile-fill-gcode))
+(spit "tiling-fill-gcode.gcode" tiling-fill-gcode)
 
 (def tiling-lines-gcode (make-tiling-gcode (@tiler-state :tiles) @current-topology gcode-scale tile-lines-gcode))
 (spit "tiling-lines-gcode.gcode" tiling-lines-gcode)

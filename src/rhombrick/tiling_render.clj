@@ -22,9 +22,44 @@
 (def face-list (atom #{}))
 (def face-id-text (atom []))
 
-(def trunc-oct-model (get-obj-face-verts (load-obj "data/truncated_octahedron.obj")))
+(def skybox-tex-idx (atom 0))
+(def skybox-textures ["miramar_large.jpg"
+                      "stormydays_large.jpg"
+                      "grimmnight_large.jpg"
+                      "interstellar_large.jpg"
+                      "Above_The_Sea.jpg"
+                      "cube_filament.jpg"
+                      "violentdays_large.jpg"
+                      ])
 
+(def bbox-tex-idx (atom 0))
+(def bbox-textures ["cave_texture_01-512x512.png"
+                    "seamless_texture__circuit_by_ark4n-d2palho.jpg"
+                    "seamless_moss_rocks.jpg"
+                    "seamless-black-wall-texture-decorating-inspiration-1.jpg"
+                    "8-dark-metal-grid-patterns.jpg"
+                    "metal_seamless_texture_18_by_jojo_ojoj-d773szm.jpg"
+                    "9441717255_5ff5d46373.jpg"
+                    "Ceramic_Glaze_Test_Pattern.jpg"
+                    ])
 
+(def bound-tex-idx (atom 0))
+(def bound-texture "cave_texture_01-512x512.png")
+
+(def particle-texture (atom nil))
+
+(def bound-model (get-obj-face-verts-tc (load-obj "data/rhombrick-boundary.obj")))
+
+;(def sky-model (get-obj-face-verts-tc (load-obj "data/rhombic_dodecahedron-tc.obj")))
+(def sky-model (get-obj-face-verts-tc (load-obj "data/skysphere.obj")))
+(def sky-tex (atom nil))
+(def skybox-model (get-obj-face-verts-tc (load-obj "data/skybox.obj")))
+(def skybox-tex (atom nil))
+(def bbox-tex (atom nil))
+(def bound-tex (atom nil))
+
+;(def trunc-oct-model (get-obj-face-verts-tc (load-obj "data/truncated_octahedron.obj")))
+(def ^:dynamic trunc-oct-tex)
 
 (defn draw-graph [[x y] w h title data-range data]
   (stroke-weight 1)
@@ -101,7 +136,7 @@
   (let [phi-1 (- (/ (+ 1 (Math/sqrt 5)) 2) 1)]
     (->> (range ncols)
          (map #(mod (+ offset (* % phi-1)) 1))
-         (map #(hsv->rgb % 0.5 0.6))
+         (map #(hsv->rgb % 0.6 0.6))
          vec)))
 
 
@@ -109,10 +144,10 @@
   (get @current-tileset-colors code [64 64 64 128]))
 
 
-(defn init-tileset-colors [tileset]
+(defn init-tileset-colors [tileset offset]
   (reset! current-tileset-colors {})
   (let [tileset-n (normalize-tileset tileset)
-        offset (/ (mod (tileset-to-number tileset) 255) 255)
+;        offset 0; (/ (mod (tileset-to-number tileset) 255) 255)
         pal (make-phi-palette (count tileset-n) offset)]
     (println "tileset-n:" tileset-n)
     (doseq [i (range (count tileset-n))]
@@ -143,9 +178,7 @@
           (swap! current-tileset-colors assoc rc col))))))
 
 
-
 (defn draw-obj [faces col]
-;          [r g b a] col]
   (doseq [face faces]
     (let [nvs (count face)]
       (cond
@@ -159,6 +192,26 @@
         (vertex (v 0) (v 1) (v 2)))
       (end-shape))))
 
+
+(defn draw-obj-textured [faces tex]
+  (no-stroke)
+  ;(fill 128 128 128 255)
+  (doseq [face faces]
+    (let [nvs (count face)]
+      (cond
+        (= nvs 3)
+          (begin-shape :triangles)
+        (= nvs 4)
+          (begin-shape :quads)
+        :else
+          (begin-shape))
+      (texture-mode :normal)
+      (texture tex)
+      (doseq [v face]
+        (vertex (v 0) (v 1) (v 2) (v 3) (v 4)))
+        ;(vertex (v 0) (v 1) (v 2) (* (v 3) 1.0) (* (- 1.0 (v 4)) 1.0)))
+        ;(vertex (v 0) (v 1) (v 2) (- 1.0 (v 3)) (- 1.0 (v 4))))
+      (end-shape))))
 
 (defn draw-faces [verts faces colors]
   (doseq [i (range (count faces))]
@@ -277,7 +330,7 @@
   ;(no-fill)
   ;(stroke 0 0 0 192)
   (stroke 128 128 128 48)
-  (stroke-weight 0.05)
+  (stroke-weight 0.025)
   ;(no-stroke)
   (doseq [face-verts @face-list]
     (cond
@@ -398,9 +451,9 @@
       (let [[r g b] (get-tile-color code)]
         (with-translation pos
           ;(scale 0.5)
-          ;(stroke-weight 1)
-          (no-stroke)
-          ;(stroke-weight 0.0125)
+          ;(stroke-weight 0.05)
+          ;(no-stroke)
+          ;(stroke-weight 0.25)
           ;(stroke 128 128 128 255)
           ;(no-stroke)
           ;(stroke r g b 255)
@@ -429,11 +482,23 @@
                     thickness (+ 0.075 (* 1.0 (bezier-box-thicknesses (.charAt code i))))
                     bcol (get boundary-colors d [127 127 127])
                     alpha 255]
-                (fill (bcol 0) (bcol 1) (bcol 2) alpha)
-                (with-translation (vec3-scale ((@current-topology :face-centers) i) 0.956)
+                (tint (bcol 0) (bcol 1) (bcol 2) alpha)
+                ;(stroke (- 255 (bcol 0)) (- 255 (bcol 1)) (- 255 (bcol 2)))
+                ;(with-translation (vec3-scale ((@current-topology :face-centers) i) 0.956)
+                (with-translation (vec3-sub ((@current-topology :face-centers) i)
+                                             (vec3-scale dir  0.04))
+
                   (rotate az 0 0 1)
                   (rotate el 0 1 0)
-                  (box 0.125 thickness thickness))))))))))
+                  (rotate (/ PI 2.0) 0 0 1)
+                  ;(box 0.0625 thickness thickness))))))))))
+                  (scale 0.5)
+                  (scale thickness 1.0 thickness)
+                  (draw-obj-textured bound-model @bound-tex)
+                  ;(box 0.125 thickness thickness)
+                  ))))
+          (no-tint)
+          )))))
 
 
 (defn draw-face-boundaries-ts [ts pos ^String code boundary-mode]
@@ -486,23 +551,48 @@
                 (box 0.125 thickness thickness)))))))))
 
 
+(defn draw-billboard [pos tex]
+  (let [[dx dy dz] (vec3-normalize (vec3-sub (vec3-scale pos @model-scale)
+                                             @camera-pos))
+      az (Math/atan2 dy dx)
+      el (- (Math/asin dz))]
+    (rotate az 0 0 1)
+    (rotate el 0 1 0)
+    (rotate (/ PI 2.0) 0 0 1)
+    (begin-shape :quads)
+      (texture tex)
+      (vertex -1 0 -1 0 0)
+      (vertex  1 0 -1 1 0)
+      (vertex  1 0  1 1 1)
+      (vertex -1 0  1 0 1)
+    (end-shape)))
+
+
 (defn draw-empty [ts]
-  (stroke-weight 0.05)
+  ;(stroke-weight 0.05)
   ;(fill 0 192 0 128)
-  (no-fill)
-  ;(no-stroke)
-  (stroke 0 255 0 128)
-  (doseq [pos (ts :empty)]
+  ;(no-fill)
+  (no-stroke)
+  (blend-mode :screen)
+;  (hint :disable-depth-test)
+;  (tint 255 255 255 240)
+  ;(stroke 0 64 0 266)
+  ;(doseq [pos (ts :empty)]
+  (doseq [pos (sort-by #(- (vec3-distance % @camera-pos)) (ts :empty))]
     ; debugging - highlight empty/tiles conflicts
 ;    (if (contains? (ts :tiles) pos)
 ;      (stroke 255 0 0 192)
 ;      (stroke 0 255 0 32))
 
     (with-translation pos
-      (scale 0.5)
-      (draw-faces (@current-topology :verts) (@current-topology :faces) [255 255 0 128])
+       ;(scale 1.0)
+       (draw-billboard pos @particle-texture)
+      ;(draw-faces (@current-topology :verts) (@current-topology :faces) [255 255 0 128])
       ;(box 0.5 0.5 0.5)
-      )))
+      ))
+  (no-tint)
+  (blend-mode :blend)
+  )
 
 
 (defn draw-assemblage-center []
@@ -533,7 +623,38 @@
     (box 0.01 0.01 10)))
 
 
+(defn draw-skysphere [camerapos]
+  ;(fill 255 255 255 255)
+  (no-stroke)
+  (push-matrix)
+    ;(rotate (/ Math/PI 2.0) 1.0 0.0 0.0)
+    (with-translation camerapos
+      (scale 10000 10000 10000)
+      (rotate (/ Math/PI 2.0) 1.0 0.0 0.0)
+      (draw-obj-textured sky-model @sky-tex)
+    )
+  (pop-matrix)
+  ;(sphere 50) 
+  (no-fill)
+  )
 
+
+(defn draw-skybox [camerapos]
+  (fill 255 255 255 255)
+  (no-stroke)
+  (stroke-weight 0.0)
+  (texture-wrap :clamp)
+  (push-matrix)
+    ;(rotate (/ Math/PI 2.0) 1.0 0.0 0.0)
+    (with-translation camerapos
+      (scale 5000 5000 5000)
+      (rotate (/ Math/PI 2.0) 1.0 0.0 0.0)
+      (draw-obj-textured skybox-model @skybox-tex)
+    )
+  (pop-matrix)
+  ;(sphere 50) 
+  (no-fill)
+  )
 ;(defn draw-curve-tangents [f1-idx f2-idx steps]
 ;  (when (not= f1-idx f2-idx)
 ;    (let [step (/ 1.0 steps)]
@@ -561,6 +682,8 @@
 ;          (rotate el 0 1 0)
 ;          (box 0.25 0.5 0.5))))))
 ;
+
+
 
 (defn draw-curve [f1-idx f2-idx]
   (when (not= f1-idx f2-idx)
@@ -661,19 +784,19 @@
   )
 
 (defn draw-jigsaw-shape-2d [code topo res]
-  (let [curves (get-facecode-shape-2d code topo res)
+  (let [curves (get-facecode-jigsaw-shape-2d code topo res)
         col (get-tile-color code)
         line-col [0 0 0 255]
         ;line-col [255 255 255 255]
         mono-col [255 255 255 255]
-        col-transp [(col 0) (col 1) (col 2) 128]
+        col-transp [(col 0) (col 1) (col 2) 64]
         with-endcaps? true
         final-vert (first (first curves))
         ]
     ;(no-stroke)
-    (stroke-weight 0.025)
-    ;(apply stroke col-transp)
-    (apply stroke line-col)
+    (stroke-weight 0.0125)
+    (apply stroke col-transp)
+    ;(apply stroke mono-col)
 
     ;(no-fill)
     (apply fill col-transp)
@@ -681,10 +804,10 @@
     ;(apply fill col)
 
     (begin-shape)
-    ;(doseq [curve curves]
-      (doseq [[vx vy vz] curves]
+    (doseq [curve curves]
+      (doseq [[vx vy vz] curve]
         (vertex vx vy vz))
-    ;)
+    )
     (vertex (final-vert 0) (final-vert 1) (final-vert 2))
     (end-shape))
   )
@@ -698,22 +821,24 @@
         ;line-col [255 255 255 255]
         col-transp [(col 0) (col 1) (col 2) 128]
         op-col (vec (map #(- 255 %) col))
+        op-col-transp [(op-col 0) (op-col 1) (op-col 2) 128]
+        bg-col [16 24 32 255]
         with-endcaps? true
         final-vert (first (first curves))
         ]
     (no-stroke)
     (stroke-weight 0.025)
-    ;(apply stroke op-col)
-    (stroke 0 0 0 192)
+    (apply stroke op-col-transp)
+    ;(stroke 0 0 0 192)
 
     (no-fill)
-    ;(apply fill op-col)
+    ;(apply fill bg-col)
     ;(no-stroke)
     (begin-shape)
     (doseq [curve curves]
       (doseq [[vx vy vz] curve]
-        (vertex vx vy vz)))
-    (vertex (final-vert 0) (final-vert 1) (final-vert 2))
+        (vertex vx vy (+ vz 0.1))))
+    (vertex (final-vert 0) (final-vert 1) (+ (final-vert 2) 0.1 ))
     (end-shape))
   )
 
@@ -725,11 +850,12 @@
         line-col [255 255 255 255]
         col-transp [(col 0) (col 1) (col 2) 192]
          op-col (vec (map #(- 255 %) col))
+         
         ]
     ;(no-stroke)
 
-    (stroke-weight 0.1)
-    (apply stroke line-col)
+    (stroke-weight 0.05)
+    (apply stroke op-col)
     (no-fill)
     ;(apply fill op-col)
     (doseq [curve curves]
@@ -779,9 +905,9 @@
         )
 
     ;(stroke (op-col 0) (op-col 1) (op-col 2) 255)
-    (stroke 64 64 64 255 )
+    (stroke 192 192 255 192)
     ;(stroke-weight 0.45)
-    (stroke-weight 0.015)
+    (stroke-weight 0.01215)
     (doseq [endpoints endpoint-pairs]
       (draw-curve (endpoints 0) (endpoints 1)))
 
@@ -819,6 +945,21 @@
         (vertex vx vy vz))
       (end-shape))))
 
+
+(defn draw-facecode-bezier-boxes-tex [code col steps]
+  ;(fill 255 255 255)
+  (fill (col 0) (col 1) (col 2) 255)
+  (no-stroke)
+  (doseq [bbox (bbox/get-bezier-box-triangles code steps)]
+    (doseq [strip bbox]
+      (let [tx-step (/ 1.0 (count strip))]
+        (begin-shape :triangle-strip)
+        (texture @bbox-tex)
+        (doseq [[i [vx vy vz]] (map-indexed vector strip)]
+          (vertex vx vy vz (* i tx-step) (mod i 2)))
+        (end-shape))))
+  ;(no-tint)
+  )
 
 (defn draw-facecode-bezier-boxes-n [code col steps]
   (when (contains? #{3 4} (count col))
@@ -937,9 +1078,10 @@
     (let [pos tile
           code (get (ts :tiles) pos)
           ;col [255 255 255 255]
-          col (conj (get-tile-color code) 255)
-          ;line-col [(col 0) (col 1) (col 2) 255]
-          line-col col
+          col [255 255 255 255] ;(conj (get-tile-color code) 255)
+          line-col [(- 255.0 (col 0)) (- 255.0 (col 1)) (- 255.0 (col 2)) 128]
+          ;line-col col
+          line-col [0 0 0 240]
           ;line-col  [0 0 0 192] ;[192 192 255 192]
           bezier-steps @bbox/bezier-box-resolution]
       (with-translation pos
@@ -953,13 +1095,14 @@
 
         (when with-lines?
           (no-fill)
-          (with-translation [0 0 0.01]
+          (with-translation [0 0 0.0]
           (draw-facecode-lines code)))
 
         (when with-bb-faces?
           (if @bezier-box-smooth-shading?
             (draw-facecode-bezier-boxes-n (get (ts :tiles) pos) col bezier-steps)
-            (draw-facecode-bezier-boxes (get (ts :tiles) pos) col bezier-steps)))
+            (draw-facecode-bezier-boxes-tex (get (ts :tiles) pos) col bezier-steps)))
+            ;(draw-facecode-bezier-boxes (get (ts :tiles) pos) col bezier-steps)))
         (when with-bb-lines?
           (draw-facecode-bezier-box-lines (get (ts :tiles) pos) line-col bezier-steps))
 
@@ -967,10 +1110,11 @@
                   (= (@current-topology :id) :square))
           (push-matrix)
           (scale 1.0)
-          ;(draw-jigsaw-shape-2d code @current-topology @bezier-box-resolution)
-          (draw-facecode-shape-2d code @current-topology @bezier-box-resolution)
+          (draw-jigsaw-shape-2d code @current-topology @bezier-box-resolution)
+          ;(draw-facecode-shape-2d code @current-topology @bezier-box-resolution)
           (pop-matrix)
-          (draw-facecode-inner-shape-2d code @current-topology @bezier-box-resolution)
+          ;(with-translation [0 0 0.05]
+          ;  (draw-facecode-inner-shape-2d code @current-topology @bezier-box-resolution))
           ;(draw-facecode-shape-outline code @current-topology @bezier-box-resolution)
           )
 

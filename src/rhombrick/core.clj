@@ -41,6 +41,7 @@
 (def my-applet (atom nil))
 (def frame (atom nil))
 
+(def fullscreen? (atom false))
 (def draw-facelist? (atom false))
 (def draw-editor? (atom false))
 (def draw-gliders? (atom false))
@@ -59,6 +60,7 @@
 (def current-boundary-mode (atom (boundary-modes @boundary-mode-idx)))
 
 (def game-mode? (atom false))
+(def auto-seed? (atom false))
 
 (def ^:dynamic editor-font)
 (def ^:dynamic console-font)
@@ -68,6 +70,9 @@
 ;(def test-surface (atom {}))
 (def rendering? (atom true))
 
+(def ^:dynamic edge-shader)
+
+(def phi-palette-offset (atom 0))
 
 ; _______________________________________________________________________
 
@@ -88,21 +93,37 @@
 
 
 (defn setup []
+    ;(reset! sky-tex (load-image "testpattern4po6.png"))
+    (reset! sky-tex (load-image "Sky02.jpg"))
+    ;(reset! skybox-tex (load-image "stormydays_large.jpg"))
+    ;(reset! skybox-tex (load-image "grimmnight_large.jpg"))
+    ;(reset! skybox-tex (load-image "interstellar_large.jpg"))
+    ;(reset! skybox-tex (load-image "Above_The_Sea.jpg"))
+    (reset! skybox-tex (load-image "miramar_large.jpg"))
+    ;(reset! skybox-tex (load-image "cube_filament.jpg"))
+    ;(reset! trunc-oct-tex (load-image "truncated_octahedron.obj"))
     ;(reset! rhomb-tex (load-image "cave_texture_01-512x512.png"))
     ;(reset! rhomb-tex (load-image "testpattern4po6.png"))
+    (reset! bbox-tex (load-image "cave_texture_01-512x512.png"))
+    ;(reset! bbox-tex (load-image "seamless_texture__circuit_by_ark4n-d2palho.jpg"))
+    ;(reset! bbox-tex (load-image "seamless_moss_rocks.jpg"))
+    ;(reset! bbox-tex (load-image "seamless-black-wall-texture-decorating-inspiration-1.jpg"))
     ;(reset! rhomb-tex (load-image "gradient.jpg"))
     ;(reset! rhomb-tex (load-image "map-15Bsubset.jpg"))
-
+    (reset! bound-tex (load-image "seamless_metal_texture_by_hhh316-d30x412.jpg"))
+    ;(reset! particle-texture (load-image "NeGeo-particle.png"))
+    (reset! particle-texture (load-image "pump_flare_06.png"))
     ;(println "texture:" @rhomb-tex)
-    ;(texture-mode :normalized)
+    (texture-mode :normal)
+    (texture-wrap :repeat)
 
     ;(println "screen pos" (get-location-on-screen))
     ;(println "screen size:" (width) (height))
     ;(println "frame:" (.getLocation (.frame @my-applet)))
     ;(.mouseMove robot 0 0)
     ;(.mouseMove robot (/ (width) 2) (/ (height) 2))
-
-    (smooth)
+    ;(smooth)
+    (def edge-shader (load-shader "data/edges.glsl"))
     (frame-rate 60)
     (update-camera)
     (println "setting font")
@@ -115,7 +136,7 @@
 
     (println "initialising tiler")
     (editor/init-editor)
-
+    (hint :enable-stroke-perspective)
 ;    (if @game-mode?
 ;      (reset! camera-mode 3)
 ;      (start-game (editor/get-tileset-expanded))
@@ -128,6 +149,7 @@
 ;    (doseq [val (range 10)]
 ;      (osc-send client "/test" "i" (float val)))
 
+    (reset! mousewarp-pos [(/ (width) 2) (/ (height) 2)])
     ;(reset! mousewarp-pos [(mouse-x) (mouse-y)])
     ;(println "mouse:" @mousewarp-pos)
 
@@ -169,11 +191,13 @@
                (str "radius: " ((@tiler-state :params) :max-radius))
                ;(str "-------------")
                (str "bbox detail: " @bbox/bezier-box-resolution)
-               (str "cam:" @camera-pos)
+               (str "cam:" (vec3-format @camera-pos))
                (str "scale: " @model-scale)
                (str "fps: " (int (current-frame-rate)))
                (str "tileset:" (get-tileset))
                ]]
+    (fill 0 0 0 192)
+    (rect (- x 10.0) (- y 20.0) 400 400)
     (fill 255 255 255 255)
     (doseq [i (range (count lines))]
       (text (lines i) x (+ y (* i line-space))))))
@@ -209,25 +233,31 @@
   {
    \, #(do
          (swap! model-scale + 1.0)
-         (println "model-scale: " @model-scale))
+         ;(println "tiling bounding box: " (get-assemblage-extents @tiler-state))
+         (println "model-scale: " @model-scale)
+         )
    \. #(do
         (swap! model-scale - 1.0)
+        ;(println "tiling bounding box: " (get-assemblage-extents @tiler-state))
         (println "model-scale: " @model-scale))
    ;\r #(make-cubic-tiling 10 10 10)
    \r #(do
          (println "restart tileset:" (editor/get-tileset-as-set))
          (shape-2d-cache-reset)
          (start-tiler (editor/get-tileset-as-set) false)
-         (init-tileset-colors (editor/get-tileset-as-set))
-         ;(init-tileset-colors (get-in @tiler-state [:params :tileset]))
+         (init-tileset-colors (editor/get-tileset-as-set) @phi-palette-offset)
+         ;(init-tileset-colors (get-in @tiler-state [:params :tileset]) @phi-palette-offset)
          (init-gliders num-gliders)
          )
    \R #(do
          (editor/set-tileset (vec (distinct (normalize-tileset (get-random-tileset-1)))))
          (start-tiler (editor/get-tileset-as-set) false)
-         (init-tileset-colors (get-in @tiler-state [:params :tileset]))
+         (init-tileset-colors (get-in @tiler-state [:params :tileset]) @phi-palette-offset)
          (println "random tileset:" (editor/get-tileset-as-set))
          (init-gliders num-gliders)
+         )
+   \A #(do
+         (swap! auto-seed? not) 
          )
    \- #(do
          (swap! camera-fov - 1)
@@ -270,7 +300,7 @@
          (editor/set-tileset (get-random-tileset-1))
          (editor/set-tileset-topo-id (@current-topology :id))
          (start-tiler (editor/get-tileset-as-set) false)
-         (init-tileset-colors (editor/get-tileset-as-set))
+         (init-tileset-colors (editor/get-tileset-as-set) @phi-palette-offset)
           (init-gliders num-gliders)
          ;(swap! max-tiles inc)
          ;(println "max tiles:" @max-tiles)
@@ -325,17 +355,21 @@
           (Thread/sleep 100)
           (editor/load-prev-library-tileset)
           (start-tiler (editor/get-tileset-as-set) false)
-          (init-tileset-colors (get-in @tiler-state [:params :tileset]))
+          (init-tileset-colors (get-in @tiler-state [:params :tileset]) @phi-palette-offset)
           (init-gliders num-gliders))
     \> #(do
           (cancel-tiler-thread)
           (Thread/sleep 100)
           (editor/load-next-library-tileset)
           (start-tiler (editor/get-tileset-as-set) false)
-          (init-tileset-colors (get-in @tiler-state [:params :tileset]))
+          (init-tileset-colors (get-in @tiler-state [:params :tileset]) @phi-palette-offset)
           (init-gliders num-gliders))
     \S #(do
           (editor/save-current-tileset-to-library))
+    \n #(do
+           (swap! fullscreen? not
+                  )
+          )
     ;\n #(do
     ;      (swap! symmetry-display-index dec))
     ;\m #(do
@@ -379,9 +413,9 @@
           (shape-2d-cache-reset)
           (println "bezierbox control bias:" @bezier-box-control-bias))
     \* #(do
-          (swap! bezier-box-line-weight (fn [w] (+ w 0.01))))
+          (swap! bezier-box-line-weight (fn [w] (+ w 0.001))))
     \& #(do
-          (swap! bezier-box-line-weight (fn [w] (- w 0.01))))
+          (swap! bezier-box-line-weight (fn [w] (- w 0.001))))
     \M #(do
           (swap! bezier-box-smooth-shading? not))
     \y #(do
@@ -390,7 +424,7 @@
                                ;512.0
                                ;(get-tileset-expanded)
                                ;(vec (distinct (vals (@tiler-state :tiles))))
-                               32 32 32
+                                32 32 32 
                                )
 
 
@@ -433,11 +467,28 @@
           (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
           (game/next-candidate)
           (update-neighbour-candidates  @tiler-state))
+    \% #(do
+          (swap! phi-palette-offset - 0.01)
+          (init-tileset-colors (get-in @tiler-state [:params :tileset]) @phi-palette-offset)
+          )
+    \^ (fn [] (do
+          (swap! phi-palette-offset + 0.01)
+          (init-tileset-colors (get-in @tiler-state [:params :tileset]) @phi-palette-offset)
+          ))
+    \! #(do
+          (reset! skybox-tex-idx (mod (inc @skybox-tex-idx) (count skybox-textures)))
+          (reset! skybox-tex (load-image (skybox-textures @skybox-tex-idx)))
+          )
+    \@ #(do
+          (reset! bbox-tex-idx (mod (inc @bbox-tex-idx) (count bbox-textures)))
+          (reset! bbox-tex (load-image (bbox-textures @bbox-tex-idx)))
+          )
 ;    \D #(do
 ;          (osc-send client "/rhombrick.game" "destroy-neighbourhood" @game/selected-candidate-idx)
 ;          (game/destroy-neighbourhood)
 ;          (game/update-game-state (editor/get-tileset-expanded))
 ;          )
+  
        })
 
 (def key-editor-map
@@ -505,7 +556,7 @@
         delta [(- (mouse-x) (@mousewarp-pos 0))
                (- (mouse-y) (@mousewarp-pos 1)) 0]]
     (when (not (> (editor/get-level) 0))
-      (reset! last-mouse-delta (vec3-scale delta 0.01))
+      (reset! last-mouse-delta (vec3-scale delta 0.001))
       (reset! (state :mouse-position) [x y]))
     (when (> (editor/get-level) 0)
       (update-ui-state :mouse-x (mouse-x))
@@ -525,9 +576,10 @@
 
 
 (defn draw-horizon []
+  (no-fill)
   (stroke 0 255 0 128)
-  (stroke-weight 0.025)
-  (ellipse 0 0 200 200))
+  (stroke-weight 0.05)
+  (ellipse 0 0 100 100))
 
 (defn draw-assemblage-radius []
   (let [rad (* ((@tiler-state :params) :max-radius) 2)]
@@ -557,7 +609,7 @@
   (doseq [[i v n] (map vector (range (count (surf :tris)))
                               (surf :tris)
                               (surf :norms)) ]
-    ;(normal (n 0) (n 1) (n 2))
+    (normal (n 0) (n 1) (n 2))
     (vertex (v 0) (v 1) (v 2)))
   (end-shape)
   (pop-matrix)
@@ -581,7 +633,9 @@
 
 
 
+
 (defn draw []
+  ;(shader edge-shader)
   ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
 
@@ -589,16 +643,38 @@
     (do-movement-keys)
   ;  )
 
+    (blend-mode :blend)
 ;  (when @tiler-auto-seed?
 ;    (auto-seed-tiler))
+; auto seed mode
+  (when @auto-seed?
+    (when (or
+            (@tiler-state :solved?)
+            (not= (@tiler-state :run-status) :runnable)
+            (and (> (@tiler-state :iters) 50)
+               (< (count (@tiler-state :tiles)) 2))
+            (and (> (@tiler-state :iters) 1000)
+               (< (count (@tiler-state :tiles)) 75))
+            (and (> (@tiler-state :iters) 2000)
+               (< (count (@tiler-state :tiles)) 100))
+            
+            ) ; early bailout / reset
+       (editor/set-tileset (vec (distinct (normalize-tileset (get-random-tileset-1)))))
+       (start-tiler (editor/get-tileset-as-set) false)
+       (init-tileset-colors (get-in @tiler-state [:params :tileset]) @phi-palette-offset)
+       (println "random tileset:" (editor/get-tileset-as-set))
+       (init-gliders num-gliders)
+       ))
+
 
   (when @draw-gliders?
     (update-gliders))
 
-;  (background 255 255 255 )
+
+  ;(background 255 255 255 )
 ;  (background 64 64 64 )
-  (background 16 24 32)
-;  (background 8 8 8)
+  ;(background 16 24 32)
+  (background 0 0 0)
 
   (push-matrix)
 
@@ -606,15 +682,16 @@
     (= @camera-mode 0)
     ; rubber band camera to glider
       (do
-        (let [g (vec3-scale @game/selected-pos @model-scale)
-        ;(let [g (vec3-scale (get-glider-pos 1) @model-scale)
+        ;(let [g (vec3-scale @game/selected-pos @model-scale)
+        ;(let [g (vec3-scale (vec3-add (get-glider-pos @model-scale) [0.0 0.0 1.0]) 1.0)
+        (let [g (vec3-add (vec3-scale (get-glider-pos 1) @model-scale) [0.0 0.0 @model-scale])
         ;(let [g (vec3-scale @assemblage-center @model-scale)
               d (dist (@camera-pos 0)
                       (@camera-pos 1)
                       (@camera-pos 2)
                       (g 0) (g 1) (g 2))
               dir (vec3-normalize (vec3-sub g @camera-pos))
-              newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.02)))
+              newpos (vec3-add @camera-pos (vec3-scale dir (* d 0.01)))
               cl-d (dist (@camera-lookat 0)
                          (@camera-lookat 1)
                          (@camera-lookat 2)
@@ -622,7 +699,7 @@
               cl-dir (vec3-normalize (vec3-sub g @camera-lookat))
               new-camera-lookat (vec3-add @camera-lookat
                                           (vec3-scale cl-dir
-                                                      (* cl-d 0.015)))]
+                                                      (* cl-d 0.05125)))]
           (reset! camera-lookat new-camera-lookat)
           (reset! camera-pos newpos)
           (camera (newpos 0) (newpos 1) (+ (newpos 2) 0)
@@ -688,6 +765,10 @@
                  @camera-aspect-ratio
                  @camera-near-clip
                  @camera-far-clip)
+  (no-lights)
+  ;(draw-skysphere @camera-pos)
+  (draw-skybox @camera-pos)
+
 
   ;(ortho)
   ;(let [w (/ (width) 2)
@@ -716,7 +797,7 @@
     ;(draw-axes)
 ;    (push-matrix)
 ;    (rotate-x (/ (frame-count) 200.1))
-;    (rotate-y (/ (frame-count) 180.73))
+;   ;(rotate-y (/ (frame-count) 180.73))
 ;    (let [n (vec3-normalize [-0.5 0.5 -0.5])]
 ;      (directional-light 64 64 255 (n 0) (n 1) (n 2)))
 ;    (let [n (vec3-normalize [-0.5 0.5 0.5])]
@@ -724,11 +805,29 @@
 ;    (let [n (vec3-normalize [-0.5 0.5 0.0])]
 ;      (directional-light 255 64 64 (n 0) (n 1) (n 2)))
 ;    (pop-matrix)
+    ;(ambient-light 20 22 25)
+    (light-specular  25 27 32)
+    
+    (light-falloff 0.75 0.0 0.0)
+  
+    (let [pos (vec3-add (vec3-scale (get-glider-pos 1) 1.0) [0 0 1])]
+      ;(no-lights)
+;      (with-translation pos
+;        (fill 255 255 255)
+;        (sphere 0.1))
+      
+      ;(spot-light 255 255 255 (pos 0) (pos 1) (pos 2)  0  0 -1 (/ Math/PI 2) 4)
+      (point-light 255 255 255 (pos 0) (pos 1) (pos 2))
+      )
+    (let [dir (vec3-scale (vec3-normalize [0.5664 -0.4369 1.0]) -1.0) ]
+      (directional-light 201 226 255 (dir 0) (dir 1) (dir 2)))
 
     (push-matrix)
 ;    (rotate-z (/ (frame-count) 40.1))
 ;    (rotate-x (/ (frame-count) 41.231))
 ;    (rotate-y (/ (frame-count) 38.73))
+;    (no-lights)
+;    (draw-skysphere @camera-pos)
 
     (let [max-rad ((@tiler-state :params) :max-radius)
           max-rad (+ max-rad 1.0)
@@ -741,14 +840,17 @@
       (fill 0 0 255)
       (with-translation [ r  r mr] (box 0.1))
 
-      (light-falloff 1.1 0.0 0.0)
-
+      ;(light-falloff 1.1 0.0 0.0)
       ;(spot-light 0 255 0 mr  r  r   1  -1  -1 (/ Math/PI 2) 2)
       ;(spot-light 255 0 0  r mr  r  -1   1  -1 (/ Math/PI 2) 2)
       ;(spot-light 0 0 255  r  r mr  -1  -1   1 (/ Math/PI 2) 2))
-      (spot-light 128 255 128 mr  r  r   1  -1  -1 (/ Math/PI 2) 2)
-      (spot-light 255 128 128  r mr  r  -1   1  -1 (/ Math/PI 2) 2)
-      (spot-light 128 128 255  r  r mr  -1  -1   1 (/ Math/PI 2) 2))
+      ;(spot-light 128 255 128 mr  r  r   1  -1  -1 (/ Math/PI 2) 2)
+      ;(spot-light 255 128 128  r mr  r  -1   1  -1 (/ Math/PI 2) 2)
+      ;(spot-light 128 128 255  r  r mr  -1  -1   1 (/ Math/PI 2) 2)
+      ;(spot-light 255 255 255 mr  r  r   1  -1  -1 (/ Math/PI 2) 2)
+      ;(spot-light 255 255 255  r mr  r  -1   1  -1 (/ Math/PI 2) 2)
+      ;(spot-light 255 255 255  r  r mr  -1  -1   1 (/ Math/PI 2) 2)
+      )
     (pop-matrix)
 
     ;(light-falloff 1.0 0.2 0.0)
@@ -757,10 +859,9 @@
     ;(hint :disable-depth-test)
     ;(draw-tiling)
     ; (hint :enable-depth-test)
-    (no-fill)
-
-    (draw-horizon)
-    (draw-assemblage-radius)
+    ;(no-fill)
+    ;(draw-horizon)
+    ;(draw-assemblage-radius)
 
     ;(when @draw-facelist?
     ;  (draw-face-list))
@@ -774,7 +875,6 @@
     (update-selected-pos-screen)
     (update-neighbour-candidates-screen)
 
-
     (draw-tiling @tiler-state
                  true ;(not= @current-boundary-mode :none)
                  @draw-tilecode-lines?
@@ -783,7 +883,6 @@
                  @current-boundary-mode)
 
     ;(draw-assemblage-center)
-
 
     (when @draw-tilecode-blobs?
       ;(draw-surface @test-surface)
@@ -797,11 +896,12 @@
       (game/render-game @tiler-state))
 
     ;(fill 0 0 0 32)
-    (stroke 140 140 140 190)
-    (no-fill)
-    (draw-obj (map #(rhombrick.obj-loader/get-verts (@current-topology :verts) %)
-                   (@current-topology :faces)) [])
+    ;(stroke 140 140 140 190)
+    ;(no-fill)
+    ;(draw-obj (map #(rhombrick.obj-loader/get-verts (@current-topology :verts) %)
+    ;               (@current-topology :faces)) [])
 
+    ;(draw-vert-numbers (@current-topology :verts))
 
 ;    (let [sym-ang ((symmetries-flattened @debug-symmetry-idx) 0)
 ;          axis ((symmetries-flattened @debug-symmetry-idx) 1) ]
@@ -810,8 +910,7 @@
 ;      (draw-face-idx-numbers [0 0 0] true)
 ;      (pop-matrix))
 
-    (draw-face-idx-numbers [0 0 0] false)
-
+    ;(draw-face-idx-numbers [0 0 0] false)
 
 ;    (reset! anchor-verts-screen
 ;            (vec (map (fn [vs] (vec (map world-to-screen vs)))
@@ -820,6 +919,8 @@
     ;(draw-tubes 4)
     ;(draw-tube-anchors 0 6)
 
+    ;(draw-billboard [10 0 0] @particle-texture)
+    (no-lights)
     (when @draw-empty?
       (draw-empty @tiler-state))
 
@@ -831,7 +932,19 @@
         ;(draw-selected-tile selected-tile)
         ))
 
+    ;(fill 255 255 255 255)
+    ;(no-stroke)
+    ;(draw-obj-textured sky-model @sky-tex)
+
+    (let [pos (vec3-add (vec3-scale (get-glider-pos 1) 1.0) [0 0 1])]
+      (no-lights)
+      (no-stroke)
+      (fill 128 255 192 255)
+      (with-translation pos
+        (sphere 0.1)))
+
     (pop-matrix)
+    
   )
 
 ;  (fill 255)
@@ -851,10 +964,11 @@
   (pop-matrix)
 
   ; 2d hud stuff
-  ;(hint :disable-depth-test)
+  (hint :disable-depth-test)
+  (no-lights)
   ;(camera)
   ;(ortho)
-  (hint :disable-depth-test)
+  ;(hint :disable-depth-test)
   (when @draw-info?
     (draw-info 10 (- (height) 330)))
 
@@ -871,7 +985,6 @@
     (text-font editor-font)
     (draw-tileset-editor [20 20] (editor/get-tileset) 64)
 
-
     ;(doseq [i (range (count @face-id-text))]
     ;  (let [f (@face-id-text i)
     ;        t (str (f 0))
@@ -881,6 +994,22 @@
     ;  (text t x y)))
     )
   ;(fill 255 255 255)
+;  (fill 255 255 255 32)
+  ;(fill 0 0 0 64)
+ ; (rect 0 0, (width) (height))
+
+  ;(display-filter :erode)
+  ;(display-filter :posterize 4)
+  (.set edge-shader "modelscale" (float @model-scale))
+  ;(filter-shader edge-shader)
+  ;(display-filter :dilate)
+  ;(display-filter :erode)
+  ;(display-filter :invert)
+  ;(display-filter :blur 1)
+  
+  ;(fill 0 0 0 64)
+  ;(rect 0 0, (width) (height))
+ 
   ;(draw-vert-numbers @to-verts-screen)
   ;(draw-anchor-numbers @anchor-verts-screen)
     ;(draw-vert-numbers (@current-topology :verts))
@@ -915,7 +1044,10 @@
     :setup setup
     :draw draw
     ;:size [1900 1100]
-    :size [1440 800]
+    ;:size [1440 800]
+    :size :fullscreen
+    :features [:present :resizable]
+    ;:features [:resizable]
     ;:renderer :opengl
     :renderer :p3d
     :key-typed key-typed
@@ -936,9 +1068,33 @@
 ;(-main)
 
 
-(get-tileset)
+;(get-tileset)
 
-(set-tileset ["---b13B-----"])
+;(set-tileset ["2-3-4-"])
+
+;(set-tileset ["--44-4"])
+;(set-tileset ["-4-Dd4"])
+;(set-tileset ["---b13B-----"])
+
+; self-compatible tiles
+;(set-tileset ["-4-Dd4"
+;              "--43-4"
+;              "-4-D-d"
+;              "-3-cC3"
+;              "---344"
+;              "--33-4"
+;              "-3C3-c"
+;              "--3-Dd"
+;              "-3-3-4"
+;              "--3-43"
+;              "-3C43c"
+;              "--3-33"
+;              "---cC3"
+;              ])
+
+(comment
+
+
 
 (set-tileset ["dD-4D-" "d44---"])
 
@@ -1291,7 +1447,7 @@
 
 
 
-
+)
 
 
 

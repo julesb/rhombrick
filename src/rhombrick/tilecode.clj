@@ -44,7 +44,7 @@
 
 
 
-; NOTE: the tile renderer currently expects face digits no higher than 6 or D 
+; NOTE: the tile renderer currently expects face digits no higher than 6 or D
 ; for simplicity, even though the tiler will handle any hex digit.
 (def ^:const random-tilecode-distribution [
   \- \- \- \- \- \- \- \- \- \- \- \- \- \- \- \-
@@ -91,7 +91,7 @@
   \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2 \2
   \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3 \3
   \4 \4 \4 \4 \4 \4 \4 \4
-  ;\5 \5 \5 \5 
+  ;\5 \5 \5 \5
   ;\6 \6
   ;\7
   \a \a \a \a \a \a \a \a
@@ -113,7 +113,7 @@
 
 
 ; compares single digits of two facecodes, using the
-; compatibility table 
+; compatibility table
 (defn face-digit-compatible? [inner outer]
   (or (contains? facecode-compatible [inner outer])
       (contains? facecode-compatible [outer inner])
@@ -128,7 +128,7 @@
 ;(defn tilecodes-directly-compatible? [outercode innercode]
 ;  (= (@current-topology :num-faces)
 ;     (count (filter true?
-;                    (map #(face-digit-compatible? %1 %2) 
+;                    (map #(face-digit-compatible? %1 %2)
 ;                         innercode outercode)))))
 
 (def tilecodes-directly-compatible? (memoize (fn [outercode innercode]
@@ -148,7 +148,7 @@
 
 (defn make-random-tilecode-to-fit [outercode]
   (apply str (map #(if (not= % \.)
-                     (facecode-compatible-map %) 
+                     (facecode-compatible-map %)
                      (rand-nth random-tilecode-distribution))
                   outercode)))
 
@@ -170,17 +170,25 @@
 ;                                :lru/threshold 65536))
 
 
-; generate all unique rotations of tiles in tileset 
+; generate all unique rotations of tiles in tileset
 (defn expand-tiles-preserving-symmetry [tiles]
   (set (flatten (map #(get-code-symmetries %) tiles))))
 
 
+(defn make-normal-random-tilecode []
+  (let [code (apply str (map (fn [_] (rand-nth [\1 \2 \3 \3 \4 \3 \a \A \b \B \c \C \d \D \- \- \- \- ]))
+                             (range (@current-topology :num-faces))))]
+    ;(if (< (get-num-connected code) 3)
+    (if (= (get-num-connected code) 0)
+      (make-normal-random-tilecode)
+      code)))
 
-(defn make-random-tilecode [] 
+
+(defn make-random-tilecode []
   (let [code (apply str (map (fn [_] (rand-nth random-tilecode-distribution))
                              (range (@current-topology :num-faces))))]
     (if (= (get-num-connected code) 0)
-      (make-random-tilecode) 
+      (make-random-tilecode)
       code)))
 
 
@@ -192,17 +200,19 @@
   (cond
     (= (count tileset) 0)
       ;(recur num-tiles [(rand-nth self-compatible-1-2-3)])
-      (recur num-tiles [(make-random-tilecode)])
+      (recur num-tiles [(make-normal-random-tilecode)])
     (>= (count tileset) num-tiles)
       tileset
     :else
-      (let [new-tile (make-random-tilecode)
+      (let [new-tile (make-normal-random-tilecode)
       ;(let [new-tile (rand-nth self-compatible-1-2-3)
             new-tile-sites (into #{} (map facecode-compatible-map
                                           (filter #(not= \- %) new-tile)))
             tileset-sites (into #{} (filter #(not= \- %)
                                             (apply str tileset)))
-            compatible? (some new-tile-sites tileset-sites) ]
+            compatible? (= (count (clojure.set/intersection new-tile-sites tileset-sites))
+                           (count new-tile-sites)) ]
+            ;compatible? (some new-tile-sites tileset-sites) ]
         (if compatible?
           (recur num-tiles (conj tileset new-tile))
           (recur num-tiles tileset)))))
@@ -212,15 +222,27 @@
   [(rand-nth (take 128 self-compatible-1-2-3))
    (rand-nth self-compatible-1-2-3)
    (rand-nth self-compatible-1-2-3)
-;   (rand-nth self-compatible-1-2-3)
+   (rand-nth self-compatible-1-2-3)
    ]
   )
 
 
 
 (defn get-random-tileset-1 []
-  (let [max-tiles 6]
+  (let [max-tiles 8]
     (make-random-tileset (+ 1 (rand-int max-tiles)) [])))
+
+
+(defn rotate-vec [v]
+  (vec (concat (rest v) [(first v)])))
+
+
+(defn rotations-vec [v]
+    (loop [n (count v)
+           accum [v]]
+      (if (> n 1)
+        (recur (dec n) (conj accum (rotate-vec (last accum))))
+        (vec accum))))
 
 
 
@@ -357,7 +379,7 @@
 
 
 (defn is-tilecode-fully-self-compatible-and-normalized? [code]
-  (and (tilecode-is-normalized? code) 
+  (and (tilecode-is-normalized? code)
     (is-tilecode-fully-self-compatible? code)))
 
 ; _______________________________________________________________________
@@ -402,7 +424,7 @@
                   (range 12))))
 
 
-; pfh code for CA rule 110: 
+; pfh code for CA rule 110:
 (def ca-rule-110 [
                   "a-aC-C"
                   "a-bC-D"

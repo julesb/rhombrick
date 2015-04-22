@@ -6,35 +6,55 @@
 
 
 (def shape-2d-cache (atom {}))
+(def jigsaw-shape-2d-cache (atom {}))
+
 (def inner-shape-2d-cache (atom {}))
 
 (defn shape-2d-cache-reset []
   (reset! shape-2d-cache {})
-  (reset! inner-shape-2d-cache {}))
+  (reset! inner-shape-2d-cache {})
+  (reset! jigsaw-shape-2d-cache {}))
 
 
 (def shape-2d-thicknesses   { ;\1 0.333
-                              \1 0.25
-                              \2 0.333
-                              \3 0.5
-                              \4 0.75
-                              \5 0.8
+                              \1 0.333
+                              \2 0.5
+                              \3 0.75
+                              \4 0.9
+                              \5 0.95
                               \6 1.6875
                               \7 2.0
-                             \a 0.25
-                             \A 0.25
-                             \b 0.333
-                             \B 0.333
-                             \c 0.5
-                             \C 0.5
-                             \d 0.75
-                             \D 0.75
+                             \a 0.333
+                             \A 0.333
+                             \b 0.5
+                             \B 0.5
+                             \c 0.75
+                             \C 0.75
+                             \d 0.9
+                             \D 0.9
                              })
+;(def shape-2d-thicknesses   { ;\1 0.333
+;                              \1 0.25
+;                              \2 0.333
+;                              \3 0.5
+;                              \4 0.75
+;                              \5 0.8
+;                              \6 1.6875
+;                              \7 2.0
+;                             \a 0.25
+;                             \A 0.25
+;                             \b 0.333
+;                             \B 0.333
+;                             \c 0.5
+;                             \C 0.5
+;                             \d 0.75
+;                             \D 0.75
+;                             })
 
 (def like-compatible-connector
   ;(vec (reverse
   [
-   ;[0.0 1.0 0.0]
+   [0.0 1.0 0.0]
    [0.0 0.5 0.0]
    [-1.0 0.5 0.0]
    [-1.0 -0.5 0.0]
@@ -45,7 +65,7 @@
    [1.0 0.5 0.0]
    [1.0 -0.5 0.0]
    [0.0 -0.5 0.0]
-   ;[0.0 -1.0 0.0]
+   [0.0 -1.0 0.0]
    ])
 ;))
 
@@ -56,7 +76,7 @@
 
 
 (def like-compatible-tolerances
-  [
+  [[(- tol) 0.0 0.0]
    [(- tol) tol 0.0]
    [(- tol) tol 0.0]
    [(- tol) (- tol) 0.0]
@@ -67,10 +87,11 @@
    [(- tol) (- tol) 0.0]
    [(- tol) tol 0.0]
    [(- tol) tol 0.0]
+   [(- tol) 0.0 0.0]
    ])
 
 (def yang-tolerances
-  [
+  [[(- tol) 0.0 0.0]
    [(- tol) (- tol) 0.0]
    [tol (- tol) 0.0]
    [tol (- tol) 0.0]
@@ -79,6 +100,7 @@
    [tol tol 0.0]
    [tol tol 0.0]
    [(- tol) tol 0.0]
+   [(- tol) 0.0 0.0]
    ])
 
 (def yin-tolerances
@@ -90,7 +112,7 @@ yin-tolerances
 
 (def opposite-compatible-connector-yang
   [
-   ;[0.0 1.0 0.0]
+   [0.0 1.0 0.0]
    [0.0 0.25 0.0]
    [0.5 0.25 0.0]
    [0.5 0.5 0.0]
@@ -99,7 +121,7 @@ yin-tolerances
    [0.5 -0.5 0.0]
    [0.5 -0.25 0.0]
    [0.0 -0.25 0.0]
-   ;[0.0 -1.0 0.0]
+   [0.0 -1.0 0.0]
    ])
 
 (def opposite-compatible-connector-yin
@@ -140,7 +162,7 @@ yin-tolerances
 ;(def get-bez-anchors-2d (memoize (fn [code topo]
 (defn get-bez-anchor-offsets-2d [code topo]
   (let [vs (rotate-vec (topo :verts-2d))
-;  (let [vs (rotate-vec (apply-tolerance(topo :verts-2d)))
+  ;(let [vs (rotate-vec (apply-tolerance (topo :verts-2d)))
         rads (->> (map shape-2d-thicknesses code)
                   (filter #(not (nil? %)))
                   (map #(* % 0.5)))
@@ -219,7 +241,7 @@ yin-tolerances
         tolerance-offsets (into {} (map #(vec [% (get-tolerance-offsets (.charAt code %))])
                                         con-idxs))
         conns-scaled (into {} (map #(vec [% (scale-connector-verts (conns %)
-                                                                   (* 0.5 (shape-2d-thicknesses (.charAt code %)))                    )])
+                                            (* 0.5 (shape-2d-thicknesses (.charAt code %))))])
                                    con-idxs))
         conns-tol (into {} (map #(vec [% (map vec3-add (conns-scaled %) (tolerance-offsets %))])
                                 con-idxs))
@@ -232,42 +254,24 @@ yin-tolerances
     ))
 
 
-(defn make-jigsaw-piece-orig [code topo res]
-  (let [curves (make-facecode-shape-2d code topo res)
-        con-idxs (get-connected-idxs code)
-        face-centers (into {} (map #(vec [% ((topo :face-centers) %)]) con-idxs))
-        ;conns-rotated (into {} (vec (map #(vec [% (rotate-connector %)]) con-idxs)))
-
-        conns (into {} (vec (map #(vec [% (get-connector-verts-for-digit (.charAt code %))]) con-idxs)))
-
-        tolerance-offsets (into {} (map #(vec [% (get-tolerance-offsets (.charAt code %))])
-                                        con-idxs))
-
-        conns-rotated (into {} (vec (map #(vec [% (rotate-connector % (conns %) topo)]) con-idxs)))
-
-        conns-scaled (into {} (map #(vec [% (scale-connector-verts (conns-rotated %)
-                                                                   (* 0.5 (shape-2d-thicknesses (.charAt code %)))
-                                                                   )])
-                                   con-idxs))
-
-        conns-tr (map #(translate-connector-verts (conns-scaled %) (face-centers %))
-                      con-idxs)
-        shape (vec (interleave  conns-tr curves))
-        ]
-    ;(apply concat shape)
-    shape
-    ))
-
-
-
 (defn get-facecode-shape-2d [code topo res]
   (if (contains? @shape-2d-cache [code topo res])
     (@shape-2d-cache [code topo res])
     (do
       (swap! shape-2d-cache assoc [code topo res]
+             (make-facecode-shape-2d code topo res))
+             ;(make-jigsaw-piece code topo res))
+      (@shape-2d-cache [code topo res]))))
+
+
+(defn get-facecode-jigsaw-shape-2d [code topo res]
+  (if (contains? @jigsaw-shape-2d-cache [code topo res])
+    (@jigsaw-shape-2d-cache [code topo res])
+    (do
+      (swap! jigsaw-shape-2d-cache assoc [code topo res]
              ;(make-facecode-shape-2d code topo res))
              (make-jigsaw-piece code topo res))
-      (@shape-2d-cache [code topo res]))))
+      (@jigsaw-shape-2d-cache [code topo res]))))
 
 
 (defn get-facecode-inner-shape-2d [code topo res]
