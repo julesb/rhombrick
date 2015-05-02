@@ -110,7 +110,9 @@
     ;(reset! bbox-tex (load-image "seamless-black-wall-texture-decorating-inspiration-1.jpg"))
     ;(reset! rhomb-tex (load-image "gradient.jpg"))
     ;(reset! rhomb-tex (load-image "map-15Bsubset.jpg"))
-    (reset! bound-tex (load-image "seamless_metal_texture_by_hhh316-d30x412.jpg"))
+    ;(reset! bound-tex (load-image "seamless_metal_texture_by_hhh316-d30x412.jpg"))
+    ;(reset! bound-tex (load-image "rhombrick-boundary-uv-edgehalo.png"))
+    (reset! bound-tex (load-image "rhombrick-boundary-uv-scifi.png"))
     ;(reset! particle-texture (load-image "NeGeo-particle.png"))
     (reset! particle-texture (load-image "pump_flare_06.png"))
     ;(println "texture:" @rhomb-tex)
@@ -195,9 +197,11 @@
                (str "scale: " @model-scale)
                (str "fps: " (int (current-frame-rate)))
                (str "tileset:" (get-tileset))
+               (str "seed:" "\"" (get-in @tiler-state [:params :seed]) "\"")
                ]]
-    (fill 0 0 0 192)
-    (rect (- x 10.0) (- y 20.0) 400 400)
+    (let [rectw (+ 20 (max 300 (text-width (str "tileset:" (get-tileset)))))]
+      (fill 0 0 0 192)
+      (rect (- x 10.0) (- y 20.0) rectw 400))
     (fill 255 255 255 255)
     (doseq [i (range (count lines))]
       (text (lines i) x (+ y (* i line-space))))))
@@ -970,7 +974,7 @@
   ;(ortho)
   ;(hint :disable-depth-test)
   (when @draw-info?
-    (draw-info 10 (- (height) 330)))
+    (draw-info 10 (- (height) 370)))
 
   (camera)
 
@@ -1000,7 +1004,7 @@
 
   ;(display-filter :erode)
   ;(display-filter :posterize 4)
-  (.set edge-shader "modelscale" (float @model-scale))
+  ;(.set edge-shader "modelscale" (float @model-scale))
   ;(filter-shader edge-shader)
   ;(display-filter :dilate)
   ;(display-filter :erode)
