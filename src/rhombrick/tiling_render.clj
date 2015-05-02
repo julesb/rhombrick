@@ -41,6 +41,7 @@
                     "metal_seamless_texture_18_by_jojo_ojoj-d773szm.jpg"
                     "9441717255_5ff5d46373.jpg"
                     "Ceramic_Glaze_Test_Pattern.jpg"
+                    "testpattern4po6.png"
                     ])
 
 (def bound-tex-idx (atom 0))
@@ -482,7 +483,7 @@
                     thickness (+ 0.075 (* 1.0 (bezier-box-thicknesses (.charAt code i))))
                     bcol (get boundary-colors d [127 127 127])
                     alpha 255]
-                (tint (bcol 0) (bcol 1) (bcol 2) alpha)
+                (fill (bcol 0) (bcol 1) (bcol 2) alpha)
                 ;(stroke (- 255 (bcol 0)) (- 255 (bcol 1)) (- 255 (bcol 2)))
                 ;(with-translation (vec3-scale ((@current-topology :face-centers) i) 0.956)
                 (with-translation (vec3-sub ((@current-topology :face-centers) i)
@@ -491,6 +492,9 @@
                   (rotate az 0 0 1)
                   (rotate el 0 1 0)
                   (rotate (/ PI 2.0) 0 0 1)
+                  (if bbox/bezier-box-rotate-45?
+                    (rotate (/ PI 4.0) 0 1 0))
+
                   ;(box 0.0625 thickness thickness))))))))))
                   (scale 0.5)
                   (scale thickness 1.0 thickness)
@@ -923,8 +927,8 @@
 
 (defn draw-facecode-bezier-box-lines [code col steps]
   (when (contains? #{3 4} (count col)) (apply stroke col))
-  (stroke-weight @bezier-box-line-weight)
-  (no-fill)
+  ;(stroke-weight @bezier-box-line-weight)
+  ;(no-fill)
   (doseq [line-verts (bbox/get-bezier-box-lines code steps)]
     (doseq [vert line-verts]
       (begin-shape)
@@ -949,7 +953,7 @@
 (defn draw-facecode-bezier-boxes-tex [code col steps]
   ;(fill 255 255 255)
   (fill (col 0) (col 1) (col 2) 255)
-  (no-stroke)
+  ;(stroke 255 255 255 192)
   (doseq [bbox (bbox/get-bezier-box-triangles code steps)]
     (doseq [strip bbox]
       (let [tx-step (/ 1.0 (count strip))]
@@ -957,9 +961,8 @@
         (texture @bbox-tex)
         (doseq [[i [vx vy vz]] (map-indexed vector strip)]
           (vertex vx vy vz (* i tx-step) (mod i 2)))
-        (end-shape))))
-  ;(no-tint)
-  )
+        (end-shape)))))
+
 
 (defn draw-facecode-bezier-boxes-n [code col steps]
   (when (contains? #{3 4} (count col))
@@ -1078,7 +1081,8 @@
     (let [pos tile
           code (get (ts :tiles) pos)
           ;col [255 255 255 255]
-          col [255 255 255 255] ;(conj (get-tile-color code) 255)
+          ;col [255 255 255 255]
+          col (conj (get-tile-color code) 255)
           line-col [(- 255.0 (col 0)) (- 255.0 (col 1)) (- 255.0 (col 2)) 128]
           ;line-col col
           line-col [0 0 0 240]
@@ -1098,12 +1102,17 @@
           (with-translation [0 0 0.0]
           (draw-facecode-lines code)))
 
+        (no-stroke)
+        ;(stroke-weight 0.01)
+        ;(stroke 0 0 0 192)
         (when with-bb-faces?
           (if @bezier-box-smooth-shading?
             (draw-facecode-bezier-boxes-n (get (ts :tiles) pos) col bezier-steps)
             (draw-facecode-bezier-boxes-tex (get (ts :tiles) pos) col bezier-steps)))
             ;(draw-facecode-bezier-boxes (get (ts :tiles) pos) col bezier-steps)))
         (when with-bb-lines?
+          (no-fill)
+          (stroke-weight @bezier-box-line-weight)
           (draw-facecode-bezier-box-lines (get (ts :tiles) pos) line-col bezier-steps))
 
         (when (or (= (@current-topology :id) :hexagon)

@@ -10,6 +10,7 @@
 (def bezier-box-resolution (atom 8))
 (def bezier-box-control-bias (atom 0.5))
 
+(def bezier-box-rotate-45? false)
 
 (def bezier-box-thicknesses { \1 0.146875
                               \2 0.29375
@@ -50,12 +51,20 @@
 
 
 (defn get-bezier-anchor-offsets-rotated [f-idx]
+  (if bezier-box-rotate-45?
+    (map #(vec3-scale % (/ 1.0 1.4142135623730951)) (bezier-anchor-offsets f-idx))
+    (let [o (bezier-anchor-offsets f-idx)]
+      (vec [(vec3-bisect (o 0) (o 1))
+                (vec3-bisect (o 1) (o 2))
+                (vec3-bisect (o 2) (o 3))
+                (vec3-bisect (o 3) (o 0))]))))
+
+(defn get-bezier-anchor-offsets-rotated-orig [f-idx]
   (let [o (bezier-anchor-offsets f-idx)]
     (vec [(vec3-bisect (o 0) (o 1))
               (vec3-bisect (o 1) (o 2))
               (vec3-bisect (o 2) (o 3))
               (vec3-bisect (o 3) (o 0))])))
-
 
 ; this is hideous and horrible but as long as it spits out the right numbers
 ; it will do, since it will only be used for precomputing triangle strip data
