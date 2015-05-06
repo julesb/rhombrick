@@ -70,7 +70,7 @@
 ;(def test-surface (atom {}))
 (def rendering? (atom true))
 
-(def ^:dynamic edge-shader)
+(def edge-shader (atom nil))
 
 (def phi-palette-offset (atom 0))
 
@@ -125,7 +125,8 @@
     ;(.mouseMove robot 0 0)
     ;(.mouseMove robot (/ (width) 2) (/ (height) 2))
     ;(smooth)
-    (def edge-shader (load-shader "data/edges.glsl"))
+    ;(def edge-shader (load-shader "data/edges.glsl"))
+    (reset! edge-shader (load-shader "data/test.frag"))
     (frame-rate 60)
     (update-camera)
     (println "setting font")
@@ -487,6 +488,10 @@
           (reset! bbox-tex-idx (mod (inc @bbox-tex-idx) (count bbox-textures)))
           (reset! bbox-tex (load-image (bbox-textures @bbox-tex-idx)))
           )
+    \` #(do
+          (reset-shader)
+          (reset! edge-shader (load-shader "data/test.frag"))          
+          )
 ;    \D #(do
 ;          (osc-send client "/rhombrick.game" "destroy-neighbourhood" @game/selected-candidate-idx)
 ;          (game/destroy-neighbourhood)
@@ -639,7 +644,6 @@
 
 
 (defn draw []
-  ;(shader edge-shader)
   ;(get-location-on-screen)
   (let [frame-start-time (System/nanoTime)]
 
@@ -647,7 +651,7 @@
     (do-movement-keys)
   ;  )
 
-    (blend-mode :blend)
+    ;(blend-mode :blend)
 ;  (when @tiler-auto-seed?
 ;    (auto-seed-tiler))
 ; auto seed mode
@@ -675,10 +679,10 @@
     (update-gliders))
 
 
-  ;(background 255 255 255 )
-;  (background 64 64 64 )
+  (background 255 255 255 )
+  ;(background 64 64 64 )
   ;(background 16 24 32)
-  (background 0 0 0)
+ ; (background 0 0 0)
 
   (push-matrix)
 
@@ -973,8 +977,8 @@
   ;(camera)
   ;(ortho)
   ;(hint :disable-depth-test)
-  (when @draw-info?
-    (draw-info 10 (- (height) 370)))
+  ;(when @draw-info?
+  ;  (draw-info 10 (- (height) 370)))
 
   (camera)
 
@@ -1004,8 +1008,25 @@
 
   ;(display-filter :erode)
   ;(display-filter :posterize 4)
-  ;(.set edge-shader "modelscale" (float @model-scale))
-  ;(filter-shader edge-shader)
+  (no-lights)
+  (let [zoom  1.0 
+        mx (/ (float (mouse-x)) (width))
+        my (/ (float (mouse-y)) (height))
+        ar (/ (float (width)) (height))
+        px (* (- mx 0.5) ar zoom)
+        py (* (- my 0.5) zoom)
+        ]
+  (.set @edge-shader "framecount" (frame-count))
+  (.set @edge-shader "aspect_ratio" (float ar))
+  (.set @edge-shader "mousex" (float px))
+  (.set @edge-shader "mousey" (float py))
+  (.set @edge-shader "zoom" (float zoom))
+  (.set @edge-shader "width" (float (width)))
+  (.set @edge-shader "height" (float (height)))
+
+  (texture-wrap :repeat)
+  (filter-shader @edge-shader)
+  )
   ;(display-filter :dilate)
   ;(display-filter :erode)
   ;(display-filter :invert)
@@ -1052,8 +1073,8 @@
     :size :fullscreen
     :features [:present :resizable]
     ;:features [:resizable]
-    ;:renderer :opengl
-    :renderer :p3d
+    :renderer :opengl
+    ;:renderer :p3d
     :key-typed key-typed
     :key-pressed key-pressed
     :key-released key-released
