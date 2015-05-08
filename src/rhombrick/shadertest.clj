@@ -54,9 +54,10 @@
     (.set shad "viewx" (float vx))
     (.set shad "viewy" (float vy))
     (.set shad "aspect_ratio" (float ar))
-    (.set shad "mousex" (float px))
-    (.set shad "mousey" (float py))
     (.set shad "zoom" (float zoom))
+    (when (mouse-pressed?)
+      (.set shad "mousex" (float px))
+      (.set shad "mousey" (float py)))
     ;(.set shad "width" (float (width)))
     ;(.set shad "height" (float (height)))
   ))
@@ -69,13 +70,10 @@
    \e #(do
          (def edge-shader (load-shader "data/edges.glsl"))
          )
-
-
    \p #(do
           (if @render-paused?
             (start-loop)
-            (no-loop)
-            )
+            (no-loop))
           (swap! render-paused? not)
           )
    \` #(do
@@ -85,6 +83,9 @@
           ;(reset! texture-shader (load-shader "data/texfrag.glsl" "data/texvert.glsl"))
           (reset! texture-shader (load-shader "data/texfrag.glsl"))
           )
+   \0 #(do
+         (reset! view-offset [0 0])
+        )
    })
 
 (def key-movement-map
@@ -112,6 +113,7 @@
     (when (contains? key-movement-map k)
       ((key-movement-map k)))))
 
+
 (defn key-typed []
   (let [keychar (raw-key)]
     (when (contains? key-command-map keychar)
@@ -138,15 +140,15 @@
 
 (defn mouse-moved []
   (let [x (mouse-x) y (mouse-y)]
-    (reset! mouse-position [x y])
-    ;(reset! view-offset @mouse-position)
-    ))
+    (reset! mouse-position [x y])))
+
 
 (defn draw-info [x y]
   (text-font console-font)
   (let [line-space 30 
         lines [
-               (str (format "view: [%.2f %.2f]" (@view-offset 0) (@view-offset 1)))
+               (str (format "view: [%.2f %.2f]" (float (@view-offset 0))
+                                                (float (@view-offset 1))))
                (str "mouse: " @mouse-position)
                (str (format "zoom: %.3f" @view-scale))
                (str "fps: " (current-frame-rate))
@@ -160,7 +162,7 @@
 (defn draw-quad []
   (let [ar @aspect-ratio]
     (begin-shape :quads)
-      (texture @tex1)
+      ;(texture @tex1)
       (shader @texture-shader)
       ;(shader @color-shader)
       (vertex -1 -1 0 0)
@@ -177,7 +179,7 @@
   (fill 0 0 0 196)
   (ortho)
   (hint :disable-depth-test)
-  (texture-wrap :clamp)
+  (texture-wrap :repeat)
   (no-lights)
   (let [c [(* (width) 0.5)
            (* (height) 0.5)]]
