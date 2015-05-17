@@ -32,8 +32,8 @@
     (q/texture-mode :normal)
     (q/texture-wrap :repeat)
     ;(frame-rate 120)
-;    (def console-font (load-font "data/FreeMono-16.vlw"))
-    (def console-font (q/load-font "ScalaSans-Caps-32.vlw"))
+    (def console-font (q/load-font "data/FreeMono-16.vlw"))
+;    (def console-font (q/load-font "ScalaSans-Caps-32.vlw"))
     (def edge-shader (q/load-shader "data/edges.glsl"))
     (reset! tex1 (q/load-image "testpattern4po6.png"))
     (reset! test-shader (q/load-shader "data/test.frag"))
@@ -52,8 +52,7 @@
 
 
 (defn update-uniforms! [state shader] 
-  (when state
-    (let [zoom  (get state :zoom 1.0) ;@view-scale
+    (let [zoom  (get state :view-scale 1.0) ;@view-scale
           mp (get state :mouse-position [0 0])
           mx (/ (float (mp 0)) (q/width))
           my (/ (float (mp 1)) (q/height))
@@ -74,10 +73,11 @@
       ;  )
       ;(.set shad "width" (float (width)))
       ;(.set shad "height" (float (height)))
-    )))
+    ;)
+    ))
 
 
-(def speed 10.0)
+(def speed 0.005)
 
 
 (def key-command-map
@@ -106,84 +106,73 @@
 
 
 (defn do-key-movement [state keychar]
-  (when state
-    (let [vs (get state :view-scale 1.0)
-          vo (get state :view-offset [0 0])
-          ar (get state :aspect-ratio 1.0)
-          key-movement-map {
-           \w (fn [s] (assoc s :view-offset (vec2-add vo [0.0 (* speed vs)])))
-           \s (fn [s] (assoc s :view-offset (vec2-sub vo [0.0 (* speed vs)])))
-           \a (fn [s] (assoc s :view-offset (vec2-add vo [(* speed vs ar) 0.0])))
-           \d (fn [s] (assoc s :view-offset (vec2-sub vo [(* speed vs ar) 0.0])))
-
-           \p (fn [s] (assoc s :render-paused? (not (s :render-paused?))))
-           \, (fn [s] (assoc s :view-scale (* 0.99 vs)))
-           \. (fn [s] (assoc s :view-scale (* 1.01 vs)))
-           ;\, #(reset! view-scale (* 0.99 vs))
-           ;\. #(reset! view-scale (* 1.01 vs))
-           
-           }]
-;    (if (contains? key-movement-map keychar)
-      (-> state
-          ((get key-movement-map keychar state))
-          (dissoc :keys-down keychar))
-      ;state)
-  ;)
-  )))
+  (let [vs (get state :view-scale 1.0)
+        vo (get state :view-offset [0 0])
+        ar (get state :aspect-ratio 1.0)
+        key-movement-map {
+          \w (fn [s] (assoc s :view-offset (vec2-add vo [0.0 (* speed vs)])))
+          \s (fn [s] (assoc s :view-offset (vec2-sub vo [0.0 (* speed vs)])))
+          \a (fn [s] (assoc s :view-offset (vec2-add vo [(* speed vs ) 0.0])))
+          \d (fn [s] (assoc s :view-offset (vec2-sub vo [(* speed vs ) 0.0])))
+          \, (fn [s] (assoc s :view-scale (* 0.99 vs)))
+          \. (fn [s] (assoc s :view-scale (* 1.01 vs)))
+          \p (fn [s] (assoc s :render-paused? (not (s :render-paused?))))
+          \r (fn [s] initial-state)
+         }]
+  (if (contains? key-movement-map keychar)
+    ((key-movement-map keychar) state)
+    state)))
 
 
-
-(defn do-movement-keys [state]
-  (doall (reduce #(do-key-movement state %) (state :keys-down))))
+(defn do-movement-keys [state & keys-down]
+  (if (nil? keys-down)
+    (recur state (state :keys-down))
+    (if (<= (count keys-down) 0)
+      state
+      (recur (do-key-movement state (first keys-down))
+             (rest keys-down)))))
 
 
 (defn key-pressed [state event]
-;  (println event)
-  (println "state: " state)
   (let [the-raw-key (event :raw-key)
         the-key-code (event :key-code)
         coded? (= processing.core.PConstants/CODED (int the-raw-key))
         the-key-pressed (if coded? the-key-code the-raw-key) ]
-    ;(if (and coded? (contains? key-movement-map the-key-pressed))
     (if coded?
       state
       (-> state
-          (assoc :keys-down (conj (state :keys-down) the-raw-key))
-          ))))
+          (assoc :keys-down (conj (state :keys-down) the-raw-key))))))
       
 
 (defn key-released [state]
-  (when state
-    (println "key released " (get state :keys-down nil)))
   (-> state
       (assoc :keys-down (disj (state :keys-down) (q/raw-key)))))
 
 
 (defn mouse-moved [state event]
-  (when state
     (-> state
-        (assoc :mouse-position [(event :x) (event :y)]))))
+        (assoc :mouse-position [(event :x) (event :y)])))
+
 
 (defn mouse-dragged [state event]
-  (when state
     (-> state
-        (assoc :mouse-position [(event :x) (event :y)]))))
+        (assoc :mouse-position [(event :x) (event :y)])))
 
 
 (defn update [state]
-  (-> state
-      do-movement-keys)
-  )
+  (do-movement-keys state))
+
 
 (defn draw-info [state x y]
   (q/text-font console-font)
-  (let [line-space 30
+  (let [line-space 24
         [vx vy] (get state :view-offset [0 0])
         vs (get state :view-scale 1.0)
         [mx my] (get state :mouse-position [0 0])
         zoom (get state :zoom 1.0)
         ar (get state :aspect-ratio 1.0)
         lines [
+               (str "state: " state)
                (str (format "view: [%.2f %.2f]" (float vx) (float vy)))
                (str (format "mouse: [%.0f %.0f]" (float mx) (float my)))
                (str (format "zoom: %.3f" vs))
@@ -226,8 +215,6 @@
 
 
 (defn draw [state]
-  ;(do-movement-keys)
-  ;(auto-move)
   (update-uniforms! state @texture-shader)
   ;(update-uniforms @ray-shader)
   (q/background 0 0 0)
@@ -269,6 +256,7 @@
     :renderer :p3d
 ;    :renderer :opengl
     ;:key-typed key-typed
+    :update update
     :key-pressed key-pressed
     :key-released key-released
     :mouse-moved mouse-moved
