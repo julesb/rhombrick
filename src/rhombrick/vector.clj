@@ -17,6 +17,10 @@
 (defn vec2-scale [v s]
   [(* (v 0) s) (* (v 1) s)])
 
+(defn vec2-mul [v1 v2]
+  [(* (v1 0) (v2 0))
+   (* (v1 1) (v2 1))])
+
 (defn vec2-length [[x y]]
   (Math/sqrt (+ (* x x) (* y y))))
 
