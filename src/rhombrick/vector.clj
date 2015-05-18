@@ -21,6 +21,10 @@
   [(* (v1 0) (v2 0))
    (* (v1 1) (v2 1))])
 
+(defn vec2-div [v1 v2]
+  [(/ (v1 0) (v2 0))
+   (/ (v1 1) (v2 1))])
+
 (defn vec2-length [[x y]]
   (Math/sqrt (+ (* x x) (* y y))))
 
@@ -30,10 +34,10 @@
         [(/ x 0.000000001) (/ y 0.000000001)]
         [(/ x l) (/ y l)])))
 
-
 (defn vec2-equal? [v1 v2]
   (and (= (v1 0) (v2 0))
        (= (v2 1) (v2 1))))
+
 
 (defn vec3-add [[v1x v1y v1z] [v2x v2y v2z]]
   [(+ v1x v2x) (+ v1y v2y) (+ v1z v2z)])
@@ -74,16 +78,13 @@
         [(/ x 0.000000001) (/ y 0.000000001) (/ z 0.000000001)]
         [(/ x l) (/ y l) (/ z l)])))
 
-
 (defn vec3-cross [[v1x v1y v1z] [v2x v2y v2z]]
   [ (- (* v1y v2z) (* v1z v2y))
     (- (* v1z v2x) (* v1x v2z))
     (- (* v1x v2y) (* v1y v2x))])
 
-
 (defn vec3-dot [[v1x v1y v1z] [v2x v2y v2z]]
   (+ (* v1x v2x) (* v1y v2y) (* v1z v2z)))
-
 
 (defn vec3-angle-between [v1 v2]
   (let [l1 (vec3-length v1)
@@ -93,17 +94,14 @@
         degs (* (/ rads Math/PI) 180.0) ]
     degs))
 
-
 (defn vec3-distance [p1 p2]
   (vec3-length (vec3-sub p2 p1)))
 
 (defn vec3-distance-squared [p1 p2]
   (vec3-sum-of-squares (vec3-sub p2 p1)))
 
-
 (defn vec3-bisect [p1 p2]
   (vec3-scale (vec3-add p1 p2) 0.5))
-
 
 (defn vec3-abs [v] [(Math/abs (v 0)) (Math/abs (v 1)) (Math/abs (v 2))])
 
@@ -111,13 +109,11 @@
 
 (defn vec3-min [v1 v2] [(min (v1 0) (v2 0)) (min (v1 1) (v2 1)) (min (v1 2) (v2 2))])
 
-
-
 (defn vec3-equal? [v1 v2]
   (and (= (v1 0) (v2 0))
        (= (v1 1) (v2 1))
-       (= (v1 2) (v2 2))
-       ))
+       (= (v1 2) (v2 2))))
+
 
 (defn myround [s n]
   (double (.setScale (bigdec n) s java.math.RoundingMode/HALF_EVEN)))
