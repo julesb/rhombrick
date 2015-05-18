@@ -48,9 +48,6 @@
   )
 
 
-
-
-
 (defn update-uniforms! [state shader] 
     (let [zoom  (get state :view-scale 1.0) ;@view-scale
           mp (get state :mouse-position [0 0])
@@ -74,6 +71,7 @@
       ;(.set shad "width" (float (width)))
       ;(.set shad "height" (float (height)))
     ;)
+    state
     ))
 
 
@@ -116,8 +114,10 @@
           \d (fn [s] (assoc s :view-offset (vec2-sub vo [(* speed vs ) 0.0])))
           \, (fn [s] (assoc s :view-scale (* 0.99 vs)))
           \. (fn [s] (assoc s :view-scale (* 1.01 vs)))
-          \p (fn [s] (assoc s :render-paused? (not (s :render-paused?))))
           \r (fn [s] initial-state)
+          \` (fn [s]
+               (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
+               s)
          }]
   (if (contains? key-movement-map keychar)
     ((key-movement-map keychar) state)
@@ -149,6 +149,16 @@
       (assoc :keys-down (disj (state :keys-down) (q/raw-key)))))
 
 
+(defn key-typed [state event]
+  (if (= \p (event :raw-key))
+    (do
+      (if (state :render-paused?)
+         (q/start-loop)
+         (q/no-loop))
+      (update-in state [:render-paused?] not))
+    state))
+
+
 (defn mouse-moved [state event]
     (-> state
         (assoc :mouse-position [(event :x) (event :y)])))
@@ -160,7 +170,11 @@
 
 
 (defn update [state]
-  (do-movement-keys state))
+  (-> state
+      (do-movement-keys)
+      (update-uniforms! @texture-shader)
+     ;(update-uniforms! @ray-shader)
+  ))
 
 
 (defn draw-info [state x y]
@@ -168,13 +182,13 @@
   (let [line-space 24
         [vx vy] (get state :view-offset [0 0])
         vs (get state :view-scale 1.0)
-        [mx my] (get state :mouse-position [0 0])
-        zoom (get state :zoom 1.0)
         ar (get state :aspect-ratio 1.0)
+        [mx my] (vec2-div (get state :mouse-position [0 0]) [(q/width) (q/height)])
+        zoom (get state :zoom 1.0)
         lines [
-               (str "state: " state)
+               ;(str "state: " state)
                (str (format "view: [%.2f %.2f]" (float vx) (float vy)))
-               (str (format "mouse: [%.0f %.0f]" (float mx) (float my)))
+               (str (format "mouse: [%.2f %.2f]" (float mx) (float my)))
                (str (format "zoom: %.3f" vs))
                (str (format "ar: %.2f" ar))
                (str "fps: " (q/current-frame-rate))
@@ -215,8 +229,6 @@
 
 
 (defn draw [state]
-  (update-uniforms! state @texture-shader)
-  ;(update-uniforms @ray-shader)
   (q/background 0 0 0)
   (q/fill 0 0 0 196)
   (q/ortho)
@@ -238,7 +250,7 @@
     )
   (q/reset-shader) 
   (draw-info state 32 (- (q/height) 150))
-  ;(filter-shader edge-shader)
+  ;(q/filter-shader edge-shader)
   )
 
 
@@ -255,7 +267,7 @@
  
     :renderer :p3d
 ;    :renderer :opengl
-    ;:key-typed key-typed
+    :key-typed key-typed
     :update update
     :key-pressed key-pressed
     :key-released key-released
