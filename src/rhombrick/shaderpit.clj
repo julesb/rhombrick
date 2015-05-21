@@ -53,7 +53,7 @@
           mp (get state :mouse-position [0 0])
           mx (/ (float (mp 0)) (q/width))
           my (/ (float (mp 1)) (q/height))
-          ar (/ (float (q/width)) (q/height))
+          ar (state :aspect-ratio);(/ (float (q/width)) (q/height))
           px (* (- mx 0.5) ar zoom)
           py (* (- my 0.5) zoom)
           [vx vy] (vec2-scale (get state :view-offset [0 0])
@@ -114,7 +114,8 @@
           \d (fn [s] (assoc s :view-offset (vec2-sub vo [(* speed vs ) 0.0])))
           \, (fn [s] (assoc s :view-scale (* 0.99 vs)))
           \. (fn [s] (assoc s :view-scale (* 1.01 vs)))
-          \r (fn [s] initial-state)
+          \r (fn [s]  (-> initial-state
+                          (assoc :aspect-ratio (/ (float (q/width)) (q/height)))))
           \` (fn [s]
                (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
                s)
@@ -260,9 +261,9 @@
     :setup setup
     :draw draw
     ;:size [1900 1100]
-    :size [1440 800]
-    ;:size :fullscreen
-    :features [;:present 
+    ;:size [1440 800]
+    :size :fullscreen
+    :features [:present 
                :resizable]
  
     :renderer :p3d
