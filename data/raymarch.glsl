@@ -37,12 +37,12 @@ vec2 obj_union(in vec2 obj0, in vec2 obj1) {
 }
 
 vec2 obj_floor(in vec3 p) {
-  return vec2(p.y+10.0,0);
+  return vec2(p.y+0.0,0);
 }
 
 vec2 obj_sphere(in vec3 p) {
-  float d = length(p)-1.5;
-  return vec2(d,0);
+  float d = length(p)-1.45;
+  return vec2(d,3);
 }
 
 vec2 obj_torus(in vec3 p) {
@@ -59,20 +59,26 @@ vec2 obj_round_box(vec3 p) {
 
 
 vec2 op_union(vec2 a, vec2 b) {
-  float d = min(a.x, b.x);
-  return vec2(d,1);
+    float d = min(a.x, b.x);
+    if (d < b.x)
+        return vec2(d,a.y);
+    else
+        return vec2(d,b.y);
 }
 
 vec2 op_sub(vec2 a, vec2 b) {
   float d = max(a.x, -b.x);
-  return vec2(d,1);
+  return vec2(d,2);
 }
 
 
 vec2 op_blend(vec3 p, vec2 a, vec2 b) {
  float s = smoothstep(length(p), 0.0, 1.0);
  float d = mix(a.x, b.x, s);
- return vec2(d,1);
+ if (s < 0.5)
+    return vec2(d,a.y);
+ else
+    return vec2(d,b.y);
 }
 
 
@@ -89,7 +95,7 @@ vec2 op_rep(vec3 p, vec3 c) {
 
 
 vec2 distance_to_obj(in vec3 p) {
-    return op_rep(p, vec3(5.0, 5.0, 5.0));
+    return obj_union(obj_floor(p), op_rep(p, vec3(3.5, 3.5, 3.5)));
 //    return obj_union(obj_floor(p), obj_ufo(p));
 //                     op_union(op_blend(p, obj_round_box(p),
 //                                        obj_torus(p)),
@@ -123,14 +129,14 @@ vec3 floor_color(in vec3 p) {
 
 // Primitive color
 vec3 prim_c(in vec3 p, int i) {
-  if (i == 0)
-    return vec3(0.6,0.6,0.8);
-  else if (i == 1)
-    return vec3(0,0,1);
+  if (i == 1)
+    return vec3(1.0,0.0,0.0);
   else if (i == 2)
-    return vec3(0,1,1);
+    return vec3(0,0,1);
+  else if (i == 3)
+    return vec3(0,1,0);
   else
-    return vec3(0.5, 0.5, 0.5);
+    return vec3(1.0, 0.0, 0.0);
 }
 
 void main(void) {
