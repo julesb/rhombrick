@@ -11,6 +11,7 @@
 (def test-shader (atom nil))
 (def color-shader (atom nil))
 (def texture-shader (atom nil))
+(def feedback-shader (atom nil))
 (def ray-shader (atom nil))
 (def tex1 (atom nil))
 ; =========================================================================
@@ -41,6 +42,7 @@
     (reset! ray-shader (q/load-shader "data/raymarch.glsl" ))
     ;(reset! texture-shader (load-shader "data/texfrag.glsl" "data/texvert.glsl"))
     (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
+    (reset! feedback-shader (q/load-shader "data/feedbackfrag.glsl"))
     ;(reset! aspect-ratio  (/ (float (q/width)) (q/height)))
 
     (-> initial-state
@@ -95,7 +97,8 @@
           ;(reset! color-shader (load-shader "data/colorfrag.glsl" "data/colorvert.glsl"))
           ;(reset! texture-shader (q/load-shader "data/texfrag.glsl" "data/texvert.glsl"))
           (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
-          ;(reset! ray-shader (q/load-shader "data/raymarch.glsl"))
+          (reset! feedback-shader (q/load-shader "data/feedbackfrag.glsl"))
+          (reset! ray-shader (q/load-shader "data/raymarch.glsl"))
           )
    ;\0 #(do
    ;      (reset! view-offset [0 0])
@@ -118,6 +121,8 @@
                           (assoc :aspect-ratio (/ (float (q/width)) (q/height)))))
           \` (fn [s]
                (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
+               (reset! feedback-shader (q/load-shader "data/feedbackfrag.glsl"))
+               (reset! ray-shader (q/load-shader "data/raymarch.glsl" ))
                s)
          }]
   (if (contains? key-movement-map keychar)
@@ -174,7 +179,8 @@
   (-> state
       (do-movement-keys)
       (update-uniforms! @texture-shader)
-     ;(update-uniforms! @ray-shader)
+      (update-uniforms! @feedback-shader)
+      (update-uniforms! @ray-shader)
   ))
 
 
@@ -192,7 +198,7 @@
                (str (format "mouse: [%.2f %.2f]" (float mx) (float my)))
                (str (format "zoom: %.3f" vs))
                (str (format "ar: %.2f" ar))
-               (str "fps: " (q/current-frame-rate))
+               (str (format "fps: %.2f" (q/current-frame-rate)))
                ]]
     (q/fill 255 255 255 255)
     (doseq [i (range (count lines))]
@@ -218,8 +224,8 @@
 (defn draw-quad [ar]
   (q/begin-shape :quads)
     ;(q/texture @tex1)
-    ;(q/shader @ray-shader)
-    (q/shader @texture-shader)
+    (q/shader @ray-shader)
+    ;(q/shader @texture-shader)
     ;(q/shader @color-shader)
     (q/vertex -1 -1 0 0)
     (q/vertex  1 -1 ar 0)
@@ -230,7 +236,7 @@
 
 
 (defn draw [state]
-  (q/background 0 0 0)
+  ;(q/background 0 0 0)
   (q/fill 0 0 0 196)
   (q/ortho)
   (q/noise-detail 2)
@@ -242,8 +248,8 @@
     (q/with-translation c
       (q/scale (c 0) (c 1))
       (q/fill 0 0 0)
-      (q/stroke 255 255 255 255)
-      (q/stroke-weight 0.5)
+      (q/stroke 0 0 0 255)
+      (q/stroke-weight 0.125)
       (q/no-stroke)
       (draw-quad (get state :aspect-ratio 1.0))
 
@@ -252,6 +258,7 @@
   (q/reset-shader) 
   (draw-info state 32 (- (q/height) 150))
   ;(q/filter-shader edge-shader)
+  ;(q/filter-shader @feedback-shader)
   )
 
 
