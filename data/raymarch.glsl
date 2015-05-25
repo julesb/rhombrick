@@ -30,13 +30,6 @@ varying vec4 vertTexCoord;
 //uniform vec2 mouse;
 float PI=3.14159265;
 
-//vec2 obj_union(in vec2 obj0, in vec2 obj1) {
-//    if (obj0.x < obj1.x)
-//        return obj0;
-//    else
-//        return obj1;
-//}
-
 vec2 obj_floor(in vec3 p) {
     return vec2(p.y+0.0,0);
 }
@@ -172,12 +165,10 @@ void main(void) {
     float my=mousey*PI*0.99;
 
     // Camera lookat.
-    //vec3 vrp = vec3(0.0,1.0,0.0);
-    vec3 pos_scaled = cam_pos * vec3(20.0, 5.0, 20.0);
-    vec3 vrp = pos_scaled + vec3(cos(my)*cos(mx),sin(my),cos(my)*sin(mx))*6.0;
+    vec3 vrp = cam_pos + vec3(cos(my)*cos(mx),sin(my),cos(my)*sin(mx))*6.0;
 
     // Camera pos
-    vec3 prp = pos_scaled; //cam_pos * vec3(10.0, 5.0, 10.0);
+    vec3 prp = cam_pos;
 
     // Camera setup.
     vec3 vpn=normalize(vrp-prp);
@@ -218,7 +209,6 @@ void main(void) {
         //simple phong lighting, LightPosition = CameraPosition
         float b=dot(N,normalize(prp-p));
         gl_FragColor=vec4((b*c + pow(b,16.0)) * (1.0-f*.01), 1.0);
-        //gl_FragColor=vec4(N, 1.0);
     }
     else 
         gl_FragColor=vec4(0.0,0.0,0.0,1.0); //background color

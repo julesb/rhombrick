@@ -16,6 +16,11 @@
 (def tex1 (atom nil))
 ; =========================================================================
 
+(def initial-camera {
+  :pos [0.0 0.0 1.0]
+  :lookat [0.0 0.0 0.0]
+})
+
 (def initial-state {
   :keys-down #{}
   :mouse-position [0 0]
@@ -23,6 +28,7 @@
   :view-scale 1.0
   :view-offset [0 0]
   :render-paused? false
+  :camera initial-camera
 })
 
 
@@ -61,11 +67,11 @@
           [vx vy] (vec2-scale (get state :view-offset [0 0])
                               (get state :aspect-ratio 1.0))
           vo (get state :view-offset [0 0])
-          cam-pos [(vo 0) 1.0 (vo 1)]
+          cam-pos [(vo 0) 3.0 (vo 1)]
           ]
       (.set shader "framecount" (float (q/frame-count)))
-      (.set shader "viewx" (float vx))
-      (.set shader "viewy" (float vy))
+      ;(.set shader "viewx" (float vx))
+      ;(.set shader "viewy" (float vy))
       (.set shader "aspect_ratio" (float ar))
       (.set shader "zoom" (float zoom))
       ;(when (mouse-pressed?)
@@ -74,13 +80,13 @@
       ;  )
       (.set shader "swidth" (float (q/width)))
       (.set shader "sheight" (float (q/height)))
-      (.set shader "cam_pos" (float (cam-pos 0))
+      (.set shader "cam_pos" (float (cam-pos 0)) 
                              (float (cam-pos 1))
                              (float (cam-pos 2)))
     state))
 
 
-(def speed 0.005)
+(def speed 0.5)
 
 
 (def key-command-map
