@@ -182,13 +182,13 @@ void main(void) {
          //+ vec3(cos(my)*cos(mx),sin(my),cos(my)*sin(mx))*6.0;
 
   // Camera pos
-  vec3 prp= vec3(viewx*10.0, 5.0, viewy*10.0); // vec3(viewx*10.0, 1.0, viewy*10.0) 
-    prp = prp + vec3(cos(framecount * 0.002) * 25.0,
-                     10.0,
-                     sin(framecount * 0.002) * 25.0);
+  //vec3 prp= vec3(viewx*10.0, 5.0, viewy*10.0);
+  vec3 prp = cam_pos * vec3(10.0, 5.0, 10.0);
+ //   prp = prp + vec3(cos(framecount * 0.002) * 25.0,
+ //                    10.0,
+ //                    sin(framecount * 0.002) * 25.0);
   
   // vec3(cos(my)*cos(mx),sin(my),cos(my)*sin(mx))*6.0; 
-  //vec3 prp = cam_pos * vec3(10.0, 5.0, 10.0);
 
   // Camera setup.
   vec3 vpn=normalize(vrp-prp);

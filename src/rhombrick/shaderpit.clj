@@ -60,8 +60,10 @@
           py (* (- my 0.5) zoom)
           [vx vy] (vec2-scale (get state :view-offset [0 0])
                               (get state :aspect-ratio 1.0))
+          vo (get state :view-offset [0 0])
+          cam-pos [(vo 0) 1.0 (vo 1)]
           ]
-      (.set shader "framecount" (q/frame-count))
+      (.set shader "framecount" (float (q/frame-count)))
       (.set shader "viewx" (float vx))
       (.set shader "viewy" (float vy))
       (.set shader "aspect_ratio" (float ar))
@@ -70,11 +72,12 @@
         (.set shader "mousex" (float px))
         (.set shader "mousey" (float py))
       ;  )
-      ;(.set shad "width" (float (width)))
-      ;(.set shad "height" (float (height)))
-    ;)
-    state
-    ))
+      (.set shader "swidth" (float (q/width)))
+      (.set shader "sheight" (float (q/height)))
+      (.set shader "cam_pos" (float (cam-pos 0))
+                             (float (cam-pos 1))
+                             (float (cam-pos 2)))
+    state))
 
 
 (def speed 0.005)
