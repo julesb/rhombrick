@@ -148,7 +148,9 @@ vec3 floor_color(in vec3 p) {
 }
 
 vec3 prim_color(in vec3 p, int i) {
-    if (i == 1)
+    if (i == 0)
+        return floor_color(p);
+    else if (i == 1)
         return vec3(1.0,0.0,0.0);
     else if (i == 2)
         return vec3(0,0,1);
@@ -206,11 +208,7 @@ void main(void) {
     }
 
     if (f < maxd) {
-        // y is used to manage materials.
-        if (d.y==0.0) 
-            c=floor_color(p);
-        else
-            c=prim_color(p, int(d.y));
+        c = prim_color(p, int(d.y));
     
         vec3 n = vec3(d.x-distance_to_obj(p-e.xyy).x,
                       d.x-distance_to_obj(p-e.yxy).x,
