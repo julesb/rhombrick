@@ -16,11 +16,11 @@ uniform float modelscale;
 uniform float aspect_ratio;
 uniform float mousex;
 uniform float mousey;
-uniform float zoom;
 uniform float framecount;
 uniform float swidth;
 uniform float sheight;
 uniform vec3 cam_pos;
+uniform vec3 cam_lookat;
 uniform float time;
 //uniform vec2 resolution;
 
@@ -97,10 +97,12 @@ vec2 op_rep(vec3 p, vec3 c) {
 
 
 vec2 distance_to_obj(in vec3 p) {
+    //return op_union(obj_floor(p) + vec2(sin(p.x) + sin(p.y) + sin(p.z), 0.0),
     return op_union(obj_floor(p),
                     op_rep(p, vec3(5.5 + sin(float(framecount) / 631.23) * 0.75 * p.x,
                                    5.5 + cos(float(framecount) / 693.27) * 0.75 * p.y,
-                                   5.5 + cos(float(framecount) / 600.21) * 0.75 * p.z)));
+                                   5.5 + cos(float(framecount) / 600.21) * 0.75 * p.z))
+                        );
 
 //    return op_union(obj_floor(p), obj_sine(p));
 //    return obj_floor(p);
@@ -125,7 +127,7 @@ vec3 get_integer_circles_color(vec2 c, vec3 col) {
 
 vec3 floor_color(in vec3 p) {
     float m = 0.5;
-    vec3 c = get_integer_circles_color(p.xz, vec3(1.0,1.0,1.0));
+    vec3 c = vec3(0.0); //get_integer_circles_color(p.xz, vec3(1.0,1.0,1.0));
     if (fract(p.x*m)>m) {
         if (fract(p.z*m)>m)
             return vec3(0,0.1,m) + c;
@@ -161,11 +163,8 @@ void main(void) {
     // Camera up vector.
     vec3 vuv=vec3(0,-1,0); 
 
-    float mx=mousex*PI*2.0;
-    float my=mousey*PI*0.99;
-
     // Camera lookat.
-    vec3 vrp = cam_pos + vec3(cos(my)*cos(mx),sin(my),cos(my)*sin(mx))*6.0;
+    vec3 vrp = cam_lookat;
 
     // Camera pos
     vec3 prp = cam_pos;

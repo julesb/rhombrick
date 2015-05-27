@@ -6,27 +6,28 @@
   )
 
 (def ^:dynamic console-font)
-(def ^:dynamic edge-shader)
 ;(def render-paused? (atom false))
+(def edge-shader (atom nil))
 (def test-shader (atom nil))
 (def color-shader (atom nil))
 (def texture-shader (atom nil))
 (def feedback-shader (atom nil))
 (def ray-shader (atom nil))
 (def tex1 (atom nil))
+(def PI Math/PI)
+
 ; =========================================================================
 
 (def initial-camera {
   :pos [0.0 0.0 1.0]
   :lookat [0.0 0.0 0.0]
+  :vpn [0.0 0.0 -1.0]
 })
 
 (def initial-state {
   :keys-down #{}
   :mouse-position [0 0]
   :aspect-ratio 1.0
-  :view-scale 1.0
-  :view-offset [0 0]
   :render-paused? false
   :camera initial-camera
 })
@@ -41,7 +42,7 @@
     ;(frame-rate 120)
     (def console-font (q/load-font "data/FreeMono-16.vlw"))
 ;    (def console-font (q/load-font "ScalaSans-Caps-32.vlw"))
-    (def edge-shader (q/load-shader "data/edges.glsl"))
+    (reset! edge-shader (q/load-shader "data/edges.glsl"))
     (reset! tex1 (q/load-image "testpattern4po6.png"))
     (reset! test-shader (q/load-shader "data/test.frag"))
     (reset! color-shader (q/load-shader "data/colorfrag.glsl" "data/colorvert.glsl"))
@@ -57,32 +58,26 @@
 
 
 (defn update-uniforms! [state shader] 
-    (let [zoom  (get state :view-scale 1.0) ;@view-scale
-          mp (get state :mouse-position [0 0])
-          mx (/ (float (mp 0)) (q/width))
-          my (/ (float (mp 1)) (q/height))
-          ar (state :aspect-ratio);(/ (float (q/width)) (q/height))
-          px (* (- mx 0.5) ar zoom)
-          py (* (- my 0.5) zoom)
-          [vx vy] (vec2-scale (get state :view-offset [0 0])
-                              (get state :aspect-ratio 1.0))
-          vo (get state :view-offset [0 0])
-          cam-pos [(vo 0) 3.0 (vo 1)]
+  (when state
+    (let [mp (get state :mouse-position [0 0])
+          ar (state :aspect-ratio)
+          cam-pos (get-in state [:camera :pos])
+          cam-lookat (get-in state [:camera :lookat])
           ]
       (.set shader "framecount" (float (q/frame-count)))
-      ;(.set shader "viewx" (float vx))
-      ;(.set shader "viewy" (float vy))
       (.set shader "aspect_ratio" (float ar))
-      (.set shader "zoom" (float zoom))
       ;(when (mouse-pressed?)
-        (.set shader "mousex" (float px))
-        (.set shader "mousey" (float py))
+        (.set shader "mousex" (float (mp 0)))
+        (.set shader "mousey" (float (mp 1)))
       ;  )
       (.set shader "swidth" (float (q/width)))
       (.set shader "sheight" (float (q/height)))
       (.set shader "cam_pos" (float (cam-pos 0)) 
                              (float (cam-pos 1))
                              (float (cam-pos 2)))
+      (.set shader "cam_lookat" (float (cam-lookat 0)) 
+                                (float (cam-lookat 1))
+                                (float (cam-lookat 2))))
     state))
 
 
@@ -105,6 +100,7 @@
           (q/reset-shader)
           ;(reset! color-shader (load-shader "data/colorfrag.glsl" "data/colorvert.glsl"))
           ;(reset! texture-shader (q/load-shader "data/texfrag.glsl" "data/texvert.glsl"))
+          (reset! edge-shader (q/load-shader "data/edges.glsl"))
           (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
           (reset! feedback-shader (q/load-shader "data/feedbackfrag.glsl"))
           (reset! ray-shader (q/load-shader "data/raymarch.glsl"))
@@ -114,28 +110,44 @@
    ;     )
    })
 
+(defn camera-mouse-update [state]
+  (let [[mx my] (vec2-mul (vec2-sub (state :mouse-position) [0.5 0.5])
+                          [(* PI 2.0) (* PI 0.99)])
+        pos (get-in state [:camera :pos] [0.0 0.0 0.0])
+        vpn [(* (Math/cos my) (Math/cos mx))
+             (Math/sin my)
+             (* (Math/cos my) (Math/sin mx))]
+        lookat (vec3-add pos (vec3-scale vpn 6.0))
+        new-cam (-> (state :camera)
+                    (assoc :vpn vpn)
+                    (assoc :lookat lookat)) ]
+  (-> state
+      (assoc :camera new-cam))))
+
 
 (defn do-key-movement [state keychar]
-  (let [vs (get state :view-scale 1.0)
-        vo (get state :view-offset [0 0])
-        ar (get state :aspect-ratio 1.0)
+  (let [pos-old  (get-in state [:camera :pos] [0.0 0.0 0.0])
+        vpn (get-in state [:camera :vpn])
+        vpv (vec3-cross (vec3-normalize (get-in state [:camera :vpn])) [0.0 -1.0 0.0])
         key-movement-map {
-          \w (fn [s] (assoc s :view-offset (vec2-add vo [0.0 (* speed vs)])))
-          \s (fn [s] (assoc s :view-offset (vec2-sub vo [0.0 (* speed vs)])))
-          \a (fn [s] (assoc s :view-offset (vec2-add vo [(* speed vs ) 0.0])))
-          \d (fn [s] (assoc s :view-offset (vec2-sub vo [(* speed vs ) 0.0])))
-          \, (fn [s] (assoc s :view-scale (* 0.99 vs)))
-          \. (fn [s] (assoc s :view-scale (* 1.01 vs)))
+          \w (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale vpn speed))))
+          \s (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpn speed))))
+          \a (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale vpv speed))))
+          \d (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpv speed))))
+          ;\, (fn [s] (assoc s :view-scale (* 0.99 vs)))
+          ;\. (fn [s] (assoc s :view-scale (* 1.01 vs)))
           \r (fn [s]  (-> initial-state
                           (assoc :aspect-ratio (/ (float (q/width)) (q/height)))))
           \` (fn [s]
+               (reset! edge-shader (q/load-shader "data/edges.glsl"))
                (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
                (reset! feedback-shader (q/load-shader "data/feedbackfrag.glsl"))
                (reset! ray-shader (q/load-shader "data/raymarch.glsl" ))
                s)
          }]
   (if (contains? key-movement-map keychar)
-    ((key-movement-map keychar) state)
+    (-> ((key-movement-map keychar) state)
+        (camera-mouse-update))
     state)))
 
 
@@ -174,9 +186,13 @@
     state))
 
 
+
 (defn mouse-moved [state event]
     (-> state
-        (assoc :mouse-position [(event :x) (event :y)])))
+        (assoc :mouse-position [(/ (event :x) (q/width))
+                                (/ (event :y) (q/height))])
+        (camera-mouse-update)
+        ))
 
 
 (defn mouse-dragged [state event]
@@ -184,9 +200,12 @@
         (assoc :mouse-position [(event :x) (event :y)])))
 
 
+
+
 (defn update [state]
   (-> state
       (do-movement-keys)
+      ;(camera-mouse-update)
       (update-uniforms! @texture-shader)
       (update-uniforms! @feedback-shader)
       (update-uniforms! @ray-shader)
@@ -196,17 +215,16 @@
 (defn draw-info [state x y]
   (q/text-font console-font)
   (let [line-space 24
-        [vx vy] (get state :view-offset [0 0])
-        vs (get state :view-scale 1.0)
         ar (get state :aspect-ratio 1.0)
-        [mx my] (vec2-div (get state :mouse-position [0 0]) [(q/width) (q/height)])
+        [mx my] (state :mouse-position)
         zoom (get state :zoom 1.0)
+        pos (get-in state [:camera :pos])
         lines [
                ;(str "state: " state)
-               (str (format "view: [%.2f %.2f]" (float vx) (float vy)))
+               (str "pos: " (vec3-format pos))
                (str (format "mouse: [%.2f %.2f]" (float mx) (float my)))
-               (str (format "zoom: %.3f" vs))
                (str (format "ar: %.2f" ar))
+               ;(str "camera: " (state :camera))
                (str (format "fps: %.2f" (q/current-frame-rate)))
                ]]
     (q/fill 255 255 255 255)
@@ -266,7 +284,7 @@
     )
   (q/reset-shader) 
   (draw-info state 32 (- (q/height) 150))
-  ;(q/filter-shader edge-shader)
+  ;(q/filter-shader @edge-shader)
   ;(q/filter-shader @feedback-shader)
   )
 
