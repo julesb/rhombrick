@@ -40,16 +40,23 @@ vec2 obj_sphere(in vec3 p) {
 }
 
 vec2 obj_torus(in vec3 p) {
-    vec2 r = vec2(2.0,1.5);
+    vec2 r = vec2(2.0,1.6);
     vec2 q = vec2(length(p.xz)-r.x,p.y);
     float d = length(q)-r.y;
     return vec2(d,2);
 }
 
-vec2 obj_round_box(vec3 p) {
-    float d = length(max(abs(p)-vec3(0.5,10.0,0.5),0.0))-0.25;
+vec2 obj_round_box(in vec3 p) {
+    float d = length(max(abs(p)-vec3(0.5,5.0,0.5),0.0))-0.25;
     return vec2(d,1);
 }
+
+vec2 obj_capsule(vec3 p, vec3 a, vec3 b, float r ) {
+    vec3 pa = p - a, ba = b - a;
+    float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+    return vec2(length( pa - ba*h ) - r, 4);
+}
+
 
 vec2 op_union(vec2 a, vec2 b) {
     float d = min(a.x, b.x);
@@ -61,8 +68,20 @@ vec2 op_union(vec2 a, vec2 b) {
 
 vec2 op_sub(vec2 a, vec2 b) {
     float d = max(a.x, -b.x);
-    return vec2(d,2);
+    if (d < b.x)
+        return vec2(d,a.y);
+    else
+        return vec2(d,b.y);
 }
+
+vec2 op_intersect(vec2 a, vec2 b) {
+    float d = max(a.x, b.x);
+    if (d < b.x)
+        return vec2(d,a.y);
+    else
+        return vec2(d,b.y);
+}
+
 
 vec2 op_blend(vec3 p, vec2 a, vec2 b) {
     float s = smoothstep(length(p), 0.0, 1.0);
@@ -81,13 +100,24 @@ float smin( float a, float b, float k ) {
 vec2 obj_sine(vec3 p) {
     return vec2((sin(p.x * 0.2059)
                + sin(p.y * 0.231)
-               + sin(p.z * 0.226)) * 0.333, 4.0);
+               + sin(p.z * 0.226)) * 1.0, 4.0);
+}
+
+vec2 op_displace(vec3 p, vec2 obj) {
+    float d = cos(p.x * 20.0)
+            * cos(p.y * 20.0)
+            * cos(p.z * 20.0)
+            * 0.05;
+    return vec2(obj.x+d, obj.y);
 }
 
 vec2 obj_ufo(vec3 p) {
-    return op_union(op_blend(p, obj_round_box(p),
+    return op_union(
+            op_union(op_blend(p, obj_round_box(p),
                                 obj_torus(p)),
-                    obj_sphere(p));
+                     op_displace(p, obj_sphere(p))
+            ) ,
+            obj_capsule(p, vec3(2.0, 0.0, 0.0), vec3(-2.0, 0.0, 0.0), 0.5 ));
 }
 
 vec2 op_rep(vec3 p, vec3 c) {
@@ -96,13 +126,16 @@ vec2 op_rep(vec3 p, vec3 c) {
 }
 
 
+
 vec2 distance_to_obj(in vec3 p) {
     //return op_union(obj_floor(p) + vec2(sin(p.x) + sin(p.y) + sin(p.z), 0.0),
     return op_union(obj_floor(p),
-                    op_rep(p, vec3(5.5 + sin(float(framecount) / 631.23) * 0.75 * p.x,
-                                   5.5 + cos(float(framecount) / 693.27) * 0.75 * p.y,
-                                   5.5 + cos(float(framecount) / 600.21) * 0.75 * p.z))
-                        );
+                    op_rep(p, vec3(5.5 + sin(float(framecount) / 431.23) * 0.75 * p.x,
+                                   5.0 + cos(float(framecount) / 413.27) * 0.75 * p.y,
+                                   5.5 + cos(float(framecount) / 490.21) * 0.75 * p.z)) ); 
+    
+//    return op_union(obj_floor(p),
+//                    op_rep(p, vec3(5.0, 5.0, 5.0)));
 
 //    return op_union(obj_floor(p), obj_sine(p));
 //    return obj_floor(p);
@@ -151,8 +184,8 @@ vec3 prim_color(in vec3 p, int i) {
         return vec3(0,0,1);
     else if (i == 3)
         return vec3(1,1,0);
-    else
-        return vec3(0.3, 0.3, 0.3);
+    else if (i == 4)
+        return vec3(0.0, 1.0, 0.0);
 }
 
 void main(void) {
