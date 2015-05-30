@@ -83,33 +83,6 @@
 
 (def speed 0.5)
 
-
-(def key-command-map
-  {
-   \e #(do
-         (def edge-shader (q/load-shader "data/edges.glsl"))
-         )
-   ;\p #(do
-   ;       (if @render-paused?
-   ;         (q/start-loop)
-   ;         (q/no-loop))
-   ;       (swap! render-paused? not)
-   ;       )
-   \` #(do
-          (println "loading shader")
-          (q/reset-shader)
-          ;(reset! color-shader (load-shader "data/colorfrag.glsl" "data/colorvert.glsl"))
-          ;(reset! texture-shader (q/load-shader "data/texfrag.glsl" "data/texvert.glsl"))
-          (reset! edge-shader (q/load-shader "data/edges.glsl"))
-          (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
-          (reset! feedback-shader (q/load-shader "data/feedbackfrag.glsl"))
-          (reset! ray-shader (q/load-shader "data/raymarch.glsl"))
-          )
-   ;\0 #(do
-   ;      (reset! view-offset [0 0])
-   ;     )
-   })
-
 (defn camera-mouse-update [state]
   (let [[mx my] (vec2-mul (vec2-sub (state :mouse-position) [0.5 0.5])
                           [(* PI 2.0) (* PI 0.99)])
@@ -134,16 +107,6 @@
           \s (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpn speed))))
           \a (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale vpv speed))))
           \d (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpv speed))))
-          ;\, (fn [s] (assoc s :view-scale (* 0.99 vs)))
-          ;\. (fn [s] (assoc s :view-scale (* 1.01 vs)))
-          \r (fn [s]  (-> initial-state
-                          (assoc :aspect-ratio (/ (float (q/width)) (q/height)))))
-          \` (fn [s]
-               (reset! edge-shader (q/load-shader "data/edges.glsl"))
-               (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
-               (reset! feedback-shader (q/load-shader "data/feedbackfrag.glsl"))
-               (reset! ray-shader (q/load-shader "data/raymarch.glsl" ))
-               s)
          }]
   (if (contains? key-movement-map keychar)
     (-> ((key-movement-map keychar) state)
@@ -177,14 +140,24 @@
 
 
 (defn key-typed [state event]
-  (if (= \p (event :raw-key))
-    (do
-      (if (state :render-paused?)
-         (q/start-loop)
-         (q/no-loop))
-      (update-in state [:render-paused?] not))
+  (case (event :raw-key)
+    \p (do
+         (if (state :render-paused?)
+           (q/start-loop)
+           (q/no-loop))
+        (update-in state [:render-paused?] not))
+    \# (do
+         (q/save-frame)
+         state)
+    \r (do (-> initial-state
+               (assoc :aspect-ratio (/ (float (q/width)) (q/height)))))
+    \` (do
+         (reset! edge-shader (q/load-shader "data/edges.glsl"))
+         (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
+         (reset! feedback-shader (q/load-shader "data/feedbackfrag.glsl"))
+         (reset! ray-shader (q/load-shader "data/raymarch.glsl" ))
+         state)
     state))
-
 
 
 (defn mouse-moved [state event]
@@ -205,7 +178,6 @@
 (defn update [state]
   (-> state
       (do-movement-keys)
-      ;(camera-mouse-update)
       (update-uniforms! @texture-shader)
       (update-uniforms! @feedback-shader)
       (update-uniforms! @ray-shader)
