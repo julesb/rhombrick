@@ -39,6 +39,8 @@
     (q/smooth)
     (q/texture-mode :normal)
     (q/texture-wrap :repeat)
+    (q/noise-detail 2)
+    (q/hint :disable-depth-test)
     ;(frame-rate 120)
     (def console-font (q/load-font "data/FreeMono-16.vlw"))
 ;    (def console-font (q/load-font "ScalaSans-Caps-32.vlw"))
@@ -87,9 +89,9 @@
   (let [[mx my] (vec2-mul (vec2-sub (state :mouse-position) [0.5 0.5])
                           [(* PI 2.0) (* PI 0.99)])
         pos (get-in state [:camera :pos] [0.0 0.0 0.0])
-        vpn [(* (Math/cos my) (Math/cos mx))
-             (Math/sin my)
-             (* (Math/cos my) (Math/sin mx))]
+        vpn (vec3-normalize [(* (Math/cos my) (Math/cos mx))
+                             (Math/sin my)
+                             (* (Math/cos my) (Math/sin mx))])
         lookat (vec3-add pos (vec3-scale vpn 6.0))
         new-cam (-> (state :camera)
                     (assoc :vpn vpn)
@@ -101,7 +103,7 @@
 (defn do-key-movement [state keychar]
   (let [pos-old  (get-in state [:camera :pos] [0.0 0.0 0.0])
         vpn (get-in state [:camera :vpn])
-        vpv (vec3-cross (vec3-normalize (get-in state [:camera :vpn])) [0.0 -1.0 0.0])
+        vpv (vec3-normalize (vec3-cross (get-in state [:camera :vpn]) [0.0 -1.0 0.0]))
         key-movement-map {
           \w (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale vpn speed))))
           \s (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpn speed))))
@@ -204,22 +206,6 @@
       (q/text (lines i) x (+ y (* i line-space))))))
 
 
-;(defn auto-move []
-;  (let [nr 200.0
-;        fr-count (q/frame-count)
-;        n1 (* 2.0 (- (q/noise (/ (+ fr-count 8474892) nr)) 0.5))
-;        n2 (* 2.0 (- (q/noise (/ (+ fr-count 3988479) nr)) 0.5))
-;        n3 (* 2.0 (- (q/noise (/ (+ fr-count 2780374) nr)) 0.5))
-;        n4 (* 2.0 (- (q/noise (/ (+ fr-count 5047583) nr)) 0.5))
-;        ]
-;    (reset! view-offset [(* n1 (q/height) @view-scale 1.5)
-;                         (* n2 (q/height) @view-scale 1.5)])
-;    ;(reset! mouse-position [(* n3 (height) @view-scale 0.5)
-;    ;                        (* n4 (height) @view-scale 0.5)])
-;  
-;  ))
-
-
 (defn draw-quad [ar]
   (q/begin-shape :quads)
     ;(q/texture @tex1)
@@ -238,9 +224,6 @@
   ;(q/background 0 0 0)
   (q/fill 0 0 0 196)
   (q/ortho)
-  (q/noise-detail 2)
-  (q/hint :disable-depth-test)
-  (q/texture-wrap :repeat)
   (q/no-lights)
   (let [c [(* (q/width) 0.5)
            (* (q/height) 0.5)]]
@@ -273,7 +256,7 @@
                :resizable]
  
     :renderer :p3d
-;    :renderer :opengl
+    ;:renderer :opengl
     :key-typed key-typed
     :update update
     :key-pressed key-pressed
