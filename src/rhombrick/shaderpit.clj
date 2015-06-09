@@ -102,13 +102,17 @@
 
 (defn do-key-movement [state keychar]
   (let [pos-old  (get-in state [:camera :pos] [0.0 0.0 0.0])
+        wup [0.0 -1.0 0.0] ; world up
         vpn (get-in state [:camera :vpn])
         vpv (vec3-normalize (vec3-cross (get-in state [:camera :vpn]) [0.0 -1.0 0.0]))
+        ;vpu (vec3-normalize (vec3-cross vpn vpv)) ;viewplane up
         key-movement-map {
           \w (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale vpn speed))))
           \s (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpn speed))))
           \a (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale vpv speed))))
           \d (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpv speed))))
+          \e (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale wup speed))))
+          \c (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale wup speed))))
          }]
   (if (contains? key-movement-map keychar)
     (-> ((key-movement-map keychar) state)
