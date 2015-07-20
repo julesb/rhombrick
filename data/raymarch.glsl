@@ -9,6 +9,7 @@ precision mediump int;
    Based on tutorial at:
    http://www.geeks3d.com/20130524/building-worlds-with-distance-functions-in-glsl-raymarching-glslhacker-tutorial-opengl/
 */
+vec3 prim_cols[9];
 
 uniform sampler2D texture;
 uniform float aspect_ratio;
@@ -20,18 +21,27 @@ uniform float sheight;
 uniform vec3 cam_pos;
 uniform vec3 cam_lookat;
 uniform float time;
-
+uniform float blend_coef;
 varying vec4 vertColor;
 varying vec4 vertTexCoord;
 
 float PI=3.14159265;
 
+const float NOISE_DETAIL =0.5;
 
+const float MB_INNER_SPHERE = 0.72;
+const float MBOX_SCALE = 8.0;
+const float MBULB_SCALE = 64.0;
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
 vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+float length2(vec3 p, float n) {
+//    (x^n+y^n+z^n)^(1/n)
+    return pow((pow(p.x,n) + pow(p.y, n) + pow(p.z, n)), 1.0 / n);
+}
 
 float snoise(vec3 v)
   { 
@@ -105,45 +115,46 @@ float noise( vec3 x )
                    mix( hash(n+170.0), hash(n+171.0),f.x),f.y),f.z);
 }
 
+float sd_plane(in vec3 p, in vec3 n, in float o) {
+    return dot(p, n) + o; 
+}
+
 vec2 obj_floor(in vec3 p) {
-    return vec2(p.y+0.0,0);
+    return vec2(p.y+10.0,0.0);
 }
 
 vec2 obj_sphere(in vec3 p, float r) {
-    float d = length(p)-r;
-    return vec2(d,0);
+    float d = length(p) -r;
+    return vec2(d,7.0);
 }
 
 vec2 obj_torus(in vec3 p) {
     vec2 r = vec2(5.0,1.0);
     vec2 q = vec2(length(p.xz)-r.x,p.y);
     float d = length(q)-r.y;
-    return vec2(d,2);
+    return vec2(d,2.0);
 }
 
 vec2 obj_round_box(in vec3 p) {
-    float d = length(max(abs(p)-vec3(0.5,2.0,0.5),0.0))-0.25;
-    return vec2(d,1);
+    float d = length(max(abs(p)-vec3(0.75,2.0,0.75),0.0))-0.25;
+    return vec2(d,1.0);
 }
 
 vec2 obj_box( vec3 p, vec3 b ){
   vec3 d = abs(p) - b;
-  return vec2(min(max(d.x,max(d.y,d.z)),0.0)+length(max(d,0.0)), 2);
+  return vec2(min(max(d.x,max(d.y,d.z)),0.0)+length(max(d,0.0)), 6.0);
+}
+
+vec2 obj_cylinder( vec3 p, vec3 c ) {
+  return vec2(length(p.xz-c.xy)-c.z, 8.0);
 }
 
 vec2 obj_capsule(vec3 p, vec3 a, vec3 b, float r ) {
     vec3 pa = p - a, ba = b - a;
     float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
-    return vec2(length( pa - ba*h ) - r, 4);
+    return vec2(length( pa - ba*h ) - r, 3.0);
 }
 
-vec2 obj_cross(vec3 p, float r) {
-    float inf = 1.0 / 0.0;
-    vec2 b1 = obj_box(p.xyz, vec3(inf,r,r));
-    vec2 b2 = obj_box(p.yzx, vec3(r,inf,r));
-    vec2 b3 = obj_box(p.zxy, vec3(r,r,inf));
-    return min(b1,min(b2,b3));
-}
 
 vec2 op_union(vec2 a, vec2 b) {
     float d = min(a.x, b.x);
@@ -184,20 +195,26 @@ float smin( float a, float b, float k ) {
     return mix( b, a, h ) - k*h*(1.0-h);
 }
 
+
+vec2 op_sblend(vec3 p, vec2 a, vec2 b) {
+    float sm = smin(a.x, b.x, blend_coef);
+    float c = smin(a.y, b.y, blend_coef);
+    return vec2(sm, c);
+}
+
 vec2 obj_sine(vec3 p) {
-    return vec2((sin(p.x * 0.07459)
-               + sin(p.y * 0.098131)
-               + sin(p.z * 0.05826)) * 0.5, 4);
+    //vec3 pf = floor(p);
+    return vec2(//smoothstep(0.0, 0.5, 
+                (sin(floor(p.x+0.0) * 0.2)
+               + sin(floor(p.y+0.0) * 0.2)
+               + sin(floor(p.z+0.0) * 0.2))
+               * 0.5 + 0.5, 5.0);
 }
 
 vec2 op_displace(vec3 p, vec2 obj) {
-    float d = cos(p.x * 1.0)
-            * cos(p.y * 1.0)
-            * cos(p.z * 1.0)
-            * (sin(float(framecount) * 0.01 + (p.z+p.x+p.y)*1.0 + obj.y*PI/4.0))
-            //* (sin(float(framecount) * 0.1 + obj.y*(PI/2.0)) * 0.5 + 0.5)
-            * 0.5;
-            
+    float m = framecount * 0.05;
+    vec3 v = cos(p*0.5+m);
+    float d = v.x*v.y*v.z * 2.0;
     return vec2(obj.x+d, obj.y);
 }
 
@@ -215,7 +232,31 @@ vec3 deform( in vec3 p, in float time, out float sca )
 	return p;
 }
 
+vec2 obj_ufo(vec3 p) {
+    return op_sblend(p,
+        op_sub(
+            op_displace(p, obj_sphere(p, 1.25)),
+            op_union(op_displace(p, obj_round_box(p)),
+                     op_displace(p, obj_torus(p)))),
+        op_sblend(p,
+            op_displace(p, obj_capsule(p, vec3(3.5, 0.0, 0.0), vec3(-3.5, 0.0, 0.0), 0.95 )),
+            op_displace(p, obj_capsule(p, vec3(0.0, 0.0, -3.5), vec3(0.0, 0.0, 3.5), 0.95 )) )
+        //obj_capsule(p, vec3(0.0, 1.5, 0.0), vec3(0.0, -1.5, 0.0), 0.5 )
+        //op_displace(p, obj_capsule(p, vec3(0.0, 1.5, 0.0), vec3(0.0, -1.5, 0.0), 0.5 ))
+        
+        );
+}
 
+vec2 obj_invertedufo(vec3 p) {
+    float s = 1.0;
+    vec3 p2 = (deform(p,float(framecount)*0.0333, s));
+    vec2 g = obj_ufo(p2) * vec2(s, 1.0);
+    return g;
+}
+
+
+
+/*
 vec2 obj_ufo(vec3 p) {
     return op_union(
         op_union(
@@ -230,10 +271,14 @@ vec2 obj_ufo(vec3 p) {
         
         );
 }
-
+*/
 vec2 op_noise(vec3 p, vec2 obj) {
 
-    return vec2(obj.x + noise(p*0.5), obj.y);
+    return vec2(obj.x + 0.5*snoise(p*NOISE_DETAIL), obj.y);
+}
+
+vec2 obj_noise(vec3 p) {
+    return vec2(length(p), 5.1);
 }
 
 vec2 op_rep(vec3 p, vec3 c) {
@@ -241,19 +286,190 @@ vec2 op_rep(vec3 p, vec3 c) {
     return obj_ufo(q);
 }
 
+vec2 obj_cross(vec3 p, float r) {
+    float inf = 1.0 / 0.0;
+    //vec2 b1 = obj_box(p.xyz, vec3(inf,r,r));
+    //vec2 b2 = obj_box(p.yzx, vec3(r,inf,r));
+    //vec2 b3 = obj_box(p.zxy, vec3(r,r,inf));
+    vec2 b1 = obj_cylinder(p.xyz, vec3(0.0,0.0,r));
+    vec2 b2 = obj_cylinder(p.yzx, vec3(0.0,0.0,r));
+    vec2 b3 = obj_cylinder(p.zxy, vec3(0.0,0.0,r));
+    //return min(b1,min(b2,b3));
+    return op_sblend(p, b1, op_sblend(p, b2, b3));
+}
+
 vec2 obj_repcross(vec3 p, vec3 c) {
     vec3 q = mod(p,c)-0.5*c;
-    return obj_cross(q, 1.0);
+    return obj_cross(q, 2.0);
 }
 
 vec2 obj_grid(vec3 p) {
-    return obj_repcross(p, vec3(20.0,20.0,20.0));
+    return obj_repcross(p, vec3(25.0,25.0,25.0));
 }
 vec2 obj_invertedgrid(vec3 p) {
     float s = 1.0;
-    vec3 p2 = (deform(p,float(framecount)*0.0333, s));
+    vec3 p2 = (deform(p,float(framecount)*0.01333, s));
     vec2 g = obj_grid(p2) * vec2(s, 1.0);
     return g;
+}
+vec2 obj_invertedgrid_rep(vec3 p, vec3 c) {
+    vec3 q = mod(p,c)-0.5*c;
+    return obj_invertedgrid(q) ;
+}
+
+float sd_tetra(in vec3 p) {
+    float s = 2.0;
+  	vec3 a1 = normalize(vec3(1,1,1));
+	vec3 a2 = normalize(vec3(-1,-1,1));
+	vec3 a3 = normalize(vec3(1,-1,-1));
+	vec3 a4 = normalize(vec3(-1,1,-1));
+    float p1 = sd_plane(p, a1, s);
+    float p2 = sd_plane(p, a2, s);
+    float p3 = sd_plane(p, a3, s);
+    float p4 = sd_plane(p, a4, s);
+    float d = min(min(min(p1, p2), p3), p4);
+    return -d;
+}
+
+vec2 obj_tetrahedron(in vec3 p, in float s) {
+/*
+    vec3 a1 = normalize(vec3(1,1,1));
+	vec3 a2 = normalize(vec3(-1,-1,1));
+	vec3 a3 = normalize(vec3(1,-1,-1));
+	vec3 a4 = normalize(vec3(-1,1,-1));
+    float p1 = sd_plane(p, a1, s);
+    float p2 = sd_plane(p, a2, s);
+    float p3 = sd_plane(p, a3, s);
+    float p4 = sd_plane(p, a4, s);
+    float d = min(min(min(p1, p2), p3), p4);
+    return vec2(-d, 1.0);
+*/
+    return vec2(sd_tetra(p/s) * s, 4.0);
+}
+
+float sd_mandelbulb(in vec3 pos, out float AO) {
+	vec3 z = pos;
+	float dr = 1.0;
+	float r = 0.0;
+    int iters = 32;
+    float power = 8.0;
+    float bailout = 32.0;
+    AO = 1.0;
+	for (int i = 0; i < iters ; i++) {
+        AO *= 0.725;
+		r = length(z);
+		if (r>bailout) {
+            AO = min((AO + 0.075) * 4.1, 1.0);
+            //return min(length(pos) - MB_INNER_SPHERE, 0.5 * log(r) * r / dr);
+            break;
+        }
+		
+		// convert to polar coordinates
+		float theta = acos(z.z/r);
+		float phi = atan(z.y,z.x);
+		dr =  pow( r, power-1.0)*power*dr + 1.0;
+		
+		// scale and rotate the point
+		float zr = pow( r,power);
+		theta = theta*power;
+		phi = phi*power;
+		
+		// convert back to cartesian coordinates
+		z = zr*vec3(sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta));
+		z+=pos;
+	}
+	return 0.5*log(r)*r/dr;
+}
+
+float sd_mandelbulb(vec3 p) {
+	float ignore;
+	return sd_mandelbulb(p, ignore);
+}
+
+
+void sphereFold(inout vec3 z, inout float dz)
+{
+	float r2 = dot(z,z);
+	if (r2 < 0.5)
+    { 
+		float temp = 2.0;
+		z *= temp;
+		dz*= temp;
+	}
+    else if (r2 < 1.0)
+    { 
+		float temp = 1.0 / r2;
+		z *= temp;
+		dz*= temp;
+	}
+}
+
+void boxFold(inout vec3 z, inout float dz)
+{
+	z = clamp(z, -1.0, 1.0) * 2.0 - z;
+}
+
+float sd_mandelbox(vec3 z, out float AO) {
+    //AO = 1.0;
+    int iters = 32;
+    float scale = 2.0;
+	vec3 offset = z;
+	float dr = 1.0;
+    //float aostep = 1.0 / 
+	for (int n = 0; n < iters; n++) {
+        //AO *= 0.725;
+		boxFold(z,dr);
+		sphereFold(z,dr);
+        z = scale * z + offset;
+        dr = dr * abs(scale) + 1.0;
+	}
+	float r = length(z);
+    AO = log(r)/32.0;
+    //AO = 1.0 - (r / abs(dr))/ float(iters);
+
+    //AO = min((AO + 0.075) * 4.1, 1.0);
+	return  r / abs(dr);
+}
+
+float sd_mandelbox(vec3 p) {
+	float ignore;
+	return sd_mandelbox(p, ignore);
+}
+
+vec2 obj_invertedmandel(vec3 p) {
+    float s = 1.0;
+    vec3 p2 = (deform(p,float(framecount)*0.01333, s));
+    vec2 g = vec2(sd_mandelbox(p2), 8.0) * vec2(s, 1.0);
+    return g;
+}
+
+float sierp(vec3 z) {
+    float scale = 2.0;
+	vec3 a1 = vec3(1,1,1);
+	vec3 a2 = vec3(-1,-1,1);
+	vec3 a3 = vec3(1,-1,-1);
+	vec3 a4 = vec3(-1,1,-1);
+	vec3 c;
+	int n = 0;
+	float dist, d;
+	while (n < 8) {
+		 //c = a1; dist =  sd_tetra(z-a1);
+	     //d = sd_tetra(z-a2); if (d < dist) { c = a2; dist=d; }
+		 //d = sd_tetra(z-a3); if (d < dist) { c = a3; dist=d; }
+		 //d = sd_tetra(z-a4); if (d < dist) { c = a4; dist=d; }
+		 c = a1; dist = length(z-a1);
+	     d = length(z-a2); if (d < dist) { c = a2; dist=d; }
+		 d = length(z-a3); if (d < dist) { c = a3; dist=d; }
+		 d = length(z-a4); if (d < dist) { c = a4; dist=d; }
+		z = scale*z-c*(scale-1.0);
+		n++;
+    }
+ 
+	return length(z) * pow(scale, float(-n));
+}
+
+vec2 obj_sierp(vec3 p) {
+    return vec2(sierp(p), 5.0);
 }
 
 vec2 distance_to_obj(in vec3 p) {
@@ -268,21 +484,81 @@ vec2 distance_to_obj(in vec3 p) {
 //  return op_union(obj_floor(p), op_noise(p, obj_sine(p)));
     //return op_union(op_noise(p, obj_sine(p)), op_rep(p, vec3(25.0, 20.0, 25.0)));
 //    return op_displace(p, op_noise(p, obj_floor(p)));
-//    return op_union(obj_floor(p), op_rep(p, vec3(15.0, 10.0, 15.0)));
 
-//    return op_union(
+//    return op_noise(p, op_sblend(p, op_displace(p, obj_grid(p)),
+//                                    op_rep(p, vec3(15.0, 15.0, 15.0))));
+
+//      return           obj_invertedufo(p);
+
+//    return op_sblend(p, op_displace(p, obj_grid(p)),
+//                        op_rep(p, vec3(15.0, 15.0, 15.0)));
+
+//    return op_sblend(p, op_displace(p, obj_grid(p)),
+//                        op_rep(p, vec3(15.0, 15.0, 15.0)));
+
+//    return op_sblend(p,
 //            op_displace(p, obj_capsule(p, vec3(5.5, 0.0, 0.0), vec3(-5.5, 0.0, 0.0), 2.0 )),
 //            op_displace(p, obj_capsule(p, vec3(0.0, 0.0, 5.5), vec3(0.0, 0.0, -5.5), 2.0 )));
 
-//    return obj_fractal(p);
-//    return obj_noise(p);
+//    return op_union(obj_cylinder(p, vec3(1.0, 1.0, 1.0)),
+//                    op_noise(p, op_displace(p, obj_grid(p))));
 
-//    return op_union(obj_floor(p), obj_sine(p));
-//    return obj_floor(p);
+//    return op_noise(p, obj_invertedgrid_rep(p, vec3(8.0,8.0,8.0)));
+
+//    return op_sblend(p, obj_floor(p), obj_sine(p));
+
+//    return op_noise(p, op_sblend(p, obj_floor(p),
+//                                    op_displace(p, obj_sphere(p, 20.0) )));
 //    return obj_box(p, vec3(5.0,13.0,8.0));
     //return op_intersect(obj_sine(p), obj_grid(p)); 
-    //return op_displace(p, obj_invertedgrid(p));
-    return obj_invertedgrid(p);
+    
+//    return op_intersect(op_rep(p, vec3(10.0,10.0,10.0)),
+//                    obj_invertedgrid_rep(p, vec3(10.0,10.0,10.0) ));
+    
+    //return op_displace(p, obj_grid(p)); //, obj_invertedgrid_rep(p, vec3(4.0,4.0,4.0) );
+
+    //return obj_invertedgrid(p);
+
+    float s = MBOX_SCALE;
+////    vec2 g = op_noise(p, op_sblend(p, op_displace(p, obj_grid(p)),
+////                                    op_rep(p, vec3(15.0, 15.0, 15.0))));
+//    vec2 g = op_noise(p, obj_invertedgrid(p/s) * vec2(s, 1.0));
+//    return g;
+//    return op_union(obj_floor(p), obj_sine(p));
+    
+    //return op_union(obj_floor(p),
+    //            obj_sine(p*s) * vec2(1.0/s, 1.0));
+    
+    //return op_noise(p, obj_sine(p*s) * vec2(1.0/s, 1.0));
+
+//    return vec2(g.x, g.y);
+
+    //return obj_cylinder(p, vec3(0.0, 0.0, 2.0));
+
+    //return obj_sierp(p*s) * vec2(1.0/s, 1.0);
+ //   return op_union(obj_floor(p),
+ //                   obj_sierp(p/s) * vec2(s, 1.0));
+
+//    return op_union(obj_floor(p),
+//                    vec2(sd_mandelbulb(p/s)*s, 9.0));
+
+    //return obj_invertedmandel(p);
+
+    //return vec2( sd_mandelbox(p/MBOX_SCALE)*MBOX_SCALE, 8.0);
+    //return vec2(sd_mandelbox(p), 8.0);
+    return vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0);
+
+//    return op_intersect(vec2(sd_mandelbulb(p/s)*s, 8.0),
+//                        vec2(sd_plane(p, vec3(1.0,0.0,0.0), 0.0), 4.0) );
+    //return obj_plane(p, vec3(0.0,1.0,0.0));
+/*    
+    return
+        op_union(
+          obj_floor(p),
+          op_sblend(p,
+            obj_tetrahedron(p, 3.0),
+            obj_capsule(p, vec3(10.5, 0.0, 0.0), vec3(-10.5, 0.0, 0.0), 5.0 )))  ;
+*/
 }
 
 
@@ -306,7 +582,37 @@ vec3 pal( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) {
     return a + b*cos( 6.28318*(c*t+d) );
 }
 
+vec3 ansi_gradient(float t) {
+	return mod(floor(t * vec3(8.0, 4.0, 2.0)), 2.0);
+}
 
+float sqr(float n) {return n*n;}
+
+vec3 rainbow_gradient(float t) {
+	vec3 c = 1.0 - pow(abs(vec3(t) - vec3(0.65, 0.5, 0.2)) * vec3(3.0, 3.0, 5.0), vec3(1.5, 1.3, 1.7));
+	c.r = max((0.15 - sqr(abs(t - 0.04) * 5.0)), c.r);
+	c.g = (t < 0.5) ? smoothstep(0.04, 0.45, t) : c.g;
+	return clamp(c, 0.0, 1.0);
+}
+vec3 heatmap_gradient(float t) {
+	return clamp((pow(t, 1.5) * 0.8 + 0.2) * vec3(smoothstep(0.0, 0.35, t) + t * 0.5, smoothstep(0.5, 1.0, t), max(1.0 - t * 1.7, t * 7.0 - 6.0)), 0.0, 1.0);
+}
+vec3 neon_gradient(float t) {
+	return clamp(vec3(t * 1.3 + 0.1, sqr(abs(0.43 - t) * 1.7), (1.0 - t) * 1.7), 0.0, 1.0);
+}
+
+vec3 stripe_gradient(float t) {
+	return vec3(mod(floor(t * 32.0), 2.0) * 0.2 + 0.8);
+}
+
+vec3 grey_gradient(float t) {
+	return vec3(clamp(0.0,1.0, t));
+}
+
+vec3 fire_gradient(float t) {
+	return max(pow(vec3(min(t * 1.02, 1.0)), vec3(1.7, 25.0, 100.0)), 
+			   vec3(0.06 * pow(max(1.0 - abs(t - 0.35), 0.0), 5.0)));
+}
 
 vec3 floor_color(in vec3 p) {
     float m = 0.5;
@@ -325,32 +631,83 @@ vec3 floor_color(in vec3 p) {
     }
 }
 
-vec3 prim_color(in vec3 p, int i) {
-    if (i == 0)
+
+// Rainbow (more yellow, narrower green, deeper red)
+vec3 rainbow2_gradient(float t) {
+    return pal(t, vec3(0.55,0.4,0.3),vec3(0.50,0.51,0.35)+0.1,vec3(0.8,0.75,0.8),vec3(0.075,0.33,0.67)+0.21);
+}
+
+vec3 prim_color(in vec3 p, float i) {
+    prim_cols[0] = vec3(0.5,0.5,0.5);
+    prim_cols[1] = vec3(1.0,0.0,0.0);
+    prim_cols[2] = vec3(1.0,0.25,0.0);
+    prim_cols[3] = vec3(1.0,1.0,0.0);
+    prim_cols[4] = vec3(0.0,1.0,0.0);
+    prim_cols[5] = vec3(0.0,0.0,1.0);
+    prim_cols[6] = vec3(1.0,0.0,1.0);
+    prim_cols[7] = vec3(0.5,0.0,1.0);
+    prim_cols[8] = vec3(1.0,1.0,1.0);
+
+    if (i == 0.0)
         return floor_color(p);
-    else if (i == 1)
+    else if (i <= 8.0) {
+        return prim_cols[int(i)];
+    }
+    else {
+         return pal((0.5*snoise(p*NOISE_DETAIL)+framecount*0.01)*2.0*PI, vec3(0.5),
+                                                           vec3(0.5),
+                                                           vec3(0.5),
+                                                           //p);
+                                                           vec3(0.,1.0,0.0) + 1.0 );
+/*
+        int i1 = int(i);
+        int i2 = int(mod(floor(i)+1.0, 8.0));
+        vec3 c1 = prim_cols[i1];
+        vec3 c2 = prim_cols[i2];
+        float t = fract(i);
+        return mix(c1, c2, t);
+        */
+    }
+
+/*
+    else if (i == 1.0)
         return vec3(1.0,0.0,0.0);
-    else if (i == 2)
+    else if (i == 2.0)
         return vec3(0,0,1);
-    else if (i == 3)
+    else if (i == 3.0)
         return vec3(1,1,0);
-    else if (i == 4)
+    else if (i == 4.0)
         return vec3(0.0, 1.0, 0.0);
-    else if (i == 5)
+    else if (i == 5.0)
         return vec3(0.8, 0.8, 1.0);
-    else if (i == 6) {
+    else if (i == 6.0) {
 //        vec3 col = pal(noise(p * 2.0), vec3(0.5,0.5,0.5),
 //                                        vec3(0.5,0.5,0.5),
 //                                        vec3(1.0,1.0,1.0),
 //                                        vec3(0.0,0.33,0.67) );
-        vec3 col = pal(noise(p * 1.0), vec3(0.75,0.75,0.75), // br
-                                       vec3(0.75,0.75,0.75), // co
-                                       vec3(1.0,1.0,1.0), // freq
-                                       vec3(0.02,0.40,0.50) ); // phase
-
+//        vec3 col = pal(noise(p * 1.0), vec3(0.75,0.75,0.75), // br
+//                                       vec3(0.75,0.75,0.75), // co
+//                                       vec3(1.0,1.0,1.0), // freq
+//                                       vec3(0.02,0.40,0.50) ); // phase
+        //vec3 col =pal(noise(p*4.0),vec3(0.5),vec3(0.55),vec3(0.45),vec3(0.00,0.10,0.20) + 0.47 );
+        float n = noise(p*4.0);
+        vec3 col =pal(n, vec3(0.5),vec3(0.55),vec3(0.45),vec3(0.0,0.1,0.2) + 0.47 );
 //        float n = noise(p * 10.0);
         return col;
     }
+    else {
+        float n = length(p); //noise(p*4.0);
+//        vec3 col =pal((0.5*snoise(p*NOISE_DETAIL)+0.5)*2.0*PI, vec3(0.5),
+//                                                           vec3(0.5),
+//                                                           vec3(0.75),
+//                                                           //p);
+//                                                           vec3(0.22,0.3,0.2) + 0.0 );
+
+        vec3 col =pal(i*1.0, vec3(0.5),vec3(0.5),vec3(0.45),vec3(0.60,0.80,0.99) + 0.47 );
+//        float n = noise(p * 10.0);
+        return col;
+     }
+     */
 }
 
 void main(void) {
@@ -374,18 +731,18 @@ void main(void) {
     vec3 vcv=(prp+vpn);
     //vec3 scrCoord=vcv+vPos.x*u*swidth/sheight+vPos.y*v;
     //vec3 scrCoord=vcv+vPos.x*u*resolution.x/resolution.y+vPos.y*v;
-    float fov = 0.5;
+    float fov = PI/3.0;
     vec3 scrCoord=vcv + vPos.x*u*fov
                       + vPos.y*v*fov;
     vec3 scp=normalize(scrCoord-prp);
 
     // Raymarching.
     const vec3 e=vec3(0.02,0,0);
-    const float maxd=100.0; //Max depth
+    const float maxd=200.0; //Max depth
     vec2 d=vec2(0.02,0.0);
     vec3 c,p,N;
 
-    float f=1.0; // near plane?
+    float f=0.01; // near plane?
     
     float nsteps = 0.0;
 
@@ -395,8 +752,9 @@ void main(void) {
 //    }
 //    else {
     for(int i=0;i<256;i++) {
-        if ((abs(d.x) < 0.001) || (f > maxd)) 
+        if ((abs(d.x) < 0.001) || (f > maxd)) {
             break;
+        }
         f+=d.x;
         p=prp+scp*f;
         d = distance_to_obj(p);
@@ -404,23 +762,57 @@ void main(void) {
     }
 
     if (f < maxd) {
-        c = prim_color(p, int(d.y));
-    
-        vec3 n = vec3(d.x-distance_to_obj(p-e.xyy).x,
-                      d.x-distance_to_obj(p-e.yxy).x,
-                      d.x-distance_to_obj(p-e.yyx).x);
-        N = normalize(n);
+        
+        float AO;
+        float m = sd_mandelbulb(p/MBULB_SCALE, AO); //*MBULB_SCALE;
+        //float m = sd_mandelbox(p/MBOX_SCALE, AO) * MBOX_SCALE;
+        
+        //c = pal(AO*2.0*PI, vec3(0.5), vec3(0.5), vec3(0.3, 0.3, 0.3), vec3(0.0,0.0,0.5) + 0.0 );
+        c =rainbow2_gradient(AO*2.0); // * hash(f);
+
+        //c = prim_color(p, d.y);
+        
+
+        //vec3 n = vec3(d.x-distance_to_obj(p-e.xyy).x,
+        //              d.x-distance_to_obj(p-e.yxy).x,
+        //              d.x-distance_to_obj(p-e.yyx).x);
+        //N = normalize(n);
+
+
+        //float cam_dist = distance_to_obj(cam_pos).x;
+        //vec3 dotfade = vec3(smoothstep(0.1, 0.5, f)) * c * vec3(hash(f))* f ;
+        //nsteps = nsteps / 256.0 ;
+        vec3 glow = vec3(nsteps/256.0) *  vec3(1.0,1.0,1.0) * 0.75;
+        //vec3 glow = vec3(nsteps/256.0) * c * 1.0;
 
         //simple phong lighting, LightPosition = CameraPosition
-        float b=dot(N,normalize(prp-p));
-        gl_FragColor=vec4((b*c + pow(b,16.0)) * (1.0-f*0.01), 1.0);
+        //float b=dot(N,normalize(prp-p));
+        //gl_FragColor=vec4(glow, 1.0);
+        
+        
+        //vec3 fc = vec3(glow + dotfade * (b*c + pow(b,32.0)) * (1.0-f*0.01));
+        //vec3 fc = vec3(AO* (b*c + pow(b,32.0)) * (1.0-f*0.005)) - glow;
+        //vec3 fc = vec3(0.0*glow + AO* c*1.0);
+        vec3 fc = vec3(AO) * c - glow; // - glow; //glow; // * c ;
+
+        //vec3 fc = c* AO*1.1 * glow; // * dotfade;
+
+        // gamma
+        //fc = pow(fc, vec3(0.47));
+        gl_FragColor= vec4(fc, 1.0);
+        //gl_FragColor=vec4(glow + (b*c + pow(b,32.0)) * (1.0-f*0.01), 1.0);
 
         // display raymarchings steps as brightness
         //nsteps = nsteps / 256.0 ;
         //gl_FragColor=(vec4(nsteps, nsteps, nsteps, 1.0) + vec4(c.xyz, 1.0)) * 0.5;
     }
-    else 
+    else {
+        //vec2 mp = vec2(mousex, mousey) ;
+        //vec2 uv = vec2(vpn.y * PI*2.0, vpn.z * PI*0.99);
         gl_FragColor=vec4(0.0,0.0,0.0,1.0); //background color
-//}
+        //vec4 texcol = texture2D(texture, q+uv); //+vpn.xy);
+        //gl_FragColor=vec4(texcol.xyz, 1.0); //background color
+        //gl_FragColor=vec4(0.25,0.25,0.25,1.0); //background color
+    }
 
 }
