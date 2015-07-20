@@ -19,9 +19,13 @@
 ; =========================================================================
 
 (def initial-camera {
-  :pos [0.0 0.0 1.0]
+  :pos [0.0 0.0 64.0]
   :lookat [0.0 0.0 0.0]
   :vpn [0.0 0.0 -1.0]
+})
+
+(def initial-params {
+  :blend_coef 0.5
 })
 
 (def initial-state {
@@ -30,6 +34,7 @@
   :aspect-ratio 1.0
   :render-paused? false
   :camera initial-camera
+  :params initial-params
 })
 
 
@@ -79,7 +84,9 @@
                              (float (cam-pos 2)))
       (.set shader "cam_lookat" (float (cam-lookat 0)) 
                                 (float (cam-lookat 1))
-                                (float (cam-lookat 2))))
+                                (float (cam-lookat 2)))
+      (.set shader "blend_coef" (float (get-in state [:params :blend_coef])))
+      )
     state))
 
 
@@ -111,8 +118,10 @@
           \s (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpn speed))))
           \a (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale vpv speed))))
           \d (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpv speed))))
-          \e (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale wup speed))))
-          \c (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale wup speed))))
+          \e (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale wup speed))))
+          \c (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale wup speed))))
+          \b (fn [s] (update-in s [:params :blend_coef] #(- % 0.01)))
+          \n (fn [s] (update-in s [:params :blend_coef] #(+ % 0.01)))
          }]
   (if (contains? key-movement-map keychar)
     (-> ((key-movement-map keychar) state)
@@ -254,10 +263,10 @@
     :setup setup
     :draw draw
     ;:size [1900 1100]
-    ;:size [1440 800]
-    :size :fullscreen
-    :features [:present 
-               :resizable]
+    :size [1440 800]
+    ;:size :fullscreen
+    ;:features [:present 
+    ;           :resizable]
  
     :renderer :p3d
     ;:renderer :opengl
