@@ -19,9 +19,10 @@
 ; =========================================================================
 
 (def initial-camera {
-  :pos [0.0 0.0 64.0]
+  :pos [128.0 0.0 256.0]
   :lookat [0.0 0.0 0.0]
   :vpn [0.0 0.0 -1.0]
+  :speed 1.5
 })
 
 (def initial-params {
@@ -90,7 +91,8 @@
     state))
 
 
-(def speed 0.5)
+;(def speed 0.025)
+;(def turbospeed 1.5)
 
 (defn camera-mouse-update [state]
   (let [[mx my] (vec2-mul (vec2-sub (state :mouse-position) [0.5 0.5])
@@ -112,16 +114,25 @@
         wup [0.0 -1.0 0.0] ; world up
         vpn (get-in state [:camera :vpn])
         vpv (vec3-normalize (vec3-cross (get-in state [:camera :vpn]) [0.0 -1.0 0.0]))
+        speed (get-in state [:camera :speed])
         ;vpu (vec3-normalize (vec3-cross vpn vpv)) ;viewplane up
         key-movement-map {
+          ;\W (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale vpn speed))))
+          ;\S (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpn speed))))
+          ;\A (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale vpv speed))))
+          ;\D (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpv speed))))
           \w (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale vpn speed))))
           \s (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpn speed))))
           \a (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale vpv speed))))
           \d (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale vpv speed))))
           \e (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale wup speed))))
           \c (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale wup speed))))
+          ;\E (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale wup speed))))
+          ;\C (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale wup speed))))
           \b (fn [s] (update-in s [:params :blend_coef] #(- % 0.01)))
           \n (fn [s] (update-in s [:params :blend_coef] #(+ % 0.01)))
+          \1 (fn [s] (update-in s [:camera :speed] #(* % 0.9)))
+          \2 (fn [s] (update-in s [:camera :speed] #(/ % 0.9)))
          }]
   (if (contains? key-movement-map keychar)
     (-> ((key-movement-map keychar) state)
@@ -166,6 +177,9 @@
          state)
     \r (do (-> initial-state
                (assoc :aspect-ratio (/ (float (q/width)) (q/height)))))
+    \0 (do (-> initial-state
+               (assoc :aspect-ratio (/ (float (q/width)) (q/height)))
+               (assoc-in [:camera :pos] [0.0 0.0 0.0])))
     \` (do
          (reset! edge-shader (q/load-shader "data/edges.glsl"))
          (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
@@ -193,8 +207,8 @@
 (defn update [state]
   (-> state
       (do-movement-keys)
-      (update-uniforms! @texture-shader)
-      (update-uniforms! @feedback-shader)
+      ;(update-uniforms! @texture-shader)
+      ;(update-uniforms! @feedback-shader)
       (update-uniforms! @ray-shader)
   ))
 
@@ -205,14 +219,16 @@
         ar (get state :aspect-ratio 1.0)
         [mx my] (state :mouse-position)
         zoom (get state :zoom 1.0)
-        pos (get-in state [:camera :pos])
+        pos (get-in state [:camera :pos] [0.0 0.0 0.0])
+        speed (get-in state [:camera :speed] 0.0)
         lines [
                ;(str "state: " state)
                (str "pos: " (vec3-format pos))
                (str (format "mouse: [%.2f %.2f]" (float mx) (float my)))
+               (str (format "speed: %.6f" speed))
                (str (format "ar: %.2f" ar))
                ;(str "camera: " (state :camera))
-               (str (format "fps: %.2f" (q/current-frame-rate)))
+               (str (format "fps: %.2f" (float (q/current-frame-rate))))
                ]]
     (q/fill 255 255 255 255)
     (doseq [i (range (count lines))]
@@ -263,10 +279,10 @@
     :setup setup
     :draw draw
     ;:size [1900 1100]
-    :size [1440 800]
-    ;:size :fullscreen
-    ;:features [:present 
-    ;           :resizable]
+    ;:size [1440 800]
+    :size :fullscreen
+    :features [:present
+               :resizable]
  
     :renderer :p3d
     ;:renderer :opengl
