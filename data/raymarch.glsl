@@ -31,7 +31,7 @@ const float NOISE_DETAIL =0.5;
 
 const float MB_INNER_SPHERE = 0.72;
 const float MBOX_SCALE = 8.0;
-const float MBULB_SCALE = 64.0;
+const float MBULB_SCALE = 128.0;
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -125,7 +125,7 @@ vec2 obj_floor(in vec3 p) {
 
 vec2 obj_sphere(in vec3 p, float r) {
     float d = length(p) -r;
-    return vec2(d,7.0);
+    return vec2(d,9.0);
 }
 
 vec2 obj_torus(in vec3 p) {
@@ -351,8 +351,8 @@ float sd_mandelbulb(in vec3 pos, out float AO) {
 	vec3 z = pos;
 	float dr = 1.0;
 	float r = 0.0;
-    int iters = 32;
-    float power = 8.0;
+    int iters = 64;
+    float power = 11.0;
     float bailout = 32.0;
     AO = 1.0;
 	for (int i = 0; i < iters ; i++) {
@@ -382,8 +382,8 @@ float sd_mandelbulb(in vec3 pos, out float AO) {
 }
 
 float sd_mandelbulb(vec3 p) {
-	float ignore;
-	return sd_mandelbulb(p, ignore);
+    float ignore;
+    return sd_mandelbulb(p, ignore);
 }
 
 
@@ -411,7 +411,7 @@ void boxFold(inout vec3 z, inout float dz)
 
 float sd_mandelbox(vec3 z, out float AO) {
     //AO = 1.0;
-    int iters = 32;
+    int iters = 24;
     float scale = 2.0;
 	vec3 offset = z;
 	float dr = 1.0;
@@ -545,8 +545,17 @@ vec2 distance_to_obj(in vec3 p) {
     //return obj_invertedmandel(p);
 
     //return vec2( sd_mandelbox(p/MBOX_SCALE)*MBOX_SCALE, 8.0);
+    
     //return vec2(sd_mandelbox(p), 8.0);
     return vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0);
+
+
+    //return op_sblend(p, vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0),
+    //                    obj_sphere(p, MBULB_SCALE * 0.985));
+
+//    return op_sub(
+//                  obj_sphere(p, MBULB_SCALE * 1.0),
+//            vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0));
 
 //    return op_intersect(vec2(sd_mandelbulb(p/s)*s, 8.0),
 //                        vec2(sd_plane(p, vec3(1.0,0.0,0.0), 0.0), 4.0) );
@@ -726,6 +735,7 @@ void main(void) {
 
     // Camera setup.
     vec3 vpn=normalize(vrp-prp);
+    //vec3 u = normalize(cam_pos);
     vec3 u=normalize(cross(vuv,vpn));
     vec3 v=cross(vpn,u);
     vec3 vcv=(prp+vpn);
@@ -742,7 +752,7 @@ void main(void) {
     vec2 d=vec2(0.02,0.0);
     vec3 c,p,N;
 
-    float f=0.01; // near plane?
+    float f=0.0001; // near plane?
     
     float nsteps = 0.0;
 
@@ -752,7 +762,7 @@ void main(void) {
 //    }
 //    else {
     for(int i=0;i<256;i++) {
-        if ((abs(d.x) < 0.001) || (f > maxd)) {
+        if ((abs(d.x) < 0.0001) || (f > maxd)) {
             break;
         }
         f+=d.x;
@@ -768,38 +778,40 @@ void main(void) {
         //float m = sd_mandelbox(p/MBOX_SCALE, AO) * MBOX_SCALE;
         
         //c = pal(AO*2.0*PI, vec3(0.5), vec3(0.5), vec3(0.3, 0.3, 0.3), vec3(0.0,0.0,0.5) + 0.0 );
-        c =rainbow2_gradient(AO*2.0); // * hash(f);
+        c =rainbow2_gradient(AO*1.0); // * hash(f);
 
         //c = prim_color(p, d.y);
         
 
-        //vec3 n = vec3(d.x-distance_to_obj(p-e.xyy).x,
-        //              d.x-distance_to_obj(p-e.yxy).x,
-        //              d.x-distance_to_obj(p-e.yyx).x);
-        //N = normalize(n);
+        vec3 n = vec3(d.x-distance_to_obj(p-e.xyy).x,
+                      d.x-distance_to_obj(p-e.yxy).x,
+                      d.x-distance_to_obj(p-e.yyx).x);
+        N = normalize(n);
 
 
         //float cam_dist = distance_to_obj(cam_pos).x;
         //vec3 dotfade = vec3(smoothstep(0.1, 0.5, f)) * c * vec3(hash(f))* f ;
         //nsteps = nsteps / 256.0 ;
-        vec3 glow = vec3(nsteps/256.0) *  vec3(1.0,1.0,1.0) * 0.75;
+        vec3 glow = vec3(nsteps/256.0) *  vec3(0.8,0.8,1.0) * 0.5;
         //vec3 glow = vec3(nsteps/256.0) * c * 1.0;
 
         //simple phong lighting, LightPosition = CameraPosition
-        //float b=dot(N,normalize(prp-p));
+        float b=dot(N,normalize(prp-p));
         //gl_FragColor=vec4(glow, 1.0);
         
         
         //vec3 fc = vec3(glow + dotfade * (b*c + pow(b,32.0)) * (1.0-f*0.01));
-        //vec3 fc = vec3(AO* (b*c + pow(b,32.0)) * (1.0-f*0.005)) - glow;
+        //vec3 fc = vec3(AO* (b*c + pow(b,32.0)) * (1.0-f*0.005));
         //vec3 fc = vec3(0.0*glow + AO* c*1.0);
-        vec3 fc = vec3(AO) * c - glow; // - glow; //glow; // * c ;
-
-        //vec3 fc = c* AO*1.1 * glow; // * dotfade;
-
-        // gamma
+        
+        vec3 fc = vec3(AO) * c; // + glow; // - glow; //glow; // * c ;
+        //vec3 phong = AO * vec3((b*c + pow(b*0.95,16.0)) * (1.0-f*0.005));
+        vec3 phong = vec3((b*fc + pow(b,16.0))); // * (1.0-f*0.005));
+        //vec3 phong = vec3((b*AO*c + pow(b,32.0)) * (1.0-f*0.01));
         //fc = pow(fc, vec3(0.47));
-        gl_FragColor= vec4(fc, 1.0);
+
+        //gl_FragColor= vec4(phong + glow*1.0, 1.0);
+        gl_FragColor= vec4((fc+phong*0.5+glow)*1.0, 1.0);
         //gl_FragColor=vec4(glow + (b*c + pow(b,32.0)) * (1.0-f*0.01), 1.0);
 
         // display raymarchings steps as brightness
