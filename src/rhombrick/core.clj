@@ -1025,7 +1025,7 @@
   (.set @edge-shader "height" (float (height)))
 
   (texture-wrap :repeat)
-  (filter-shader @edge-shader)
+  ;(filter-shader @edge-shader)
   )
   ;(display-filter :dilate)
   ;(display-filter :erode)
