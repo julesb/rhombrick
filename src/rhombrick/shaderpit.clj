@@ -22,7 +22,8 @@
   :pos [128.0 0.0 256.0]
   :lookat [0.0 0.0 0.0]
   :vpn [0.0 0.0 -1.0]
-  :speed 1.5
+  :fov (/ Math/PI 3.0)
+  :speed 0.5
 })
 
 (def initial-params {
@@ -71,6 +72,7 @@
           ar (state :aspect-ratio)
           cam-pos (get-in state [:camera :pos])
           cam-lookat (get-in state [:camera :lookat])
+          cam-fov (get-in state [:camera :fov])
           ]
       (.set shader "framecount" (float (q/frame-count)))
       (.set shader "aspect_ratio" (float ar))
@@ -86,6 +88,7 @@
       (.set shader "cam_lookat" (float (cam-lookat 0)) 
                                 (float (cam-lookat 1))
                                 (float (cam-lookat 2)))
+      (.set shader "cam_fov" (float cam-fov))
       (.set shader "blend_coef" (float (get-in state [:params :blend_coef])))
       )
     state))
@@ -133,6 +136,8 @@
           \n (fn [s] (update-in s [:params :blend_coef] #(+ % 0.01)))
           \1 (fn [s] (update-in s [:camera :speed] #(* % 0.9)))
           \2 (fn [s] (update-in s [:camera :speed] #(/ % 0.9)))
+          \- (fn [s] (update-in s [:camera :fov] #(* % 0.9)))
+          \= (fn [s] (update-in s [:camera :fov] #(/ % 0.9)))
          }]
   (if (contains? key-movement-map keychar)
     (-> ((key-movement-map keychar) state)
@@ -221,12 +226,15 @@
         zoom (get state :zoom 1.0)
         pos (get-in state [:camera :pos] [0.0 0.0 0.0])
         speed (get-in state [:camera :speed] 0.0)
+        fov (get-in state [:camera :fov] 0.5)
+        fovdeg (/ (* fov 180.0) Math/PI)
         lines [
                ;(str "state: " state)
                (str "pos: " (vec3-format pos))
                (str (format "mouse: [%.2f %.2f]" (float mx) (float my)))
                (str (format "speed: %.6f" speed))
                (str (format "ar: %.2f" ar))
+               (str (format "fov: %.2f"  fovdeg))
                ;(str "camera: " (state :camera))
                (str (format "fps: %.2f" (float (q/current-frame-rate))))
                ]]
