@@ -29,7 +29,7 @@ uniform float time;
 uniform float blend_coef;
 varying vec4 vertColor;
 varying vec4 vertTexCoord;
-
+uniform float ray_hit_epsilon;
 float PI=3.14159265;
 
 const float NOISE_DETAIL =0.5;
@@ -358,7 +358,7 @@ float sd_mandelbulb(in vec3 pos, out float AO) {
 	float r = 0.0;
     int iters = 32;
     float power = 8.0;
-    float bailout = 32.0;
+    float bailout = 2.0;
     AO = 1.0;
 	for (int i = 0; i < iters ; i++) {
         AO *= 0.725;
@@ -763,7 +763,7 @@ void main(void) {
     vec2 d=vec2(0.02,0.0);
     vec3 c,p,N;
 
-    float f=0.0001; // near plane?
+    float f=0.001; // near plane?
     
     float nsteps = 0.0;
 
@@ -772,8 +772,8 @@ void main(void) {
 //        gl_FragColor=vec4(0.25*prim_color(cam_pos, int(cam_dist.y)),1.0);
 //    }
 //    else {
-    for(int i=0;i<128;i++) {
-        if ((abs(d.x) < 0.001) || (f > maxd)) {
+    for(int i=0;i<240;i++) {
+        if ((abs(d.x) < ray_hit_epsilon) || (f > maxd)) {
             break;
         }
         f+=d.x;
@@ -807,7 +807,7 @@ void main(void) {
         //float cam_dist = distance_to_obj(cam_pos).x;
         //vec3 dotfade = vec3(smoothstep(0.1, 0.5, f)) * c * vec3(hash(f))* f ;
         //nsteps = nsteps / 256.0 ;
-        vec3 glow = vec3(nsteps/256.0) *  vec3(0.8,0.8,1.0) * 0.5;
+        vec3 glow = vec3(nsteps/256.0) *  vec3(0.8,0.8,1.0) * 0.75;
         //vec3 glow = vec3(nsteps/256.0) * c * 1.0;
 
         //simple phong lighting, LightPosition = CameraPosition
@@ -821,12 +821,16 @@ void main(void) {
         
         vec3 fc = vec3(AO) * c; // + glow; // - glow; //glow; // * c ;
         //vec3 phong = AO * vec3((b*c + pow(b*0.95,16.0)) * (1.0-f*0.005));
-        vec3 phong = vec3((b*fc + pow(b,16.0))); // * (1.0-f*0.005));
+
+        // *
+        //vec3 phong = vec3((b*fc + pow(b,16.0))); // * (1.0-f*0.005));
+ 
         //vec3 phong = vec3((b*AO*c + pow(b,32.0)) * (1.0-f*0.01));
         //fc = pow(fc, vec3(0.47));
 
         //gl_FragColor= vec4(phong + glow*1.0, 1.0);
-        gl_FragColor= vec4((fc+phong*0.5+glow)*1.0, 1.0);
+        gl_FragColor= vec4((fc+glow)*1.0, 1.0);
+        //gl_FragColor= vec4((fc+phong*0.5+glow)*1.0, 1.0);
         //gl_FragColor=vec4(glow + (b*c + pow(b,32.0)) * (1.0-f*0.01), 1.0);
 
         // display raymarchings steps as brightness
@@ -834,10 +838,10 @@ void main(void) {
         //gl_FragColor=(vec4(nsteps, nsteps, nsteps, 1.0) + vec4(c.xyz, 1.0)) * 0.5;
     }
     else {
+        gl_FragColor=vec4(0.0,0.0,0.0,1.0); //background color
         //vec2 mp = vec2(mousex, mousey) ;
         //vec2 uv = vec2(vpn.y * PI*2.0, vpn.z * PI*0.99);
-        gl_FragColor=vec4(0.0,0.0,0.0,1.0); //background color
-        //vec4 texcol = texture2D(texture, q+uv); //+vpn.xy);
+        //vec4 texcol = texture2D(texture, q+uv +vpn.xy);
         //gl_FragColor=vec4(texcol.xyz, 1.0); //background color
         //gl_FragColor=vec4(0.25,0.25,0.25,1.0); //background color
     }

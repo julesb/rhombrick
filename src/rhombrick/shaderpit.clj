@@ -28,6 +28,7 @@
 
 (def initial-params {
   :blend_coef 0.5
+  :ray_hit_epsilon 0.001
 })
 
 (def initial-state {
@@ -90,6 +91,7 @@
                                 (float (cam-lookat 2)))
       (.set shader "cam_fov" (float cam-fov))
       (.set shader "blend_coef" (float (get-in state [:params :blend_coef])))
+      (.set shader "ray_hit_epsilon" (float (get-in state [:params :ray_hit_epsilon] 0.001)))
       )
     state))
 
@@ -138,6 +140,8 @@
           \2 (fn [s] (update-in s [:camera :speed] #(/ % 0.9)))
           \- (fn [s] (update-in s [:camera :fov] #(* % 0.9)))
           \= (fn [s] (update-in s [:camera :fov] #(/ % 0.9)))
+          \[ (fn [s] (update-in s [:params :ray_hit_epsilon] #(* % 0.9)))
+          \] (fn [s] (update-in s [:params :ray_hit_epsilon] #(/ % 0.9)))
          }]
   (if (contains? key-movement-map keychar)
     (-> ((key-movement-map keychar) state)
@@ -228,12 +232,14 @@
         speed (get-in state [:camera :speed] 0.0)
         fov (get-in state [:camera :fov] 0.5)
         fovdeg (/ (* fov 180.0) Math/PI)
+        eps (get-in state [:params :ray_hit_epsilon] 0.001)
         lines [
                ;(str "state: " state)
                (str "pos: " (vec3-format pos))
                (str (format "mouse: [%.2f %.2f]" (float mx) (float my)))
                (str (format "speed: %.6f" speed))
                (str (format "ar: %.2f" ar))
+               (str (format "eps: %.8f" eps))
                (str (format "fov: %.2f"  fovdeg))
                ;(str "camera: " (state :camera))
                (str (format "fps: %.2f" (float (q/current-frame-rate))))
