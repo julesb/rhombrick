@@ -29,6 +29,7 @@
 (def initial-params {
   :blend_coef 0.5
   :ray_hit_epsilon 0.001
+  :palette_offset 0.0
 })
 
 (def initial-state {
@@ -92,6 +93,7 @@
       (.set shader "cam_fov" (float cam-fov))
       (.set shader "blend_coef" (float (get-in state [:params :blend_coef])))
       (.set shader "ray_hit_epsilon" (float (get-in state [:params :ray_hit_epsilon] 0.001)))
+      (.set shader "palette_offset" (float (get-in state [:params :palette_offset] 0.0)))
       )
     state))
 
@@ -134,14 +136,16 @@
           \c (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale wup speed))))
           ;\E (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale wup speed))))
           ;\C (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale wup speed))))
-          \b (fn [s] (update-in s [:params :blend_coef] #(- % 0.01)))
-          \n (fn [s] (update-in s [:params :blend_coef] #(+ % 0.01)))
+          \b (fn [s] (update-in s [:params :blend_coef] #(- % 0.05)))
+          \n (fn [s] (update-in s [:params :blend_coef] #(+ % 0.05)))
           \1 (fn [s] (update-in s [:camera :speed] #(* % 0.9)))
           \2 (fn [s] (update-in s [:camera :speed] #(/ % 0.9)))
           \- (fn [s] (update-in s [:camera :fov] #(* % 0.9)))
           \= (fn [s] (update-in s [:camera :fov] #(/ % 0.9)))
           \[ (fn [s] (update-in s [:params :ray_hit_epsilon] #(* % 0.9)))
           \] (fn [s] (update-in s [:params :ray_hit_epsilon] #(/ % 0.9)))
+          \3 (fn [s] (update-in s [:params :palette_offset] #(- % 0.1)))
+          \4 (fn [s] (update-in s [:params :palette_offset] #(+ % 0.1)))
          }]
   (if (contains? key-movement-map keychar)
     (-> ((key-movement-map keychar) state)
