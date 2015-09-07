@@ -218,7 +218,7 @@ vec2 obj_sine(vec3 p) {
 }
 
 vec2 op_displace(vec3 p, vec2 obj) {
-    float m = framecount * 0.05;
+    float m = framecount * 0.01;
     vec3 v = cos(p*0.5+m);
     float d = v.x*v.y*v.z * 2.0;
     return vec2(obj.x+d, obj.y);
@@ -489,15 +489,18 @@ vec2 distance_to_obj(in vec3 p) {
 //  return op_union(obj_floor(p), op_displace(p, obj_sine(p)));
 //  return op_union(obj_floor(p), op_noise(p, obj_sine(p)));
     //return op_union(op_noise(p, obj_sine(p)), op_rep(p, vec3(25.0, 20.0, 25.0)));
+    //return op_rep(p, vec3(25.0, 20.0, 25.0));
 //    return op_displace(p, op_noise(p, obj_floor(p)));
 
-//    return op_noise(p, op_sblend(p, op_displace(p, obj_grid(p)),
-//                                    op_rep(p, vec3(15.0, 15.0, 15.0))));
+    // blobby noise blend infinite grid
+    //return op_noise(p, op_sblend(p, op_displace(p, obj_grid(p)),
+    //                                op_rep(p, vec3(15.0, 15.0, 15.0))));
 
 //      return           obj_invertedufo(p);
 
-//    return op_sblend(p, op_displace(p, obj_grid(p)),
-//                        op_rep(p, vec3(15.0, 15.0, 15.0)));
+    // blobby infinite grid
+    //return op_sblend(p, op_displace(p, obj_grid(p)),
+    //                    op_rep(p, vec3(15.0, 15.0, 15.0)));
 
 //    return op_sblend(p, op_displace(p, obj_grid(p)),
 //                        op_rep(p, vec3(15.0, 15.0, 15.0)));
@@ -513,17 +516,20 @@ vec2 distance_to_obj(in vec3 p) {
 
 //    return op_sblend(p, obj_floor(p), obj_sine(p));
 
-//    return op_noise(p, op_sblend(p, obj_floor(p),
-//                                    op_displace(p, obj_sphere(p, 20.0) )));
+    // low freq noise blend plane
+    //return op_noise(p, op_sblend(p, obj_floor(p),
+    //                                op_displace(p, obj_sphere(p, 20.0) )));
 //    return obj_box(p, vec3(5.0,13.0,8.0));
-    //return op_intersect(obj_sine(p), obj_grid(p)); 
-    
+//    return op_intersect(obj_sine(p), obj_grid(p)); 
+//    
 //    return op_intersect(op_rep(p, vec3(10.0,10.0,10.0)),
 //                    obj_invertedgrid_rep(p, vec3(10.0,10.0,10.0) ));
     
     //return op_displace(p, obj_grid(p)); //, obj_invertedgrid_rep(p, vec3(4.0,4.0,4.0) );
 
-    //return obj_invertedgrid(p);
+//    return obj_invertedgrid(p);
+
+
 
     float s = MBOX_SCALE;
 ////    vec2 g = op_noise(p, op_sblend(p, op_displace(p, obj_grid(p)),
@@ -731,11 +737,21 @@ vec3 prim_color(in vec3 p, float i) {
      */
 }
 
+vec3 lambert(vec3 p, vec3 n, vec3 l) {
+    return vec3(dot(l-p, n)/150.0);
+}
+
 void main(void) {
     vec2 q = vertTexCoord.st;
     vec2 vPos = -vec2(aspect_ratio, 1.0) + 2.0 * q;
     //vec2 vPos = -1.0 + 2.0 * q;
 
+    float lightspeed = 0.1;
+    float lightrad = 200.0;
+    //vec3 lightpos = vec3(cos(framecount*lightspeed)*lightrad,
+    //                     0.0,
+    //                     sin(framecount*lightspeed)*lightrad);
+    vec3 lightpos = vec3(400.0,0.0,0.0);
     // Camera up vector.
     vec3 vuv=vec3(0,-1,0); 
 
@@ -794,9 +810,8 @@ void main(void) {
 #endif
 
         //c = pal(AO*2.0*PI, vec3(0.5), vec3(0.5), vec3(0.3, 0.3, 0.3), vec3(0.0,0.0,0.5) + 0.0 );
-        c = rainbow2_gradient(AO*1.0); // * hash(f);
 
-        //c = prim_color(p, d.y);
+
         
 
         vec3 n = vec3(d.x-distance_to_obj(p-e.xyy).x,
@@ -819,18 +834,27 @@ void main(void) {
         //vec3 fc = vec3(glow + dotfade * (b*c + pow(b,32.0)) * (1.0-f*0.01));
         //vec3 fc = vec3(AO* (b*c + pow(b,32.0)) * (1.0-f*0.005));
         //vec3 fc = vec3(0.0*glow + AO* c*1.0);
-        
-        vec3 fc = vec3(AO) * c; // + glow; // - glow; //glow; // * c ;
-        //vec3 phong = AO * vec3((b*c + pow(b*0.95,16.0)) * (1.0-f*0.005));
+#if FRACTALTYPE >= 0
 
+        c = rainbow2_gradient(AO*1.0); // * hash(f);
+        vec3 fc = vec3(AO) * c; // + glow; // - glow; //glow; // * c ;
+        vec3 phong =  vec3((b*c + pow(b,16.0))); // * (1.0-f*0.005));
+        vec3 lamb = lambert(p, N, lightpos);
+        gl_FragColor = vec4((lamb * AO+phong)*1.0 * c , 1.0);
+        //gl_FragColor= vec4(phong + glow*1.0, 1.0);
+        //gl_FragColor= vec4(phong*0.5 + glow*0.5, 1.0);
+
+#else
+        c = prim_color(p, d.y);
+        vec3 fc = vec3((b*c + pow(b,16.0)) * (1.0-f*0.005));
+        gl_FragColor= vec4((fc+glow)*1.0, 1.0);
+
+#endif
         // *
-        vec3 phong = vec3((b*fc + pow(b,32.0))); // * (1.0-f*0.005));
  
         //vec3 phong = vec3((b*AO*c + pow(b,32.0)) * (1.0-f*0.01));
         //fc = pow(fc, vec3(0.47));
 
-        //gl_FragColor= vec4(phong + glow*1.0, 1.0);
-        gl_FragColor= vec4((fc+glow)*1.0, 1.0);
         
         //gl_FragColor= vec4((fc+phong*0.5+glow)*1.0, 1.0);
         //gl_FragColor=vec4(glow + (b*c + pow(b,32.0)) * (1.0-f*0.01), 1.0);
