@@ -7,7 +7,7 @@ precision mediump int;
 
 #define MANDELBULB 0
 #define MANDELBOX 1
-#define FRACTALTYPE MANDELBOX
+#define FRACTALTYPE MANDELBULB
 
 /*
    Based on tutorial at:
@@ -31,6 +31,9 @@ varying vec4 vertColor;
 varying vec4 vertTexCoord;
 uniform float ray_hit_epsilon;
 uniform float palette_offset;
+uniform float gamma;
+uniform float glow_intensity;
+
 float PI=3.14159265;
 
 const float NOISE_DETAIL =0.5;
@@ -553,7 +556,7 @@ vec2 distance_to_obj(in vec3 p) {
 
 #if FRACTALTYPE == MANDELBULB
     return op_sblend(p, vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0),
-                        obj_sphere(p, MBULB_SCALE * 0.800));
+                        obj_sphere(p, MBULB_SCALE * 0.5));
     //return vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0);
 
     //return op_union(obj_floor(p),
@@ -747,11 +750,14 @@ void main(void) {
     //vec2 vPos = -1.0 + 2.0 * q;
 
     float lightspeed = 0.1;
-    float lightrad = 200.0;
+    float lightrad = 400.0;
     //vec3 lightpos = vec3(cos(framecount*lightspeed)*lightrad,
-    //                     0.0,
+    //                     400.0,
     //                     sin(framecount*lightspeed)*lightrad);
-    vec3 lightpos = vec3(400.0,0.0,0.0);
+    //vec3 lightpos = normalize(cam_pos*vec3(-1.0, -1.0, -1.0)) * 200.0;
+    //vec3 lightpos =  vec3(400.0,400.0,400.0);
+    vec3 lightpos = cam_pos;
+
     // Camera up vector.
     vec3 vuv=vec3(0,-1,0); 
 
@@ -799,31 +805,30 @@ void main(void) {
         nsteps = nsteps + 1.0;
     }
 
-    if (f < maxd) {
-        
-        float AO;
 
+    float AO;
 #if FRACTALTYPE == MANDELBULB
         float m = sd_mandelbulb(p/MBULB_SCALE, AO); //*MBULB_SCALE;
 #elif FRACTALTYPE == MANDELBOX
-        float m = sd_mandelbox(p/MBOX_SCALE, AO) * MBOX_SCALE;
+        float m = sd_mandelbox(p/MBOX_SCALE, AO); // * MBOX_SCALE;
 #endif
+    vec3 glowcol = (rainbow2_gradient(AO*2.0) + vec3(1.0, 1.0, 1.0)) * 0.5 ;
+    vec3 glow = vec3(nsteps/256.0) * glowcol * glow_intensity;
 
+    if (f < maxd) {
+ 
+        //float AO;
         //c = pal(AO*2.0*PI, vec3(0.5), vec3(0.5), vec3(0.3, 0.3, 0.3), vec3(0.0,0.0,0.5) + 0.0 );
-
-
-        
 
         vec3 n = vec3(d.x-distance_to_obj(p-e.xyy).x,
                       d.x-distance_to_obj(p-e.yxy).x,
                       d.x-distance_to_obj(p-e.yyx).x);
         N = normalize(n);
 
-
         //float cam_dist = distance_to_obj(cam_pos).x;
         //vec3 dotfade = vec3(smoothstep(0.1, 0.5, f)) * c * vec3(hash(f))* f ;
         //nsteps = nsteps / 256.0 ;
-        vec3 glow = vec3(nsteps/256.0) *  vec3(0.8,0.8,1.0) * 1.0;
+        //vec3 glow = vec3(nsteps/256.0) *  vec3(0.8,0.8,1.0) * 1.0;
         //vec3 glow = vec3(nsteps/256.0) * c * 1.0;
 
         //simple phong lighting, LightPosition = CameraPosition
@@ -836,14 +841,19 @@ void main(void) {
         //vec3 fc = vec3(0.0*glow + AO* c*1.0);
 #if FRACTALTYPE >= 0
 
-        c = rainbow2_gradient(AO*1.0); // * hash(f);
-        vec3 fc = vec3(AO) * c; // + glow; // - glow; //glow; // * c ;
-        vec3 phong =  vec3((b*c + pow(b,16.0))); // * (1.0-f*0.005));
+        c =  rainbow2_gradient(AO*2.0); // * hash(f);
+        //c = pow(c, vec3(gamma));
+        //vec3 fc = vec3(AO) * c; // + glow; // - glow; //glow; // * c ;
+        vec3 phong =  vec3((b + pow(b,32.0))) * 1.; // * (1.0-f*0.005));
         vec3 lamb = lambert(p, N, lightpos);
-        gl_FragColor = vec4((lamb * AO+phong)*1.0 * c , 1.0);
+        vec3 fc = (lamb + phong ) * AO * c+glow;
+        //vec3 fc = (lamb*AO * glow + phong)*1.0 * c;
+        fc = pow(fc, vec3(gamma));
+        //gl_FragColor = vec4((lamb*AO * glow + phong)*1.0 * c , 1.0);
+        //gl_FragColor = vec4((lamb*AO*c + glow + (phong*0.5) ), 1.0);
         //gl_FragColor= vec4(phong + glow*1.0, 1.0);
         //gl_FragColor= vec4(phong*0.5 + glow*0.5, 1.0);
-
+        gl_FragColor = vec4(fc, 1.0);
 #else
         c = prim_color(p, d.y);
         vec3 fc = vec3((b*c + pow(b,16.0)) * (1.0-f*0.005));
@@ -864,12 +874,20 @@ void main(void) {
         //gl_FragColor=(vec4(nsteps, nsteps, nsteps, 1.0) + vec4(c.xyz, 1.0)) * 0.5;
     }
     else {
-        gl_FragColor=vec4(0.8,0.8,1.0,1.0); //background color
+        //gl_FragColor=vec4(0.8,0.8,1.0,1.0); //background color
         //vec2 mp = vec2(mousex, mousey) ;
+        //vec2 uv = vec2(0.5  + (cos(mp.x*2.0*PI) * 0.5),
+        //          0.5  + (sin(mp.x*2.0*PI) * 0.5));
         //vec2 uv = vec2(vpn.y * PI*2.0, vpn.z * PI*0.99);
-        //vec4 texcol = texture2D(texture, q+uv +vpn.xy);
+        
+        //vec2 uv = (q + vpn.xy) * vec2(1.0, 1.0);
+        //vec4 texcol = texture2D(texture, uv);
+        //vec4 texcol = texture2D(texture, (q+vpn.xy) * 0.5);
         //gl_FragColor=vec4(texcol.xyz, 1.0); //background color
-        //gl_FragColor=vec4(0.25,0.25,0.25,1.0); //background color
+        vec3 bgcol = vec3(0.0,0.0,0.0);
+        //vec3 bgcol = rainbow2_gradient(mousey* PI);
+        // vec3 glow = vec3(nsteps/256.0) *  vec3(0.8,0.8,1.0) * 1.0;
+        gl_FragColor=vec4(bgcol+glow,1.0); //background color
     }
 
 }

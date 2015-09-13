@@ -19,7 +19,7 @@
 ; =========================================================================
 
 (def initial-camera {
-  :pos [128.0 0.0 256.0]
+  :pos [128.0 0.0 0.0]
   :lookat [0.0 0.0 0.0]
   :vpn [0.0 0.0 -1.0]
   :fov (/ Math/PI 3.0)
@@ -27,14 +27,17 @@
 })
 
 (def initial-params {
-  :blend_coef 0.5
+  :blend_coef 1.0
   :ray_hit_epsilon 0.001
   :palette_offset 0.0
+  :gamma 0.5
+  :glow-intensity 1.0
 })
 
 (def initial-state {
   :keys-down #{}
   :mouse-position [0 0]
+  :mousewarp true
   :aspect-ratio 1.0
   :render-paused? false
   :camera initial-camera
@@ -55,6 +58,7 @@
 ;    (def console-font (q/load-font "ScalaSans-Caps-32.vlw"))
     (reset! edge-shader (q/load-shader "data/edges.glsl"))
     (reset! tex1 (q/load-image "testpattern4po6.png"))
+    (reset! tex1 (q/load-image "Sky02.jpg"))
     (reset! test-shader (q/load-shader "data/test.frag"))
     (reset! color-shader (q/load-shader "data/colorfrag.glsl" "data/colorvert.glsl"))
     (reset! ray-shader (q/load-shader "data/raymarch.glsl" ))
@@ -94,6 +98,8 @@
       (.set shader "blend_coef" (float (get-in state [:params :blend_coef])))
       (.set shader "ray_hit_epsilon" (float (get-in state [:params :ray_hit_epsilon] 0.001)))
       (.set shader "palette_offset" (float (get-in state [:params :palette_offset] 0.0)))
+      (.set shader "gamma" (float (get-in state [:params :gamma] 0.5)))
+      (.set shader "glow_intensity" (float (get-in state [:params :glow-intensity] 1.0)))
       )
     state))
 
@@ -136,16 +142,20 @@
           \c (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale wup speed))))
           ;\E (fn [s] (assoc-in s [:camera :pos] (vec3-sub pos-old (vec3-scale wup speed))))
           ;\C (fn [s] (assoc-in s [:camera :pos] (vec3-add pos-old (vec3-scale wup speed))))
-          \b (fn [s] (update-in s [:params :blend_coef] #(- % 0.05)))
-          \n (fn [s] (update-in s [:params :blend_coef] #(+ % 0.05)))
+          \b (fn [s] (update-in s [:params :blend_coef] #(- % 0.1)))
+          \n (fn [s] (update-in s [:params :blend_coef] #(+ % 0.1)))
           \1 (fn [s] (update-in s [:camera :speed] #(* % 0.9)))
           \2 (fn [s] (update-in s [:camera :speed] #(/ % 0.9)))
           \- (fn [s] (update-in s [:camera :fov] #(* % 0.9)))
           \= (fn [s] (update-in s [:camera :fov] #(/ % 0.9)))
           \[ (fn [s] (update-in s [:params :ray_hit_epsilon] #(* % 0.9)))
           \] (fn [s] (update-in s [:params :ray_hit_epsilon] #(/ % 0.9)))
-          \3 (fn [s] (update-in s [:params :palette_offset] #(- % 0.1)))
-          \4 (fn [s] (update-in s [:params :palette_offset] #(+ % 0.1)))
+          \3 (fn [s] (update-in s [:params :palette_offset] #(- % 0.05)))
+          \4 (fn [s] (update-in s [:params :palette_offset] #(+ % 0.05)))
+          \5 (fn [s] (update-in s [:params :gamma] #(- % 0.01)))
+          \6 (fn [s] (update-in s [:params :gamma] #(+ % 0.01)))
+          \7 (fn [s] (update-in s [:params :glow-intensity] #(- % 0.1)))
+          \8 (fn [s] (update-in s [:params :glow-intensity] #(+ % 0.1)))
          }]
   (if (contains? key-movement-map keychar)
     (-> ((key-movement-map keychar) state)
@@ -193,6 +203,8 @@
     \0 (do (-> initial-state
                (assoc :aspect-ratio (/ (float (q/width)) (q/height)))
                (assoc-in [:camera :pos] [0.0 0.0 0.0])))
+    \m (do (-> initial-state
+               (update-in [:mousewarp] not)))
     \` (do
          (reset! edge-shader (q/load-shader "data/edges.glsl"))
          (reset! texture-shader (q/load-shader "data/texfrag.glsl"))
@@ -229,14 +241,18 @@
 (defn draw-info [state x y]
   (q/text-font console-font)
   (let [line-space 24
-        ar (get state :aspect-ratio 1.0)
+        ar (get state :aspect-ratio 0.0)
         [mx my] (state :mouse-position)
-        zoom (get state :zoom 1.0)
+        zoom (get state :zoom 0.0)
         pos (get-in state [:camera :pos] [0.0 0.0 0.0])
         speed (get-in state [:camera :speed] 0.0)
-        fov (get-in state [:camera :fov] 0.5)
+        fov (get-in state [:camera :fov] 0.0)
         fovdeg (/ (* fov 180.0) Math/PI)
-        eps (get-in state [:params :ray_hit_epsilon] 0.001)
+        blend (get-in state [:params :blend_coef] 0.0)
+        eps (get-in state [:params :ray_hit_epsilon] 0.0)
+        gamma (get-in state [:params :gamma] 0.0)
+        glow (get-in state [:params :glow-intensity] 0.0)
+
         lines [
                ;(str "state: " state)
                (str "pos: " (vec3-format pos))
@@ -245,6 +261,9 @@
                (str (format "ar: %.2f" ar))
                (str (format "eps: %.8f" eps))
                (str (format "fov: %.2f"  fovdeg))
+               (str (format "blend: %.2f" blend))
+               (str (format "gamma: %.2f" gamma))
+               (str (format "glow: %.2f" glow))
                ;(str "camera: " (state :camera))
                (str (format "fps: %.2f" (float (q/current-frame-rate))))
                ]]
@@ -255,7 +274,7 @@
 
 (defn draw-quad [ar]
   (q/begin-shape :quads)
-    ;(q/texture @tex1)
+    (q/texture @tex1)
     (q/shader @ray-shader)
     ;(q/shader @texture-shader)
     ;(q/shader @color-shader)
@@ -285,7 +304,7 @@
       )
     )
   (q/reset-shader) 
-  (draw-info state 32 (- (q/height) 150))
+  (draw-info state 32 (- (q/height) 225))
   ;(q/filter-shader @edge-shader)
   ;(q/filter-shader @feedback-shader)
   )
