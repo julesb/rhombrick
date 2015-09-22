@@ -8,6 +8,7 @@ precision mediump int;
 #define MANDELBULB 0
 #define MANDELBOX 1
 #define FRACTALTYPE MANDELBULB
+//#define FRACTALTYPE -1
 
 /*
    Based on tutorial at:
@@ -537,12 +538,12 @@ vec2 distance_to_obj(in vec3 p) {
     float s = MBOX_SCALE;
 ////    vec2 g = op_noise(p, op_sblend(p, op_displace(p, obj_grid(p)),
 ////                                    op_rep(p, vec3(15.0, 15.0, 15.0))));
-//    vec2 g = op_noise(p, obj_invertedgrid(p/s) * vec2(s, 1.0));
+//    vec2 g = op_noise(p, obj_invertedgrid(p/s) * vec2(1.0/s, 1.0));
 //    return g;
 //    return op_union(obj_floor(p), obj_sine(p));
     
     //return op_union(obj_floor(p),
-    //            obj_sine(p*s) * vec2(1.0/s, 1.0));
+    //            obj_sine(p*s) * vec2(1.0/s, 1.0/s));
     
     //return op_noise(p, obj_sine(p*s) * vec2(1.0/s, 1.0));
 
@@ -741,7 +742,32 @@ vec3 prim_color(in vec3 p, float i) {
 }
 
 vec3 lambert(vec3 p, vec3 n, vec3 l) {
-    return vec3(dot(l-p, n)/150.0);
+    return vec3(dot(normalize(l-p), n));
+}
+
+
+// http://www.iquilezles.org/www/articles/rmshadows/rmshadows.htm
+
+float iqshadow( in vec3 ro, in vec3 rd, float mint, float maxt ) {
+    for( float t=mint; t < maxt; ) {
+        float h = distance_to_obj(ro + rd*t).x;
+        if( h<0.001 )
+            return 0.0;
+        t += h;
+    }
+    return 1.0;
+}
+
+float iqsoftshadow( in vec3 ro, in vec3 rd, float mint, float maxt, float k ) {
+    float res = 1.0;
+    for( float t=mint; t < maxt; ) {
+        float h = distance_to_obj(ro + rd*t).x;
+        if( h<0.01 )
+            return 0.0;
+        res = min( res, k*h/t );
+        t += h;
+    }
+    return res;
 }
 
 void main(void) {
@@ -749,14 +775,14 @@ void main(void) {
     vec2 vPos = -vec2(aspect_ratio, 1.0) + 2.0 * q;
     //vec2 vPos = -1.0 + 2.0 * q;
 
-    float lightspeed = 0.1;
-    float lightrad = 400.0;
-    //vec3 lightpos = vec3(cos(framecount*lightspeed)*lightrad,
-    //                     400.0,
-    //                     sin(framecount*lightspeed)*lightrad);
-    //vec3 lightpos = normalize(cam_pos*vec3(-1.0, -1.0, -1.0)) * 200.0;
+    float lightspeed = 0.05;
+    float lightrad = 800.0;
+    vec3 lightpos = vec3(cos(framecount*lightspeed)*lightrad,
+                         400.0,
+                         sin(framecount*lightspeed)*lightrad);
+    //vec3 lightpos = normalize(cam_pos*vec3(-1.0, 1.0, 1.0)) * 200.0;
     //vec3 lightpos =  vec3(400.0,400.0,400.0);
-    vec3 lightpos = cam_pos;
+    //vec3 lightpos = cam_pos;
 
     // Camera up vector.
     vec3 vuv=vec3(0,-1,0); 
@@ -812,7 +838,12 @@ void main(void) {
 #elif FRACTALTYPE == MANDELBOX
         float m = sd_mandelbox(p/MBOX_SCALE, AO); // * MBOX_SCALE;
 #endif
-    vec3 glowcol = (rainbow2_gradient(AO*2.0) + vec3(1.0, 1.0, 1.0)) * 0.5 ;
+
+#if FRACTALTYPE < 0
+    vec3 glowcol = (rainbow2_gradient(AO*1.0));// + vec3(1.0, 1.0, 1.0)) * 0.5 ;
+#else
+    vec3 glowcol = vec3(1.0, 1.0, 1.0);
+#endif
     vec3 glow = vec3(nsteps/256.0) * glowcol * glow_intensity;
 
     if (f < maxd) {
@@ -840,19 +871,22 @@ void main(void) {
         //vec3 fc = vec3(AO* (b*c + pow(b,32.0)) * (1.0-f*0.005));
         //vec3 fc = vec3(0.0*glow + AO* c*1.0);
 #if FRACTALTYPE >= 0
+        float amb_shad = 0.125;
+        float amb_lamb = 0.5;
 
-        c =  rainbow2_gradient(AO*2.0); // * hash(f);
+        c =  rainbow2_gradient(AO*1.0); // * hash(f);
         //c = pow(c, vec3(gamma));
-        //vec3 fc = vec3(AO) * c; // + glow; // - glow; //glow; // * c ;
-        vec3 phong =  vec3((b + pow(b,32.0))) * 1.; // * (1.0-f*0.005));
-        vec3 lamb = lambert(p, N, lightpos);
-        vec3 fc = (lamb + phong ) * AO * c+glow;
-        //vec3 fc = (lamb*AO * glow + phong)*1.0 * c;
+        vec3 phong =  vec3((b + pow(b,32.0))) * 0.5; // * (1.0-f*0.005));
+        vec3 lamb = amb_lamb + (1.0 - amb_lamb) * lambert(p, N, lightpos);
+        
+        float shad = amb_shad + (1.0 - amb_shad) * iqsoftshadow(p, normalize(lightpos), 0.1, 100.0, 4.0);
+
+        //*
+        //vec3 fc = (lamb*1.0 + phong + glow) * AO * c * shad;
+        vec3 fc = (phong + lamb) * shad  * c + glow*shad;
+        //vec3 fc = (lamb*AO + phong*shad ) * c + glow;
+        //vec3 fc = shad*c + glow;
         fc = pow(fc, vec3(gamma));
-        //gl_FragColor = vec4((lamb*AO * glow + phong)*1.0 * c , 1.0);
-        //gl_FragColor = vec4((lamb*AO*c + glow + (phong*0.5) ), 1.0);
-        //gl_FragColor= vec4(phong + glow*1.0, 1.0);
-        //gl_FragColor= vec4(phong*0.5 + glow*0.5, 1.0);
         gl_FragColor = vec4(fc, 1.0);
 #else
         c = prim_color(p, d.y);
@@ -861,14 +895,6 @@ void main(void) {
 
 #endif
         // *
- 
-        //vec3 phong = vec3((b*AO*c + pow(b,32.0)) * (1.0-f*0.01));
-        //fc = pow(fc, vec3(0.47));
-
-        
-        //gl_FragColor= vec4((fc+phong*0.5+glow)*1.0, 1.0);
-        //gl_FragColor=vec4(glow + (b*c + pow(b,32.0)) * (1.0-f*0.01), 1.0);
-
         // display raymarchings steps as brightness
         //nsteps = nsteps / 256.0 ;
         //gl_FragColor=(vec4(nsteps, nsteps, nsteps, 1.0) + vec4(c.xyz, 1.0)) * 0.5;

@@ -27,11 +27,11 @@
 })
 
 (def initial-params {
-  :blend_coef 1.0
-  :ray_hit_epsilon 0.001
+  :blend_coef 50.0
+  :ray_hit_epsilon 0.01
   :palette_offset 0.0
-  :gamma 0.5
-  :glow-intensity 1.0
+  :gamma 0.55
+  :glow-intensity 0.0
 })
 
 (def initial-state {
@@ -198,7 +198,7 @@
     \# (do
          (q/save-frame)
          state)
-    \r (do (-> initial-state
+    \R (do (-> initial-state
                (assoc :aspect-ratio (/ (float (q/width)) (q/height)))))
     \0 (do (-> initial-state
                (assoc :aspect-ratio (/ (float (q/width)) (q/height)))
