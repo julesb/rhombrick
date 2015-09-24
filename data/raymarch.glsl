@@ -242,6 +242,14 @@ vec3 deform( in vec3 p, in float time, out float sca )
 	return p;
 }
 
+vec3 rotate_y(vec3 p, float a) {
+	float c,s;vec3 q=p;
+	c = cos(a); s = sin(a);
+	p.x = c * q.x + s * q.z;
+	p.z = -s * q.x + c * q.z;
+    return p;
+}
+
 vec2 obj_ufo(vec3 p) {
     return op_sblend(p,
         op_sub(
@@ -555,9 +563,15 @@ vec2 distance_to_obj(in vec3 p) {
  //   return op_union(obj_floor(p),
  //                   obj_sierp(p/s) * vec2(s, 1.0));
 
+    //p = rotate_y(p, framecount * 0.01);
 #if FRACTALTYPE == MANDELBULB
-    return op_sblend(p, vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0),
-                        obj_sphere(p, MBULB_SCALE * 0.5));
+
+    return op_sblend(p,
+            obj_floor(p),
+            op_sblend(p, vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0),
+                         obj_sphere(p, MBULB_SCALE * 0.5)));
+    //return op_sblend(p, vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0),
+    //                    obj_sphere(p, MBULB_SCALE * 0.5));
     //return vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0);
 
     //return op_union(obj_floor(p),
@@ -742,7 +756,7 @@ vec3 prim_color(in vec3 p, float i) {
 }
 
 vec3 lambert(vec3 p, vec3 n, vec3 l) {
-    return vec3(dot(normalize(l-p), n));
+    return clamp(vec3(dot(normalize(l-p), n)), 0.0, 1.0);
 }
 
 
@@ -762,7 +776,7 @@ float iqsoftshadow( in vec3 ro, in vec3 rd, float mint, float maxt, float k ) {
     float res = 1.0;
     for( float t=mint; t < maxt; ) {
         float h = distance_to_obj(ro + rd*t).x;
-        if( h<0.01 )
+        if( h < ray_hit_epsilon)
             return 0.0;
         res = min( res, k*h/t );
         t += h;
@@ -775,10 +789,10 @@ void main(void) {
     vec2 vPos = -vec2(aspect_ratio, 1.0) + 2.0 * q;
     //vec2 vPos = -1.0 + 2.0 * q;
 
-    float lightspeed = 0.05;
-    float lightrad = 800.0;
+    float lightspeed = 0.0;
+    float lightrad = 1800.0;
     vec3 lightpos = vec3(cos(framecount*lightspeed)*lightrad,
-                         400.0,
+                         1500.0,
                          sin(framecount*lightspeed)*lightrad);
     //vec3 lightpos = normalize(cam_pos*vec3(-1.0, 1.0, 1.0)) * 200.0;
     //vec3 lightpos =  vec3(400.0,400.0,400.0);
@@ -808,7 +822,7 @@ void main(void) {
 
     // Raymarching.
     const vec3 e=vec3(0.02,0,0);
-    const float maxd=200.0; //Max depth
+    const float maxd=400.0; //Max depth
     vec2 d=vec2(0.01,0.0);
     vec3 c,p,N;
 
@@ -842,7 +856,7 @@ void main(void) {
 #if FRACTALTYPE < 0
     vec3 glowcol = (rainbow2_gradient(AO*1.0));// + vec3(1.0, 1.0, 1.0)) * 0.5 ;
 #else
-    vec3 glowcol = vec3(1.0, 1.0, 1.0);
+    vec3 glowcol = rainbow2_gradient(AO*1.0); //vec3(1.0, 1.0, 1.0);
 #endif
     vec3 glow = vec3(nsteps/256.0) * glowcol * glow_intensity;
 
@@ -863,7 +877,7 @@ void main(void) {
         //vec3 glow = vec3(nsteps/256.0) * c * 1.0;
 
         //simple phong lighting, LightPosition = CameraPosition
-        float b=dot(N,normalize(prp-p));
+        float b=dot(N,normalize(lightpos-p));
         //gl_FragColor=vec4(glow, 1.0);
         
         
@@ -871,21 +885,25 @@ void main(void) {
         //vec3 fc = vec3(AO* (b*c + pow(b,32.0)) * (1.0-f*0.005));
         //vec3 fc = vec3(0.0*glow + AO* c*1.0);
 #if FRACTALTYPE >= 0
-        float amb_shad = 0.125;
-        float amb_lamb = 0.5;
+        float amb_shad =0.05;// 0.125;
+        float amb_lamb = 0.125;
 
-        c =  rainbow2_gradient(AO*1.0); // * hash(f);
+        c =  rainbow2_gradient(1.0 - AO*1.0); // * hash(f);
         //c = pow(c, vec3(gamma));
         vec3 phong =  vec3((b + pow(b,32.0))) * 0.5; // * (1.0-f*0.005));
         vec3 lamb = amb_lamb + (1.0 - amb_lamb) * lambert(p, N, lightpos);
-        
-        float shad = amb_shad + (1.0 - amb_shad) * iqsoftshadow(p, normalize(lightpos), 0.1, 100.0, 4.0);
+        //vec3 lamb = lambert(p, N, lightpos);
+
+        float shad = amb_shad + (1.0 - amb_shad) * iqsoftshadow(p, normalize(lightpos-p), 1.0, 100.0, 64.0);
 
         //*
         //vec3 fc = (lamb*1.0 + phong + glow) * AO * c * shad;
-        vec3 fc = (phong + lamb) * shad  * c + glow*shad;
+        //**
+        //vec3 fc = (phong + lamb) * shad  * c + glow*shad;
+        
         //vec3 fc = (lamb*AO + phong*shad ) * c + glow;
-        //vec3 fc = shad*c + glow;
+        vec3 fc = shad * (phong+lamb) * AO * c + glow*shad;
+        //vec3 fc =  lamb ; // * c + glow*shad;
         fc = pow(fc, vec3(gamma));
         gl_FragColor = vec4(fc, 1.0);
 #else
@@ -911,9 +929,11 @@ void main(void) {
         //vec4 texcol = texture2D(texture, (q+vpn.xy) * 0.5);
         //gl_FragColor=vec4(texcol.xyz, 1.0); //background color
         vec3 bgcol = vec3(0.0,0.0,0.0);
+        bgcol += glow;
+        bgcol = pow(bgcol, vec3(gamma));
         //vec3 bgcol = rainbow2_gradient(mousey* PI);
         // vec3 glow = vec3(nsteps/256.0) *  vec3(0.8,0.8,1.0) * 1.0;
-        gl_FragColor=vec4(bgcol+glow,1.0); //background color
+        gl_FragColor=vec4(bgcol,1.0); //background color
     }
 
 }
