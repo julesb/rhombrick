@@ -130,7 +130,7 @@ float sd_plane(in vec3 p, in vec3 n, in float o) {
 }
 
 vec2 obj_floor(in vec3 p) {
-    return vec2(p.y+10.0,0.0);
+    return vec2(p.y+50.0,0.0);
 }
 
 vec2 obj_sphere(in vec3 p, float r) {
@@ -213,12 +213,10 @@ vec2 op_sblend(vec3 p, vec2 a, vec2 b) {
 }
 
 vec2 obj_sine(vec3 p) {
-    //vec3 pf = floor(p);
-    return vec2(//smoothstep(0.0, 0.5, 
-                (sin(floor(p.x+0.0) * 0.2)
-               + sin(floor(p.y+0.0) * 0.2)
-               + sin(floor(p.z+0.0) * 0.2))
-               * 0.5 + 0.5, 5.0);
+    p = floor(p);
+    return vec2((sin(p.x * 0.2059)
+               + sin(p.y * 0.231)
+               + sin(p.z * 0.226)) * 0.333, 4.0);
 }
 
 vec2 op_displace(vec3 p, vec2 obj) {
@@ -493,9 +491,9 @@ vec2 obj_sierp(vec3 p) {
 vec2 distance_to_obj(in vec3 p) {
 //    return op_union(obj_floor(p) + vec2(sin(p.x) + sin(p.y) + sin(p.z), 0.0),
 //    return op_union(obj_floor(p),
-//                    op_rep(p, vec3(20.0 + sin(float(framecount) / 231.23) * 1.0 *p.x,
-//                                   20.0 + cos(float(framecount) / 213.27) * 1.0 *p.y,
-//                                   20.0 + cos(float(framecount) / 290.21) * 1.0 *p.z)) );
+//                    op_rep(p, vec3(20.0 + sin(float(framecount) / 231.23) * 10.0 *p.x,
+//                                   20.0 + cos(float(framecount) / 213.27) * 10.0 *p.y,
+//                                   20.0 + cos(float(framecount) / 290.21) * 10.0 *p.z)) );
 
 //  return  op_displace(p,  op_noise(p, obj_floor(p))); 
 //  return op_union(obj_floor(p), op_displace(p, obj_sine(p)));
@@ -508,12 +506,9 @@ vec2 distance_to_obj(in vec3 p) {
     //return op_noise(p, op_sblend(p, op_displace(p, obj_grid(p)),
     //                                op_rep(p, vec3(15.0, 15.0, 15.0))));
 
-//      return           obj_invertedufo(p);
+//      return           obj_ufo(p);
 
     // blobby infinite grid
-    //return op_sblend(p, op_displace(p, obj_grid(p)),
-    //                    op_rep(p, vec3(15.0, 15.0, 15.0)));
-
 //    return op_sblend(p, op_displace(p, obj_grid(p)),
 //                        op_rep(p, vec3(15.0, 15.0, 15.0)));
 
@@ -539,15 +534,15 @@ vec2 distance_to_obj(in vec3 p) {
     
     //return op_displace(p, obj_grid(p)); //, obj_invertedgrid_rep(p, vec3(4.0,4.0,4.0) );
 
-//    return obj_invertedgrid(p);
+    //return obj_invertedgrid(p);
 
 
 
     float s = MBOX_SCALE;
 ////    vec2 g = op_noise(p, op_sblend(p, op_displace(p, obj_grid(p)),
 ////                                    op_rep(p, vec3(15.0, 15.0, 15.0))));
-//    vec2 g = op_noise(p, obj_invertedgrid(p/s) * vec2(1.0/s, 1.0));
-//    return g;
+    //vec2 g =obj_invertedgrid(p/s) * vec2(1.0/s, 1.0);
+    //return g;
 //    return op_union(obj_floor(p), obj_sine(p));
     
     //return op_union(obj_floor(p),
@@ -583,7 +578,7 @@ vec2 distance_to_obj(in vec3 p) {
 
     //return obj_invertedmandel(p);
 
-    return vec2( sd_mandelbox(p/MBOX_SCALE)*MBOX_SCALE, 8.0);
+    //return vec2( sd_mandelbox(p/MBOX_SCALE)*MBOX_SCALE, 8.0);
     
     //return vec2(sd_mandelbox(p), 8.0);
 
@@ -756,7 +751,8 @@ vec3 prim_color(in vec3 p, float i) {
 }
 
 vec3 lambert(vec3 p, vec3 n, vec3 l) {
-    return clamp(vec3(dot(normalize(l-p), n)), 0.0, 1.0);
+    return vec3(max( dot(normalize(l-p), n), 0.0));
+   // return clamp(vec3(dot(normalize(l-p), n)), 0.0, 1.0);
 }
 
 
@@ -790,13 +786,12 @@ void main(void) {
     //vec2 vPos = -1.0 + 2.0 * q;
 
     float lightspeed = 0.0;
-    float lightrad = 1800.0;
-    vec3 lightpos = vec3(cos(framecount*lightspeed)*lightrad,
-                         1500.0,
-                         sin(framecount*lightspeed)*lightrad);
+    float lightrad = 1000.0;
+    //vec3 lightpos = vec3(cos(framecount*lightspeed)*lightrad,
+    //                     1500.0,
+    //                     sin(framecount*lightspeed)*lightrad);
     //vec3 lightpos = normalize(cam_pos*vec3(-1.0, 1.0, 1.0)) * 200.0;
     //vec3 lightpos =  vec3(400.0,400.0,400.0);
-    //vec3 lightpos = cam_pos;
 
     // Camera up vector.
     vec3 vuv=vec3(0,-1,0); 
@@ -819,6 +814,8 @@ void main(void) {
     vec3 scrCoord=vcv + vPos.x*u*fov
                       + vPos.y*v*fov;
     vec3 scp=normalize(scrCoord-prp);
+
+    vec3 lightpos = cam_pos* 10.0 + v * 100.0;
 
     // Raymarching.
     const vec3 e=vec3(0.02,0,0);
@@ -854,11 +851,17 @@ void main(void) {
 #endif
 
 #if FRACTALTYPE < 0
+    AO = 1.0;
+    vec3 glowcol_miss = rainbow2_gradient(AO*1.0);
     vec3 glowcol = (rainbow2_gradient(AO*1.0));// + vec3(1.0, 1.0, 1.0)) * 0.5 ;
+    c = prim_color(p, d.y);
 #else
+    vec3 glowcol_miss = rainbow2_gradient(AO*1.0);
     vec3 glowcol = rainbow2_gradient(AO*1.0); //vec3(1.0, 1.0, 1.0);
+    c =  rainbow2_gradient(AO*1.0);
 #endif
     vec3 glow = vec3(nsteps/256.0) * glowcol * glow_intensity;
+    vec3 glow_miss = vec3(nsteps/256.0) * glowcol_miss * glow_intensity;
 
     if (f < maxd) {
  
@@ -884,34 +887,25 @@ void main(void) {
         //vec3 fc = vec3(glow + dotfade * (b*c + pow(b,32.0)) * (1.0-f*0.01));
         //vec3 fc = vec3(AO* (b*c + pow(b,32.0)) * (1.0-f*0.005));
         //vec3 fc = vec3(0.0*glow + AO* c*1.0);
-#if FRACTALTYPE >= 0
-        float amb_shad =0.05;// 0.125;
+        float amb_shad =0.125;// 0.125;
         float amb_lamb = 0.125;
 
-        c =  rainbow2_gradient(1.0 - AO*1.0); // * hash(f);
-        //c = pow(c, vec3(gamma));
-        vec3 phong =  vec3((b + pow(b,32.0))) * 0.5; // * (1.0-f*0.005));
+        vec3 phong =  vec3((b + pow(b,8.0))) * 0.5; // * (1.0-f*0.005));
         vec3 lamb = amb_lamb + (1.0 - amb_lamb) * lambert(p, N, lightpos);
         //vec3 lamb = lambert(p, N, lightpos);
 
-        float shad = amb_shad + (1.0 - amb_shad) * iqsoftshadow(p, normalize(lightpos-p), 1.0, 100.0, 64.0);
+        float shad = amb_shad + (1.0 - amb_shad) * iqsoftshadow(p, normalize(lightpos-p), 1.0, 100.0, 32.0);
 
         //*
         //vec3 fc = (lamb*1.0 + phong + glow) * AO * c * shad;
         //**
-        //vec3 fc = (phong + lamb) * shad  * c + glow*shad;
+        vec3 fc = (phong*shad + lamb) * shad  *AO * c + glow*shad;
         
         //vec3 fc = (lamb*AO + phong*shad ) * c + glow;
-        vec3 fc = shad * (phong+lamb) * AO * c + glow*shad;
+        //vec3 fc = shad * (lamb) * AO * c + glow*shad + phong*shad;
         //vec3 fc =  lamb ; // * c + glow*shad;
         fc = pow(fc, vec3(gamma));
         gl_FragColor = vec4(fc, 1.0);
-#else
-        c = prim_color(p, d.y);
-        vec3 fc = vec3((b*c + pow(b,16.0)) * (1.0-f*0.005));
-        gl_FragColor= vec4((fc+glow)*1.0, 1.0);
-
-#endif
         // *
         // display raymarchings steps as brightness
         //nsteps = nsteps / 256.0 ;
@@ -928,8 +922,9 @@ void main(void) {
         //vec4 texcol = texture2D(texture, uv);
         //vec4 texcol = texture2D(texture, (q+vpn.xy) * 0.5);
         //gl_FragColor=vec4(texcol.xyz, 1.0); //background color
-        vec3 bgcol = vec3(0.0,0.0,0.0);
-        bgcol += glow;
+        //vec3 bgcol = vec3(0.0,0.0,0.0);
+        vec3 bgcol = c; //rainbow2_gradient(1.0 - nsteps / 256.0) ;
+        bgcol += glow_miss;
         bgcol = pow(bgcol, vec3(gamma));
         //vec3 bgcol = rainbow2_gradient(mousey* PI);
         // vec3 glow = vec3(nsteps/256.0) *  vec3(0.8,0.8,1.0) * 1.0;
