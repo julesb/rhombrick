@@ -106,6 +106,7 @@ float snoise(vec3 v)
 
 
 vec3 to_spherical(vec3 v) {
+    v = v.xzy;
     float r = length(v); //sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
     float lon = acos(v.x / sqrt(v.x * v.x + v.y * v.y)) * (v.y < 0.0 ? -1.0 : 1.0);
     float lat = acos(v.z / r);
@@ -151,7 +152,7 @@ vec2 obj_torus(in vec3 p) {
 }
 
 vec2 obj_round_box(in vec3 p) {
-    float d = length(max(abs(p)-vec3(2.0,2.0,2.0),0.0))-1.5;
+    float d = length(max(abs(p)-vec3(24.0,24.0,24.0),0.0))-1.5;
     return vec2(d,8.0);
 }
 
@@ -590,9 +591,11 @@ vec2 distance_to_obj(in vec3 p) {
     //return vec2(sd_mandelbox(p), 8.0);
 # elif FRACTALTYPE < 0
 
-    return op_union(obj_floor(p),
-                    op_union(obj_round_box(p-vec3(0.0, 5.0, 0.0)),
-                             obj_sphere(p-vec3(10.0, 5.0, 0.0), 4.0)));
+    return //op_union(obj_floor(p),
+                    op_union(obj_round_box(p-vec3(0.0, 25.0, 0.0)),
+                             obj_sphere(p-vec3(75.0, 25.0, 0.0), 24.0))
+           //         )
+                     ;
 
 #endif
 
@@ -831,7 +834,7 @@ void main(void) {
                       + vPos.y*v*fov;
     vec3 scp=normalize(scrCoord-prp);
 
-    float lightspeed = 0.025;
+    float lightspeed = 0.001;
     float lightrad = 1500.0;
     vec3 lightpos = vec3(cos(framecount*lightspeed)*lightrad,
                          1500.0,
@@ -892,10 +895,9 @@ void main(void) {
                   d.x-distance_to_obj(p-e.yyx).x);
     N = normalize(n);
 
-    vec3 spher = to_spherical(reflect(normalize(cam_pos.xzy-p.xzy), N ));
-    vec2 uv = (1.0 + (spher.xy / PI)) * 0.5; //(spher.xy); // * vec2(0.25, 1.0);
-    uv *= vec2(1.0, 2.0);
-    uv.x = 1.0 - uv.x;
+    vec3 spher = to_spherical(reflect(normalize(cam_pos-p), N ));
+    vec2 uv = spher.xy / vec2(2.0*PI, PI);
+    uv.y = 1.0 - uv.y;
     vec3 texcol = texture2D(texture, uv).rgb;
     
     vec3 glow = vec3(nsteps/256.0) * texcol *c * glow_intensity;
@@ -908,7 +910,6 @@ void main(void) {
  
         //float AO;
         //c = pal(AO*2.0*PI, vec3(0.5), vec3(0.5), vec3(0.3, 0.3, 0.3), vec3(0.0,0.0,0.5) + 0.0 );
-
 
         //vec3 dotfade = vec3(smoothstep(0.1, 0.5, f)) * c * vec3(hash(f))* f ;
         //nsteps = nsteps / 256.0 ;
@@ -937,8 +938,8 @@ void main(void) {
         //vec3 fc = (lamb*1.0 + phong + glow) * AO * c * shad;
         //**
         //vec3 fc = texcol * AO * shad ;
-        vec3 fc = (phong + lamb) *texcol * shad * AO  + glow;
-        //fc = iqfog(fc, cam_dist, normalize(p-cam_pos), normalize(p-lightpos));
+        vec3 fc = (phong*0.0 + lamb) * shad * texcol * AO  + glow;
+        fc = iqfog(fc, cam_dist, normalize(p-cam_pos), normalize(p-lightpos));
         
         //vec3 fc = (lamb*AO + phong*shad ) * c + glow;
         //vec3 fc = shad * (lamb) * AO * c + glow*shad + phong*shad;
@@ -957,20 +958,18 @@ void main(void) {
         //          0.5  + (sin(mp.x*2.0*PI) * 0.5));
         //vec2 uv = vec2(vpn.y * PI*2.0, vpn.z * PI*0.99);
         //vec2 uv = (q + vpn.xy) * vec2(1.0, 1.0);
-        vec3 spher2 = to_spherical(cam_pos.xzy-p.xzy);
-        vec2 uv2 = (1.0 + (spher2.xy / PI)) * 0.5; // * vec2(0.0625, 0.0625);
-        uv2 *= vec2(1.0, 2.0);
+        
+        vec3 spher2 = to_spherical(cam_pos-p);
+        vec2 uv2 = (spher2.xy / vec2(2.0*PI, PI));
         uv2.y = 1.0 - uv2.y;
-        //vec3 texcol = vec3(uv.x / uv.y);
-        vec3 texcol2 = texture2D(texture, uv2).rgb;
-        //vec4 texcol = texture2D(texture, (q+vpn.xy) * 0.5);
-        //gl_FragColor=vec4(texcol.xyz, 1.0); //background color
+        vec3 texcol2 = texture2D(texture, uv2.xy).rgb;
         //vec3 bgcol = vec3(0.0,0.0,0.0);
         vec3 bgcol = texcol2; //rainbow2_gradient(1.0);
         //vec3 bgcol = vec3(0.5, 0.6,0.7); //rainbow2_gradient(1.0);
         //vec3 bgcol = 1.0-c; //vec3(0.5,0.6,0.7); //c; //rainbow2_gradient(1.0 - nsteps / 256.0) ;
         //bgcol = iqfog(bgcol, cam_dist, normalize(cam_pos-p), normalize(p-lightpos));
         bgcol += glow_miss;
+        bgcol = iqfog(bgcol, cam_dist, normalize(cam_pos-p), normalize(p-lightpos));
         bgcol = pow(bgcol, vec3(gamma));
         //vec3 bgcol = rainbow2_gradient(mousey* PI);
         // vec3 glow = vec3(nsteps/256.0) *  vec3(0.8,0.8,1.0) * 1.0;
