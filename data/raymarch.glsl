@@ -226,8 +226,8 @@ vec2 obj_sine(vec3 p) {
 }
 
 vec2 op_displace(vec3 p, vec2 obj) {
-    float m = framecount * 0.01;
-    vec3 v = cos(p*0.5+m);
+    float m = framecount * 0.1;
+    vec3 v = cos(p*0.1+m);
     float d = v.x*v.y*v.z * 2.0;
     return vec2(obj.x+d, obj.y);
 }
@@ -326,10 +326,11 @@ vec2 obj_repcross(vec3 p, vec3 c) {
 }
 
 vec2 obj_grid(vec3 p) {
-    return obj_repcross(p, vec3(25.0,25.0,25.0));
+    return obj_repcross(p, vec3(300.0,300.0,300.0));
 }
 vec2 obj_invertedgrid(vec3 p) {
     float s = 1.0;
+    //vec3 p2 = (deform(p,float(framecount)*0.01333, s));
     vec3 p2 = (deform(p,float(framecount)*0.01333, s));
     vec2 g = obj_grid(p2) * vec2(s, 1.0);
     return g;
@@ -373,7 +374,7 @@ float sd_mandelbulb(in vec3 pos, out float AO) {
 	vec3 z = pos;
 	float dr = 1.0;
 	float r = 0.0;
-    int iters = 32;
+    int iters = 10;
     float power = 8.0;
     float bailout = 2.0;
     AO = 1.0;
@@ -567,12 +568,20 @@ vec2 distance_to_obj(in vec3 p) {
 
     //p = rotate_y(p, framecount * 0.01);
 #if FRACTALTYPE == MANDELBULB
+//    return obj_invertedgrid(p);
+    //p.x = mod(p.x+200.0, 400.0) - 200.0;
+
+//    return op_sblend(p,
+//            op_sblend(p, obj_floor(p), 
+//                        op_displace(p, op_intersect(obj_grid(p),
+//                                                    obj_box(p, vec3(1000.0)) ))),
+//            op_sblend(p, vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 1.0),
+//                         op_displace(p, obj_sphere(p, MBULB_SCALE * 0.75))));
 
     return op_sblend(p,
-            obj_floor(p),
-            op_sblend(p, vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0),
-                         obj_sphere(p, MBULB_SCALE * 0.5)));
-
+            obj_floor(p), 
+            op_sblend(p, vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 1.0),
+                         op_displace(p, obj_sphere(p, MBULB_SCALE * 0.75))));
 //return op_sblend(p, vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0),
 //                        obj_sphere(p, MBULB_SCALE * 0.5));
     //return vec2(sd_mandelbulb(p/MBULB_SCALE)*MBULB_SCALE, 8.0);
@@ -586,7 +595,7 @@ vec2 distance_to_obj(in vec3 p) {
 
     //return obj_invertedmandel(p);
 
-    //return vec2( sd_mandelbox(p/MBOX_SCALE)*MBOX_SCALE, 8.0);
+    return vec2( sd_mandelbox(p/MBOX_SCALE)*MBOX_SCALE, 8.0);
     
     //return vec2(sd_mandelbox(p), 8.0);
 # elif FRACTALTYPE < 0
@@ -620,7 +629,7 @@ vec2 distance_to_obj(in vec3 p) {
 vec3 get_integer_circles_color(vec2 c, vec3 col) {
     vec3 pixel;
     vec3 basecol = col; //vec4(1.0, 1.0, 0.75, 1.0);
-    float line_width = 0.4;
+    float line_width = 0.1;
     float dnorm = length(c);
     float nearest_int = abs(dnorm-float(round(dnorm)));
     if (nearest_int < line_width) {
@@ -632,6 +641,37 @@ vec3 get_integer_circles_color(vec2 c, vec3 col) {
     }
     return pixel;
 }
+
+vec3 get_grid_pixel_color(vec2 c) {
+    int grid_pixel = 0;
+    float bri=0.;
+    int val = 0;
+    float line_width = 0.0125;
+    vec3 linecolor = vec3(1.0, 1.0, 1.0);
+    vec3 bgcolor = vec3(0.0,0.0,0.0);
+    vec2 nearest_int = vec2(abs(c.x - round(c.x)), abs(c.y - round(c.y)));
+
+    if ((nearest_int.x < line_width) && (nearest_int.y < line_width)) { // line intersection
+      bri = 2.0 - (nearest_int.x+nearest_int.y) / line_width; // better
+      return linecolor * bri;
+    }
+    else if ((nearest_int.x < line_width) || (nearest_int.y < line_width)) {
+      if (nearest_int.x < line_width) {
+            bri = ((1.-nearest_int.x/(line_width)));
+            return linecolor * bri;
+      }
+      else if (nearest_int.y < line_width) {
+        bri = ((1.-nearest_int.y/(line_width)));
+        return linecolor * bri;
+      }
+    }
+    else {
+        linecolor = bgcolor;
+    }
+    return linecolor;
+  }
+
+
 
 vec3 pal( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) {
     return a + b*cos( palette_offset +  6.28318*(c*t+d) );
@@ -799,12 +839,52 @@ vec3 iqfog( in vec3  rgb,      // original color of the pixel
             in float camdist, // camera to point distance
             in vec3  rayDir,   // camera to point vector
             in vec3  sunDir ) {// sun light direction
-    float fogAmount = 1.0 - exp( -camdist*0.005125 );
+    float fogAmount = 1.0 - exp( -camdist*0.0012565125 );
     float sunAmount = max( dot( rayDir, sunDir ), 0.0 );
     vec3  fogColor  = mix( vec3(0.5,0.6,0.7), // bluish
                            vec3(1.0,0.9,0.7), // yellowish
-                           pow(sunAmount,8.0) );
+                           pow(sunAmount,512.0) );
     return mix( rgb, fogColor, fogAmount );
+    //return mix( fogColor, vec3(0.0,0.0,0.0), fogAmount );
+}
+
+
+vec3 sun( in vec3  rgb,      // original color of the pixel
+          in vec3  rayDir,   // camera to point vector
+          in vec3  sunDir ) {// sun light direction
+    //sunDir.y = abs(sunDir.y);
+    float sunAmount = max( dot( rayDir, sunDir ), 0.0 );
+    vec3  sunColor  = vec3(1.0,0.9,0.8) * pow(sunAmount,1024.0);
+    return rgb + sunColor;
+}
+
+vec3 saturate(vec3 a) { return clamp(a, 0.0, 1.0); }
+vec2 saturate(vec2 a) { return clamp(a, 0.0, 1.0); }
+float saturate(float a) { return clamp(a, 0.0, 1.0); }
+
+float getao(vec3 p, vec3 n) {
+    float ao = 1.0;
+    float amb = 0.2;
+    ao *= saturate(distance_to_obj(p + n * 0.0125).x*80.0);
+    ao *= saturate(distance_to_obj(p + n * 0.025).x*40.0);
+    ao *= saturate(distance_to_obj(p + n * 0.05).x*20.0);
+    ao *= saturate(distance_to_obj(p + n * 0.1).x*10.0);
+    ao *= saturate(distance_to_obj(p + n * 0.2).x*5.0);
+    ao *= saturate(distance_to_obj(p + n * 0.4).x*2.5);
+    return amb + (1.0-amb)*clamp(ao*8.0, 0.0, 1.0);
+}
+
+vec3 calcNormal( in vec3 pos ) {
+	vec3 eps = vec3( 0.01, 0.0, 0.0 );
+	vec3 nor = vec3(
+	    distance_to_obj(pos+eps.xyy).x - distance_to_obj(pos-eps.xyy).x,
+	    distance_to_obj(pos+eps.yxy).x - distance_to_obj(pos-eps.yxy).x,
+	    distance_to_obj(pos+eps.yyx).x - distance_to_obj(pos-eps.yyx).x );
+	return normalize(nor);
+}
+
+vec3 getNormal( in vec3 p ) {
+    return normalize(cross( dFdy(p), dFdx(p) ));
 }
 
 void main(void) {
@@ -834,18 +914,18 @@ void main(void) {
                       + vPos.y*v*fov;
     vec3 scp=normalize(scrCoord-prp);
 
-    float lightspeed = 0.001;
-    float lightrad = 1500.0;
-    vec3 lightpos = vec3(cos(framecount*lightspeed)*lightrad,
-                         1500.0,
-                         sin(framecount*lightspeed)*lightrad);
-    //vec3 lightpos = normalize(cam_pos*vec3(-1.0, 1.0, 1.0)) * 200.0;
+    float lightspeed = 0.0125;
+    float lightrad = 5000000.0;
+//    vec3 lightpos = vec3(cos(PI/4.0 + framecount*lightspeed)*lightrad,
+//                         3000000.0,
+//                         sin(PI/4.0 + framecount*lightspeed)*lightrad);
+    //vec3 lightpos = normalize(cam_pos*vec3(-1.0, 1.0, 1.0)) * 500.0;
     //vec3 lightpos =  vec3(400.0,400.0,400.0);
-    //vec3 lightpos = cam_pos* 1.0 + u * 50.0;
+    vec3 lightpos = cam_pos + normalize(vpn)*1.0 + u*2.5;
 
     // Raymarching.
     const vec3 e=vec3(0.02,0,0);
-    const float maxd=400.0; //Max depth
+    const float maxd=1000.0; //Max depth
     vec2 d=vec2(0.01,0.0);
     vec3 c,p,N;
 
@@ -860,6 +940,8 @@ void main(void) {
 //    else {
     for(int i=0;i<256;i++) {
         if ((abs(d.x) < ray_hit_epsilon) || (f > maxd)) {
+            //p += (vec3(hash(p.x), hash(p.y), hash(p.z)) -= 0.5) * 0.001;
+            //d = distance_to_obj(p);
             break;
         }
         f+=d.x;
@@ -884,29 +966,38 @@ void main(void) {
 #else
     vec3 glowcol_miss = rainbow2_gradient(AO*1.0);
     vec3 glowcol = rainbow2_gradient(AO*1.0); //vec3(1.0, 1.0, 1.0);
-    c =  rainbow2_gradient(AO*1.0);
-
-
-
+    c =  rainbow2_gradient(AO*2.0);
 #endif
-    
+
     vec3 n = vec3(d.x-distance_to_obj(p-e.xyy).x,
                   d.x-distance_to_obj(p-e.yxy).x,
                   d.x-distance_to_obj(p-e.yyx).x);
     N = normalize(n);
 
-    vec3 spher = to_spherical(reflect(normalize(cam_pos-p), N ));
+    //N = getNormal(p);
+    //N = calcNormal(p);
+    
+    //AO = AO*AO*AO*AO; 
+    //AO = (AO+getao(p, N)) * 0.25;
+    AO = getao(p, N) * 0.5;
+    //AO=1.0;
+
+    float cam_dist = length(cam_pos - p);
+    vec3 spher = to_spherical(reflect(normalize(p-cam_pos), N ));
     vec2 uv = spher.xy / vec2(2.0*PI, PI);
     uv.y = 1.0 - uv.y;
     vec3 texcol = texture2D(texture, uv).rgb;
+    //vec3 circ = get_integer_circles_color(uv, vec3(1.0));
+    //texcol += circ; 
+    //texcol = sun(texcol, normalize(cam_pos-p), normalize(p-lightpos));
+    //texcol = iqfog(texcol, cam_dist, normalize(p-cam_pos), normalize(p-lightpos));
     
-    vec3 glow = vec3(nsteps/256.0) * texcol *c * glow_intensity;
+    vec3 glow = vec3(nsteps/256.0) * c * glow_intensity;
     //vec3 glow_miss = vec3(nsteps/256.0) * glowcol_miss * glow_intensity;
-    vec3 glow_miss = vec3(nsteps/256.0) * texcol*c * glow_intensity;
+    vec3 glow_miss = vec3(nsteps/256.0) * c * glow_intensity;
 
-    float cam_dist = length(cam_pos - p);
     
-    if (f < maxd) {
+    if (f < maxd &&f >= 0.0) {
  
         //float AO;
         //c = pal(AO*2.0*PI, vec3(0.5), vec3(0.5), vec3(0.3, 0.3, 0.3), vec3(0.0,0.0,0.5) + 0.0 );
@@ -924,26 +1015,35 @@ void main(void) {
         //vec3 fc = vec3(glow + dotfade * (b*c + pow(b,32.0)) * (1.0-f*0.01));
         //vec3 fc = vec3(AO* (b*c + pow(b,32.0)) * (1.0-f*0.005));
         //vec3 fc = vec3(0.0*glow + AO* c*1.0);
-        float amb_shad =0.25;// 0.125;
-        float amb_lamb = 0.125;
+        vec3 ambient = vec3(0.15, 0.09, 0.08);
+        float amb_shad =0.25;
+        float amb_lamb = 0.0;
 
-        vec3 cam_dist_sc = vec3(cam_dist/ 256.0);
+        //vec3 cam_dist_sc = vec3(cam_dist/ 256.0);
 
-        vec3 phong =  vec3((b + pow(b,8.0))) * 0.5; // * (1.0-f*0.005));
+        vec3 phong =  vec3((b + pow(b,8.0))) * 1.0; // * (1.0-f*0.005));
         vec3 lamb = amb_lamb + (1.0 - amb_lamb) * lambert(p, N, lightpos);
         //vec3 lamb = lambert(p, N, lightpos);
-
-        float shad = amb_shad + (1.0 - amb_shad) * iqsoftshadow(p, normalize(lightpos-p), 1.0, 100.0, 16.0);
+        float shad = amb_shad + (1.0 - amb_shad) * iqsoftshadow(p, normalize(lightpos-p), 1.0, 300.0, 32.0);
         //*
         //vec3 fc = (lamb*1.0 + phong + glow) * AO * c * shad;
         //**
-        //vec3 fc = texcol * AO * shad ;
-        vec3 fc = (phong*0.0 + lamb) * shad * texcol * AO  + glow;
-        fc = iqfog(fc, cam_dist, normalize(p-cam_pos), normalize(p-lightpos));
+        
+        vec3 fc = (mix(texcol, c, 0.5)
+                + lamb * 1.0
+                + phong)
+                * shad * AO ;
+        
+        //vec3 fc =  vec3(AO);
+
+        //vec3 fc = (phong*0.0 + lamb + ambient) * shad * texcol * AO + glow;
         
         //vec3 fc = (lamb*AO + phong*shad ) * c + glow;
         //vec3 fc = shad * (lamb) * AO * c + glow*shad + phong*shad;
-        //vec3 fc =  phong ; // * c + glow*shad;
+        //vec3 fc =  vec3(AO*AO*AO*AO) * c ; // * c + glow*shad;
+        
+        fc += glow;
+        fc = iqfog(fc, cam_dist, normalize(cam_pos-p), normalize(p-lightpos));
         fc = pow(fc, vec3(gamma));
         gl_FragColor = vec4(fc, 1.0);
         // *
@@ -952,26 +1052,20 @@ void main(void) {
         //gl_FragColor=(vec4(nsteps, nsteps, nsteps, 1.0) + vec4(c.xyz, 1.0)) * 0.5;
     }
     else {
-        //gl_FragColor=vec4(0.8,0.8,1.0,1.0); //background color
-        //vec2 mp = vec2(mousex, mousey) ;
-        //vec2 uv = vec2(0.5  + (cos(mp.x*2.0*PI) * 0.5),
-        //          0.5  + (sin(mp.x*2.0*PI) * 0.5));
-        //vec2 uv = vec2(vpn.y * PI*2.0, vpn.z * PI*0.99);
-        //vec2 uv = (q + vpn.xy) * vec2(1.0, 1.0);
-        
-        vec3 spher2 = to_spherical(cam_pos-p);
+        vec3 spher2 = to_spherical(normalize(cam_pos-p));
         vec2 uv2 = (spher2.xy / vec2(2.0*PI, PI));
         uv2.y = 1.0 - uv2.y;
         vec3 texcol2 = texture2D(texture, uv2.xy).rgb;
-        //vec3 bgcol = vec3(0.0,0.0,0.0);
-        vec3 bgcol = texcol2; //rainbow2_gradient(1.0);
+        //vec3 bgcol = texcol2; //rainbow2_gradient(1.0);
+        vec3 bgcol = vec3(0.0,0.0,0.0);
         //vec3 bgcol = vec3(0.5, 0.6,0.7); //rainbow2_gradient(1.0);
-        //vec3 bgcol = 1.0-c; //vec3(0.5,0.6,0.7); //c; //rainbow2_gradient(1.0 - nsteps / 256.0) ;
-        //bgcol = iqfog(bgcol, cam_dist, normalize(cam_pos-p), normalize(p-lightpos));
-        bgcol += glow_miss;
+        //vec3 circ = get_integer_circles_color((-0.5+fract(uv2.xy))*16.0, vec3(1.0));
+        //vec3 circ = get_grid_pixel_color((-0.5+fract(uv2.xy))*4.0);
+        //bgcol += circ;
+        //bgcol = sun(bgcol, normalize(p-cam_pos), normalize(p-lightpos));
         bgcol = iqfog(bgcol, cam_dist, normalize(cam_pos-p), normalize(p-lightpos));
+        bgcol += glow_miss;
         bgcol = pow(bgcol, vec3(gamma));
-        //vec3 bgcol = rainbow2_gradient(mousey* PI);
         // vec3 glow = vec3(nsteps/256.0) *  vec3(0.8,0.8,1.0) * 1.0;
         gl_FragColor=vec4(bgcol.rgb,1.0); //background color
     }
