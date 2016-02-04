@@ -8,7 +8,7 @@
 (def bezier-box-tristrip-normals-cache (atom {}))
 (def bezier-box-line-cache (atom {}))
 (def bezier-box-resolution (atom 8))
-(def bezier-box-control-bias (atom 0.5))
+(def bezier-box-control-bias (atom 0.53))
 
 (def bezier-box-rotate-45? false)
 
