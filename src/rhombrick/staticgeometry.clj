@@ -173,10 +173,10 @@
 
 (def ^:const boundary-colors {
   \0 [0 0 0]
-  \1 [192 0 0]
-  \2 [192 128 0]
-  \3 [128 192 0]
-  \4 [0 192 0]
+  \1 [192 64 0]
+  \2 [192 192 0]
+  \3 [64 192 0]
+  \4 [0 64 128]
   \5 [0 0 192]
   \6 [75 0 130]
   \7 [143 0 32]
@@ -831,6 +831,8 @@
 
 (def current-topology (atom (topologies :cube)))
 
+(defn set-topology [topo]
+  (reset! current-topology (topologies topo)))
 
 (def debug-symmetry-idx (atom 0))
 
