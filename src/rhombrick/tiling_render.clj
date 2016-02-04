@@ -150,10 +150,94 @@
   (let [tileset-n (normalize-tileset tileset)
 ;        offset 0; (/ (mod (tileset-to-number tileset) 255) 255)
         pal (make-phi-palette (count tileset-n) offset)]
-    (println "tileset-n:" tileset-n)
+    ;(println "tileset-n:" tileset-n)
     (doseq [i (range (count tileset-n))]
       (let [code (tileset-n i)
             col (pal i)]
+        (doseq [rc (get-code-symmetries code)]
+          (swap! current-tileset-colors assoc rc col))))))
+
+(defn init-tileset-colors-binary [tileset]
+  (reset! current-tileset-colors {})
+  (let [tileset-n (normalize-tileset tileset)
+;        offset 0; (/ (mod (tileset-to-number tileset) 255) 255)
+        ;pal (make-phi-palette (count tileset-n) offset)
+        ]
+    ;(println "tileset-n:" tileset-n)
+    (doseq [i (range (count tileset-n))]
+      (let [code (tileset-n i)
+          col (if (zero? (mod i 2))
+                [0 0 0]
+                [255 255 255])
+            ;col (pal i)
+            ]
+        (doseq [rc (get-code-symmetries code)]
+          (swap! current-tileset-colors assoc rc col))))))
+
+
+(defn init-tileset-colors-minchange [tileset offset]
+  (reset! current-tileset-colors {})
+  (let [tileset-n (normalize-tileset tileset)
+;        offset 0; (/ (mod (tileset-to-number tileset) 255) 255)
+        ;pal (make-phi-palette (count tileset-n) offset)
+        ]
+    ;(println "tileset-n:" tileset-n)
+    (doseq [i (range (count tileset-n))]
+      (let [code (tileset-n i)
+            col (phi-palette-color (tilecode-to-number (normalize-tilecode code)) 0) ]
+        (doseq [rc (get-code-symmetries code)]
+          (swap! current-tileset-colors assoc rc col))))))
+
+
+(defn init-tileset-colors-numcons [tileset offset]
+  (reset! current-tileset-colors {})
+  (let [tileset-n (normalize-tileset tileset)
+        ;tileset-hash (tileset-cons-hash tileset)
+;        offset 0; (/ (mod (tileset-to-number tileset) 255) 255)
+        ;pal (make-phi-palette (count tileset-n) offset)
+        ]
+    ;(println "tileset-n:" tileset-n)
+    (doseq [i (range (count tileset-n))]
+      (let [code (tileset-n i)
+            nc (get-num-connected code)
+            nccol (phi-palette-color nc 0)
+            tilecol (phi-palette-color (tilecode-to-number code) 0)
+            col (vec3-add (vec3-scale tilecol 0.5)
+                          (vec3-scale nccol 0.5))
+            ]
+        (doseq [rc (get-code-symmetries code)]
+          (swap! current-tileset-colors assoc rc col))))))
+
+
+
+(defn get-tileset-group-color [tileset]
+  ;(let [tileset-num (/ (tileset-to-binary-number tileset) 4096.0)
+  (let [tileset-num (tileset-to-binary-number tileset)
+        col (phi-palette-color tileset-num 0) ]
+    col
+    )
+  )
+
+
+(defn init-tileset-colors-spectrum [tileset offset]
+  (reset! current-tileset-colors {})
+  (let [tileset-n (normalize-tileset tileset)
+        tileset-col (vec3-scale (get-tileset-group-color tileset) 1.0)
+;        offset 0; (/ (mod (tileset-to-number tileset) 255) 255)
+        ;pal (make-phi-palette (count tileset-n) offset)
+        ]
+    ;(println "tileset-n:" tileset-n)
+    (doseq [i (range (count tileset-n))]
+      (let [code (tileset-n i)
+            tilenum (tilecode-to-number (normalize-tilecode code))
+            div (/ 1.0 4096.0)
+            hue (* div tilenum)
+            tilecol (phi-palette-color (tilecode-to-number (normalize-tilecode code)) 0)
+            col (vec3-scale (vec3-add tilecol tileset-col) 0.5)
+            ;col (vec3-scale (vec3-add (hsv->rgb hue 1.0 1.0)
+            ;                          tileset-col)
+            ;                0.75) 
+            ]
         (doseq [rc (get-code-symmetries code)]
           (swap! current-tileset-colors assoc rc col))))))
 
@@ -298,6 +382,11 @@
     (add-tile-to-facelist tile)))
 
 
+(defn build-face-list-ts [ts]
+  (reset! face-list #{})
+  (doseq [tile (keys (ts :tiles))]
+    (add-tile-to-facelist tile)))
+
 ;(defn build-face-list2 []
 ;  (reset! face-list #{})
 ;  (doseq [tile (@tiler-state :tiles)]
@@ -330,8 +419,8 @@
 
   ;(no-fill)
   ;(stroke 0 0 0 192)
-  (stroke 128 128 128 48)
-  (stroke-weight 0.025)
+  (stroke 64 64 128 240)
+  (stroke-weight 0.25)
   ;(no-stroke)
   (doseq [face-verts @face-list]
     (cond
@@ -514,9 +603,9 @@
     (let [[r g b] (get-tile-color code)]
       (with-translation pos
         ;(scale 0.5)
-        (stroke-weight 1)
-        (stroke 128 128 128 255)
-        ;(no-stroke)
+        ;(stroke-weight 0.01)
+        ;(stroke 128 128 128 255)
+        (no-stroke)
         ;(stroke r g b 255)
         (assert (and (not (nil? code)) (= (@current-topology :num-faces) (count code))))
 
@@ -542,16 +631,23 @@
                   el (- (Math/asin dz))
                   thickness (+ 0.075 (* 1.0 (bezier-box-thicknesses (.charAt code i))))
                   ;thickness (* 1.3 (bezier-box-thicknesses (.charAt code i)))
+                  bcol (get boundary-colors d [127 127 127])
+                  ;bcol [96 96 128]; (get boundary-colors d [127 127 127])
                   alpha 255]
               (if (face-digit-like-compatible? d)
-                (do (fill 160 160 220 alpha))
+                (do ;(fill 160 160 220 alpha)
+                    (apply fill bcol)
+                    )
                 (do
                   (if (>= (int d) 97)
                     (fill 255 255 255 alpha)
                     (fill 0 0 0 alpha))))
               (with-translation (vec3-scale ((@current-topology :face-centers) i) 0.956)
+                ;(scale 0.5)
                 (rotate az 0 0 1)
                 (rotate el 0 1 0)
+                (if bbox/bezier-box-rotate-45?
+                    (rotate (/ PI 4.0) 0 1 0))
                 (box 0.125 thickness thickness)))))))))
 
 
@@ -601,12 +697,14 @@
 
 (defn draw-assemblage-center []
   (let [c @assemblage-center]
-    (stroke 255 255 255 192)
-    (stroke-weight 0.025)
+    (stroke 255 255 64 192)
+    (stroke-weight 0.05)
     ;(fill 255 255 0 32)
     (no-fill)
     ;(with-translation (find-assemblage-center @tiles)
     (box 0.5)
+    (stroke 255 64 128 192)
+
     (with-translation c
       (scale 0.5)
       (box 1 1 1))))
@@ -618,13 +716,13 @@
   (no-stroke)
   (with-translation [5 0 0]
     (fill 255 0 0 128)
-    (box 10 0.01 0.01))
+    (box 10 0.1 0.1))
   (with-translation [0 5 0]
     (fill 0 255 0 128)
-    (box 0.01 10 0.01))
+    (box 0.1 10 0.1))
   (with-translation [0 0 5]
     (fill 128 128 255 128)
-    (box 0.01 0.01 10)))
+    (box 0.1 0.1 10)))
 
 
 (defn draw-skysphere [camerapos]
@@ -793,12 +891,13 @@
         line-col [0 0 0 255]
         ;line-col [255 255 255 255]
         mono-col [255 255 255 255]
-        col-transp [(col 0) (col 1) (col 2) 64]
+        col-transp [(col 0) (col 1) (col 2) 255]
         with-endcaps? true
         final-vert (first (first curves))
         ]
+    ;(println "code/topo/res" code topo res)
     ;(no-stroke)
-    (stroke-weight 0.0125)
+    (stroke-weight 0.025)
     (apply stroke col-transp)
     ;(apply stroke mono-col)
 
@@ -806,15 +905,13 @@
     (apply fill col-transp)
     ;(apply fill mono-col)
     ;(apply fill col)
-
-    (begin-shape)
-    (doseq [curve curves]
-      (doseq [[vx vy vz] curve]
-        (vertex vx vy vz))
-    )
-    (vertex (final-vert 0) (final-vert 1) (final-vert 2))
-    (end-shape))
-  )
+    (when (not= code "------")
+      (begin-shape)
+      (doseq [curve curves]
+        (doseq [[vx vy vz] curve]
+          (vertex vx vy vz)))
+      (vertex (final-vert 0) (final-vert 1) (final-vert 2))
+      (end-shape))))
 
 
 (defn draw-facecode-inner-shape-2d [code topo res]
@@ -967,12 +1064,12 @@
 (defn draw-facecode-bezier-boxes-n [code col steps]
   (when (contains? #{3 4} (count col))
     (apply fill col)
-    (apply stroke col)
-    (stroke-weight 1)
+    ;(apply stroke col)
+    ;(stroke-weight 1)
     )
   ;(stroke 0 0 0 192)
   (no-stroke)
-  (no-smooth)
+  ;(no-smooth)
   (doseq [bbox (bbox/get-bezier-box-triangles code steps)]
     (doseq [strip bbox]
       (let [verts (vec strip)
@@ -1070,6 +1167,66 @@
   ))
 
 
+; bounding sphere
+(defn get-assemblage-radius [ts]
+  (->> (ts :tiles)
+       (keys)
+       (map vec3-length)
+       (sort)
+       (last)
+  ))
+
+
+; returns two opposing corners of axis aligned bounding box
+; (there will be a quicker way to do this)
+(defn get-assemblage-extents [ts]
+  (let [tile-positions (keys (ts :tiles))
+        min-xyz [((apply min-key #(% 0) tile-positions) 0)
+                 ((apply min-key #(% 1) tile-positions) 1)
+                 ((apply min-key #(% 2) tile-positions) 2)]
+        max-xyz [((apply max-key #(% 0) tile-positions) 0)
+                 ((apply max-key #(% 1) tile-positions) 1)
+                 ((apply max-key #(% 2) tile-positions) 2)]]
+    [min-xyz max-xyz]))
+
+
+(defn get-bounding-box-center [ts]
+  (apply vec3-bisect (get-assemblage-extents ts)))
+
+
+(defn get-tiling-dims [ts]
+  ;(println "extents:" exts)
+  (let [
+        exts (get-assemblage-extents ts)
+        axlens { :x (+ 1 (Math/abs (- ((exts 0) 0) ((exts 1) 0) )))
+                 :y (+ 1 (Math/abs (- ((exts 0) 1) ((exts 1) 1) )))
+                 :z (+ 1 (Math/abs (- ((exts 0) 2) ((exts 1) 2) ))) }
+
+        ;ax-sorted (sort-by val axlens)
+        ]
+    ;(println "axis lengths:" axlens)
+    axlens
+      ))
+
+
+(defn draw-aabb [ts]
+  (let [ext (get-assemblage-extents ts)
+        ;abr (* (vec3-length (first (@current-topology :verts))) 1.0)
+        abr (* (@current-topology :aabb-radius) 1.0)
+        dims (get-tiling-dims ts)
+        dimsa [(+ (dims :x) abr)
+               (+ (dims :y) abr)
+               (+ (dims :z) abr)]
+        ]
+    (stroke 255 255 255)
+    (no-fill)
+    ;(with-translation (vec3-scale (find-assemblage-center (ts :tiles)) 1.0)
+      ;(box (dimsa :x) (dimsa :y) (dimsa :z))
+      (apply box dimsa)
+    ;  )
+
+  ))
+
 (defn draw-tubes [npoints]
   (doseq [i (range (@current-topology :num-faces))]
     (draw-tube-anchors i npoints)
@@ -1135,18 +1292,20 @@
 
 
 (defn draw-tiling2 [ts attr]
-  (init-tileset-colors (get-in ts [:params :tileset]))
-  (doseq [tile (keys (ts :tiles))]
-    (let [pos tile
-          code ((ts :tiles) pos)
+  (init-tileset-colors (get-in ts [:params :tileset]) 0.0)
+  (doseq [[pos code] (ts :tiles) ] 
+        ;[tile (keys (ts :tiles))]
+    (let [;pos tile
+          ;code ((ts :tiles) pos)
           ;col [255 255 255 255]
           col (conj (get-tile-color code) 255)
-          ;line-col [(col 0) (col 1) (col 2) 255]
-          line-col col
-          ;line-col  [0 0 0 192] ;[192 192 255 192]
+          line-col [(col 0) (col 1) (col 2) 160]
+
+          ;line-col col
+          ;line-col  [192 240 255 240]
           bezier-steps (attr :bbox-res)]
       (with-translation pos
-        (scale 0.5)
+        ;(scale 0.5)
         ;(stroke-weight 8)
         ;(stroke 0 0 0 64)
         (no-stroke)
@@ -1158,7 +1317,10 @@
             (draw-facecode-bezier-boxes-n ((ts :tiles) pos) col bezier-steps)
             (draw-facecode-bezier-boxes ((ts :tiles) pos) col bezier-steps)))
         (when (attr :bbox-lines?)
-          (reset! bezier-box-line-weight (attr :bbox-line-weight)) ; <-- get rid of
+          ;(reset! bezier-box-line-weight (attr :bbox-line-weight)) ; <-- get rid of
+          ;(stroke-weight 0.01)
+          (stroke-weight (attr :bbox-line-weight))
+          (no-fill)
           (draw-facecode-bezier-box-lines ((ts :tiles) pos) line-col bezier-steps))
         )
       (when (not= (attr :boundary-mode) :none)
@@ -1167,51 +1329,27 @@
       )))
 
 
-; bounding sphere
-(defn get-assemblage-radius [ts]
-  (->> (ts :tiles)
-       (keys)
-       (map vec3-length)
-       (sort)
-       (last)
-  ))
-
-
-; returns two opposing corners of axis aligned bounding box
-; (there will be a quicker way to do this)
-(defn get-assemblage-extents [ts]
-  (let [tile-positions (keys (ts :tiles))
-        min-xyz [((apply min-key #(% 0) tile-positions) 0)
-                 ((apply min-key #(% 1) tile-positions) 1)
-                 ((apply min-key #(% 2) tile-positions) 2)]
-        max-xyz [((apply max-key #(% 0) tile-positions) 0)
-                 ((apply max-key #(% 1) tile-positions) 1)
-                 ((apply max-key #(% 2) tile-positions) 2)]]
-    [min-xyz max-xyz]))
-
-
-(defn get-bounding-box-center [ts]
-  (apply vec3-bisect (get-assemblage-extents ts)))
 
 
 (def default-render-attribs {
   :bbox-smooth? true
   :bbox-lines? true
   :bbox-faces? true
-  :bbox-line-weight 1
+  :bbox-line-weight 0.005
   :bbox-res 32
   :simple-lines? false
   :boundary-mode :type-change
                       })
 
 
-(defn render [ts attr filename]
-  ;(println (ts :params))
-  ;(println attr)
-  ;(println "iters:" (ts :iters) "tiles:" (count (ts :tiles)))
-
-  (draw-tiling2 ts attr)
-  (save filename)
-
-  )
+;(defn render [ts attr filename]
+;  ;(println (ts :params))
+;  ;(println attr)
+;  ;(println "iters:" (ts :iters) "tiles:" (count (ts :tiles)))
+;  (draw-tiling ts false false false false :type-change)
+;  ;(draw-tiling2 ts attr)
+;  (println "render" ts attr)
+;  (save filename)
+;
+;  )
 
