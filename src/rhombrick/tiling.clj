@@ -380,7 +380,7 @@
   ;:tileset ["1-1---" "1--1-1"] ; hex
   :seed ""
   :max-iters 1000000
-  :max-radius 8
+  :max-radius 16
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0
@@ -668,7 +668,7 @@
     ;(println "iter")
     (let [iter-start-time (System/nanoTime)]
 ;      (dosync
-        (swap! tiler-state make-backtracking-tiling-iteration5)
+        (swap! tiler-state make-backtracking-tiling-iteration4)
         (update-assemblage-center (@tiler-state :tiles))
         (reset! last-iteration-time (float (/ (- (System/nanoTime) iter-start-time) 1000000.0)))
 ;        )

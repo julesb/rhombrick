@@ -695,9 +695,9 @@
     (update-gliders))
 
 
-  (background 255 255 255 )
+  ;(background 255 255 255 )
   ;(background 64 64 64 )
-  ;(background 16 24 32)
+  (background 16 24 32)
  ; (background 0 0 0)
 
   (push-matrix)
@@ -996,8 +996,8 @@
   ;(camera)
   ;(ortho)
   ;(hint :disable-depth-test)
-  ;(when @draw-info?
-  ;  (draw-info 10 (- (height) 370)))
+  (when @draw-info?
+    (draw-info 10 (- (height) 370)))
 
   (camera)
 
@@ -1089,9 +1089,9 @@
     :setup setup
     :draw draw
     ;:size [1900 1100]
-    ;:size [1440 800]
-    :size :fullscreen
-    :features [:present :resizable]
+    :size [1440 800]
+    ;:size :fullscreen
+    ;:features [:present :resizable]
     ;:features [:resizable]
     ;:renderer :opengl
     :renderer :p3d
