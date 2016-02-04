@@ -189,10 +189,12 @@
 
 
 (defn vec3-format [v]
-  (str "[" (format "%.2f" (v 0))
-       " " (format "%.2f" (v 1))
-       " " (format "%.2f" (v 2))
-       "]"))
+  (if (and (not= nil v) (>= (count v) 3))
+    (str "[" (format "%.2f" (v 0))
+         " " (format "%.2f" (v 1))
+         " " (format "%.2f" (v 2))
+         "]")
+    ""))
 
 ;; p=point, pv=point on plane, pn=plane normal
 ;(defn distance-point-to-plane [p pv pn]
