@@ -11,10 +11,10 @@
 (def camera-fov (atom 60.0))
 (def camera-aspect-ratio (atom 1.0))
 (def camera-near-clip (atom 10))
-(def camera-far-clip (atom 15000))
+(def camera-far-clip (atom 25000))
 
 (def camera-modes [:follow-glider :follow-paths :free :game])
-(def camera-mode (atom 0))
+(def camera-mode (atom 3))
 (def camera-num-modes 4)
 (def camera-up (atom [0 0 1]))
 
