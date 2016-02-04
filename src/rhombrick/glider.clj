@@ -6,15 +6,15 @@
         [rhombrick.staticgeometry]
         [rhombrick.obj-loader]
         ;[rhombrick.facecode]
-        [overtone.osc]
+        ;[overtone.osc]
     ))
 
 (def gliders (atom []))
 (def num-gliders 2)
 (def max-glider-id (atom 0))
 
-(def OSCPORT 4242)
-(def client (osc-client "localhost" OSCPORT))
+;(def OSCPORT 4242)
+;(def client (osc-client "localhost" OSCPORT))
 
 
 
@@ -221,10 +221,10 @@
                                                    next-entry-face-idx )]
           (if (is-traversable? next-tile-code)
             (do
-              (if (and 
-                    (= (glider :id) 1)
-                    (> (count (get-connected-idxs next-tile-code)) 2))
-                (osc-send client "/rhombrick.game" "boundary" (float (glider :id))))
+;              (if (and 
+;                    (= (glider :id) 1)
+;                    (> (count (get-connected-idxs next-tile-code)) 2))
+;                (osc-send client "/rhombrick.game" "boundary" (float (glider :id))))
               (update-glider-value (glider :id)
                                    :time (- new-glider-time
                                             (int new-glider-time)))
@@ -237,8 +237,8 @@
             ; the next tile is not traversable or doesnt exist
             ; so reverse direction
             (do
-              (if (= (glider :id) 1)
-                (osc-send client "/rhombrick.game" "hitblock" (float (glider :id))))
+;              (if (= (glider :id) 1)
+;                (osc-send client "/rhombrick.game" "hitblock" (float (glider :id))))
               (let [old-entry-idx (glider :entry-face-idx)
                     old-exit-idx (glider :exit-face-idx)]
                 (update-glider-value (glider :id) :entry-face-idx

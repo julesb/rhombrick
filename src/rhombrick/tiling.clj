@@ -3,16 +3,17 @@
         [rhombrick.vector]
         [rhombrick.staticgeometry]
         [ordered.map]
-        [overtone.osc]))
+        ;[overtone.osc]
+        ))
 
 
 (def assemblage-center (atom [0 0 0]))
 (def last-iteration-time (atom 0))
 
 (def sonify? false)
-(when sonify?
-  (def OSCPORT2 4242)
-  (def client2 (osc-client "localhost" OSCPORT2)))
+;(when sonify?
+;  (def OSCPORT2 4242)
+;  (def client2 (osc-client "localhost" OSCPORT2)))
 
 ;(defn update-assemblage-center [new-pos]
 ;  (let [new-center (vec3-scale (vec3-add new-pos @assemblage-center)
@@ -101,8 +102,8 @@
 
 
 (defn make-tile [ts pos facecode]
-  (when sonify?
-    (osc-send client2 "/rhombrick.tiling" "make-tile" (int (mod (tilecode-to-number facecode) 21))))
+  ;(when sonify?
+  ;  (osc-send client2 "/rhombrick.tiling" "make-tile" (int (mod (tilecode-to-number facecode) 21))))
   (assoc ts :tiles (assoc (ts :tiles) (quantize-position pos) facecode)))
 
 
@@ -461,9 +462,9 @@
              (< n num-tiles))
       (do
         ;(append-stats-buffer! stats-backtrack n)
-        (when sonify?
-          (osc-send client2 "/rhombrick.tiling" "backtrack"
-                    (int (mod (tilecode-to-number (val (last (take ni tiles)))) 21))))
+        ;(when sonify?
+        ;  (osc-send client2 "/rhombrick.tiling" "backtrack"
+        ;            (int (mod (tilecode-to-number (val (last (take ni tiles)))) 21))))
         (ordered-map (take ni tiles)))
       (do
         ;(append-stats-buffer! stats-backtrack 0)

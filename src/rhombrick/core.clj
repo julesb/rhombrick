@@ -16,7 +16,7 @@
         [rhombrick.console :as console]
         [rhombrick.marching-cubes]
         [clojure.math.combinatorics]
-        [overtone.osc]
+        ;[overtone.osc]
         )
   (:import java.awt.event.KeyEvent))
 
@@ -464,7 +464,7 @@
 ;    \z #(do
 ;          (game/start-game (editor/get-tileset-expanded)))
     \u #(do
-          (osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
+          ;(osc-send client "/rhombrick.game" "place-tile" @game/selected-candidate-idx)
           (game/game-step @tiler-state)
           )
 ;    \U #(do
@@ -472,16 +472,16 @@
 ;          (game/game-step (editor/get-tileset-expanded))
 ;        )
     \j #(do
-          (osc-send client "/rhombrick.game" "backtrack" @game/selected-candidate-idx)
+          ;(osc-send client "/rhombrick.game" "backtrack" @game/selected-candidate-idx)
           (game/do-backtrack)
           (game/update-game-state @tiler-state)
           )
     \h #(do
-          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
+          ;(osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
           (game/prev-candidate)
           (update-neighbour-candidates  @tiler-state))
     \k #(do
-          (osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
+          ;(osc-send client "/rhombrick.game" "change-candidate" @game/selected-candidate-idx)
           (game/next-candidate)
           (update-neighbour-candidates  @tiler-state))
     \% #(do
@@ -640,7 +640,7 @@
 (defn draw-blobs [ts]
   ;(stroke-weight 1)
   ;(stroke 96 96 96)
-  (no-stroke)
+  ;(no-stroke)
   ;(no-fill)
   (doseq [[pos code] (ts :tiles)]
     (if (contains? @tileset-meshes code)
@@ -965,7 +965,7 @@
 
     (let [pos (vec3-add (vec3-scale (get-glider-pos 1) 1.0) [0 0 1])]
       (no-lights)
-      (no-stroke)
+      ;(no-stroke)
       (fill 128 255 192 255)
       (with-translation pos
         (sphere 0.1)))
@@ -1083,6 +1083,7 @@
 
 
 (defn -main [& args]
+  (println "(-main)")
   (defsketch rhombrick
     :title "rhombrick"
     :setup setup
