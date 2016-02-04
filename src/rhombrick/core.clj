@@ -34,8 +34,8 @@
 
 (def keys-down (atom #{}))
 
-;(def mousewarp-pos (atom [716 356])) ; 1440x800
-(def mousewarp-pos (atom [946 506])) ; 1900x1100
+(def mousewarp-pos (atom [716 356])) ; 1440x800
+;(def mousewarp-pos (atom [946 506])) ; 1900x1100
 (def last-mouse-delta (atom [0 0]))
 
 (def my-applet (atom nil))
@@ -171,6 +171,7 @@
 
     (println "setup done")
     )
+
 
 ; _______________________________________________________________________
 
@@ -396,6 +397,17 @@
           (swap! draw-empty? not))
     \i #(do
           (swap! draw-info? not))
+    \I #(do
+          (let [max-rad (get-assemblage-radius @tiler-state)
+                extents (get-assemblage-extents @tiler-state)
+                extents-adj [(vec3-sub (extents 0) [0.5 0.5 0.5])
+                             (vec3-add (extents 1) [0.5 0.5 0.5])  
+                                       ]
+                ]
+            (println "rad:" max-rad "extents:" extents-adj)
+            (println "tiles:" (@tiler-state :tiles))
+         ))
+
     \_ #(do
           (when (> @bezier-box-resolution 1)
             (swap! bezier-box-resolution dec)
@@ -655,6 +667,10 @@
 ;  (when @tiler-auto-seed?
 ;    (auto-seed-tiler))
 ; auto seed mode
+
+  (when (nil? @tiler-state)
+    (start-tiler (editor/get-tileset-as-set) false))
+
   (when @auto-seed?
     (when (or
             (@tiler-state :solved?)
@@ -802,7 +818,7 @@
       (pop-matrix)
     )
 
-    ;(draw-axes)
+    (draw-axes)
 ;    (push-matrix)
 ;    (rotate-x (/ (frame-count) 200.1))
 ;   ;(rotate-y (/ (frame-count) 180.73))
@@ -836,7 +852,6 @@
 ;    (rotate-y (/ (frame-count) 38.73))
 ;    (no-lights)
 ;    (draw-skysphere @camera-pos)
-
     (let [max-rad ((@tiler-state :params) :max-radius)
           max-rad (+ max-rad 1.0)
           r (/ max-rad 2)
@@ -867,9 +882,9 @@
     ;(hint :disable-depth-test)
     ;(draw-tiling)
     ; (hint :enable-depth-test)
-    ;(no-fill)
+    (no-fill)
     ;(draw-horizon)
-    ;(draw-assemblage-radius)
+    (draw-assemblage-radius)
 
     ;(when @draw-facelist?
     ;  (draw-face-list))
@@ -890,7 +905,7 @@
                  @draw-bezier-box-lines?
                  @current-boundary-mode)
 
-    ;(draw-assemblage-center)
+    (draw-assemblage-center)
 
     (when @draw-tilecode-blobs?
       ;(draw-surface @test-surface)
@@ -929,8 +944,12 @@
 
     ;(draw-billboard [10 0 0] @particle-texture)
     (no-lights)
+
+    (draw-aabb @tiler-state)
+
     (when @draw-empty?
       (draw-empty @tiler-state))
+
 
     ;(lights)
     (when @draw-gliders?
@@ -1073,8 +1092,8 @@
     :size :fullscreen
     :features [:present :resizable]
     ;:features [:resizable]
-    :renderer :opengl
-    ;:renderer :p3d
+    ;:renderer :opengl
+    :renderer :p3d
     :key-typed key-typed
     :key-pressed key-pressed
     :key-released key-released

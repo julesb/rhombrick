@@ -222,9 +222,11 @@
 (defn add-to-dead-loci-ts [ts code]
   (assoc ts :dead (conj (ts :dead) code)))
 
-(defn add-to-dead-loci-ts2 [ts code]
-  (assoc ts :dead (clojure.set/union (ts :dead) #{code})))
+;(defn add-to-dead-loci-ts2 [ts code]
+;  (assoc ts :dead (clojure.set/union (ts :dead) #{code})))
 
+(defn add-to-dead-loci-ts2 [ts code]
+  (assoc ts :dead (clojure.set/union (ts :dead) code)))
 
 (defn get-untileable-neighbours [tiles tileset pos dead]
   (->> (get-neighbours pos)
@@ -361,6 +363,8 @@
 
 
 
+(defn uuid [] (str (java.util.UUID/randomUUID)))
+
 ; some useful trunc-octa tiles:
 ; "-3---3-----3-3" ; tetrahedron
 ; "-3--333-3--333" ; octahedron
@@ -375,16 +379,17 @@
   ;:tileset ["1-1---" "1--1-1"] ; hex
   :seed ""
   :max-iters 1000000
-  :max-radius 32 
+  :max-radius 8
   :max-tiles 1000000
   :adhd 2.0
   :autism 1.0
-  :nfc? true
+  :nfc? false 
   })
 
 
 
 (def default-state {
+  :uuid ""
   :params default-params
   :tiles (ordered-map)
   :tileset-expanded #{}
@@ -431,11 +436,12 @@
                         (set (get-empty-neighbours {[0 0 0] (params :seed)} [0 0 0]))
                         (set (get-empty-connected-neighbours {[0 0 0] (params :seed)} [0 0 0]))))
         ;(assoc :empty (set (get-empty-connected-neighbours {[0 0 0] (params :seed)} [0 0 0])))
+        (assoc :uuid (uuid))
       )))
 
 
 ; move this definition to core
-(def tiler-state (atom (make-state)))
+(def tiler-state (atom nil)) ; (atom (make-state)))
 (def tiler-thread (atom nil))
 
 
@@ -584,7 +590,8 @@
         (let [;new-pos (find-closest-to-center positions)
               new-pos (find-closest-to-point positions @assemblage-center)
               new-neighbourhood (get-neighbourhood tiles new-pos)
-              new-code (choose-tilecode new-neighbourhood tileset dead)]
+              new-code (choose-tilecode ts new-pos)]
+              ;new-code (choose-tilecode new-neighbourhood tileset)]
           ;(println "pos nb code tileset" new-pos new-neighbourhood new-code tileset)
           (if (nil? new-code)
             ; no tile will fit, backtrack and return new state
